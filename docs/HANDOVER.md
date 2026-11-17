@@ -123,8 +123,8 @@ GLB 안의 PNG를 WEBP로 바꾸는 방법은 Su-33에 이미 써먹었다 (GLB 
 **파일로 직접 받아 쓰면 한도와 무관하다.** 사용자는 GitHub Pages로 옮길 예정.
 
 ### GitHub로 옮길 때
-`.gitignore` 가 `dist/*.html` 을 빼고 있다. Pages로 올리려면 빌드 결과를 포함시키거나
-Actions에서 `python3 build.py` 를 돌리게 해야 한다. 커밋은 전부 로컬에 있고 원격은 없다.
+`.gitignore` 가 `dist/` 를 빼고 있다. Pages로 올리려면 빌드 결과를 포함시키거나
+Actions에서 `python3 build.py` 를 돌리게 해야 한다. 저장소는 아직 원격이 없다 (3-0절).
 
 ---
 
