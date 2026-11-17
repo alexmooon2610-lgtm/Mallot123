@@ -77,6 +77,7 @@ es.forEach(e => scene.remove(e.mesh)); es = []; wt = 1e9; wv = 1; spawnWave();
 p.pos.set(20000, 3000, 25000); p.q.identity(); p.vd.set(0, 0, -1);
 p.speed = 250; p.thr = 0.9; p.ab = 0; p.gearDown = false; p.flap = 0; p.mesh.userData.setGear?.(false);
 es.forEach((e, i) => { e.pos.set(20000 + (i ? 400 : -400), 3000, 20000); e.q.identity(); e.vd.set(0, 0, -1); e.speed = 230; e.ai.hint = 99; });
+ACFT.su33.locks = 2;
 """
 
 WAVECLEAR = """
@@ -118,8 +119,9 @@ SCENARIOS = {
     'su33-vclimb': ('CARRIER', 'LEGACY', 3000, keys(hold('ShiftLeft', 0, 3000)), 1, {'stAc': 'su33'}, VCLIMB),
     'su33-trap': ('CARRIER', 'LEGACY', 900, {}, 1, {'stAc': 'su33'},
                   TRAP.format(z=120, spd=140, sink=0.04) + 'p.gun = 10; p.fl = 3; p.am.SARH = 0;'),
-    # Su-33 다중 락: 앞 7 km 에 F-16 두 대 → MULTI-TRK → 락 → Tab → 두 번째 락 → SARH 발사 → Tab(주 락 전환) → SARH 발사
-    'su33-multilock': ('CARRIER', 'LEGACY', 1500, keys(tap('KeyT', 10), tap('KeyY', 150), tap('Tab', 170), tap('KeyY', 260),
+    # 다중 락 코드 시험: 실기 Su-33 은 1개 교전이라 시험 안에서만 ACFT.su33.locks = 2 로 켠다 (MULTILOCK 끝 줄).
+    # 앞 5 km F-16 두 대 → MULTI-TRK → 락 → Tab → 두 번째 락 → SARH → Tab(주 락 전환) → SARH
+    'multilock': ('CARRIER', 'LEGACY', 1500, keys(tap('KeyT', 10), tap('KeyY', 150), tap('Tab', 170), tap('KeyY', 260),
                                                        tap('Space', 290), tap('Tab', 340), tap('Space', 380)),
                        1, {'stAc': 'su33'}, MULTILOCK),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용

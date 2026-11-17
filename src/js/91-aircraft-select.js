@@ -13,8 +13,8 @@
       en: 'MiG-29 9.12 — light, quick to accelerate (T/W 1.09). R-27R ×4 · R-73 ×4 · 30 flares/chaff. Short legs.',
     },
     su33: {
-      ko: 'Su-33 — 무겁고 가속이 느리다 (추중비 0.85). 레이더 탐지 거리 0.8배 대신 다중 락 2 · 락 가능까지 0.8초(MiG 1.5초). 연료 1.7배 · R-27R 6 · R-73 4 · 플레어/채프 각 48. 덩치가 커서 맞기도 쉽다.',
-      en: 'Su-33 — heavy, slower to accelerate (T/W 0.85). 0.8× radar range but 2-target multi-lock · lock-ready in 0.8 s (MiG 1.5 s). 1.7× endurance · R-27R ×6 · R-73 ×4 · 48 flares/chaff. Bigger target.',
+      ko: 'Su-33 — 무겁고 가속이 느리다 (추중비 0.85). 대신 N001 레이더로 더 멀리 본다 (탐지 1.4배 · 락 유지 1.3배). 연료 1.7배 · R-27R 6 · R-73 4 · 플레어/채프 각 48. 덩치가 커서 맞기도 쉽다.',
+      en: 'Su-33 — heavy, slower to accelerate (T/W 0.85), but the N001 radar sees farther (1.4× detection · 1.3× lock hold). 1.7× endurance · R-27R ×6 · R-73 ×4 · 48 flares/chaff. Bigger target.',
     },
   };
   function paint() {
