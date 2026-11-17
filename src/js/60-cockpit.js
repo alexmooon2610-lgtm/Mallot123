@@ -61,6 +61,10 @@ const mirrorRT = new T.WebGLRenderTarget(512, 192, { depthBuffer: true, stencilB
 mirrorRT.texture.generateMipmaps = false;
 mirrorRT.texture.minFilter = T.LinearFilter;
 mirrorRT.texture.magFilter = T.LinearFilter;
+// 화면과 같은 sRGB 로 그린다 (V15.0.0-alpha.3): three r128 은 렌더 타깃의 encoding 을 셰이더 키에 넣어서,
+// 선형(기본값)이면 거울을 처음 그릴 때 장면의 셰이더를 전부 한 벌 더 컴파일했다(측정 +8개 · 교전 중 멈칫).
+// sRGB 로 저장하면 어두운 쪽 계조도 더 좋다. 콕핏의 거울 재질은 이 텍스처를 sRGB 로 읽어 색은 그대로다.
+mirrorRT.texture.encoding = T.sRGBEncoding;
 const mirrorCam = new T.PerspectiveCamera(70, 512 / 192, 0.5, 60000);
 const mirrorYaw = new T.Quaternion().setFromAxisAngle(V(0, 1, 0), Math.PI);
 const mirrorInterval = 1000 / 15;
@@ -1073,6 +1077,14 @@ for (const s of [-1, 1]) {
   lev.userData.base = 0.06;
 }
 ckAdd(new T.BoxGeometry(0.1, 0.04, 0.16), CKM.tealDk, 0, 0, 0, thr);
+
+// ---------- 정적 부분 합치기 (V15.0.0-alpha.3): 콕핏 메시 164개 · 재질 40개 → 매 프레임 그리기 호출이 124번이었다.
+// 움직이는 것(바늘 · 자세계 · 방위계 · 조종간 · 스로틀 · 경고등)은 그대로 두고 나머지를 재질별로 합친다.
+{
+  const moving = new Set([...Object.values(NDL), adiBall, hsiCard, hsiHome, stick, thr, ...lampMeshes]);
+  ck.updateMatrixWorld(true);
+  mergeStaticInPlace(ck, o => moving.has(o));
+}
 
 // ---------- 매 프레임 갱신
 const CKS = { rpm1: 0, rpm2: 0, egt1: 350, egt2: 350, screens: 0, hx: 0, hy: 0 };

@@ -310,8 +310,37 @@ function start() {
   activeMode = curM().env === 'AIRBASE' ? 'AIRBASE' : 'CARRIER';
   lastMission[activeMode] = activeMission;
   init();
+  warmShaders();
   S = 'play';
   $('ov').style.display = 'none';
+}
+// 셰이더 미리 굽기 (V15.0.0-alpha.3): 미사일 · 적기 · 비행운 · 폭발 입자처럼 싸우는 도중 처음 보이는 재질은
+// 처음 그려질 때 셰이더를 굽느라 한 번 멈칫한다 (측정: 출격 19개 → 교전 중 31개로 늘었다).
+// 출격할 때 장면에 잠깐 넣고 R.compile 로 미리 굽는다. 그리지는 않는다. 판정 난수(rnd)는 건드리지 않는다.
+let warmGroup = null;
+function warmShaders() {
+  try {
+    if (!warmGroup) {
+      warmGroup = new T.Group();
+      warmGroup.name = 'shader_warmup';
+      const pseudo = s => ({ side: s, mock: false });
+      for (const ty of ['SARH', 'IR']) warmGroup.add(mslMesh(pseudo('P'), ty), mslMesh(pseudo('E'), ty));
+      warmGroup.add(f16Mesh());
+      const tg = new T.BufferGeometry();
+      tg.setAttribute('position', new T.BufferAttribute(new Float32Array(9), 3));
+      tg.setAttribute('alpha', new T.BufferAttribute(new Float32Array(3), 1));
+      tg.setAttribute('side', new T.BufferAttribute(new Float32Array(3), 1));
+      warmGroup.add(new T.Mesh(tg, trailMat), new T.Mesh(bGeo, bMat[0]), new T.Mesh(bGeo, bMat[1]));
+      warmGroup.traverse(o => (o.visible = true));
+    }
+    scene.add(warmGroup);
+    R.compile(scene, cam);
+    R.compile(cockpitScene, ckCam);
+  } catch (e) {
+    console.warn('[STEEL TEMPEST] shader warm-up skipped', e);
+  } finally {
+    if (warmGroup) scene.remove(warmGroup);
+  }
 }
 function nextMission() {
   const id = nextMissionId();

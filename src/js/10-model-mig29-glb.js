@@ -85,7 +85,7 @@ function loadMiG29Paint() {
       raw = atob(b64),
       bytes = new Uint8Array(raw.length);
     for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-    decodeTexQueued(bytes, 'image/png', texCap())
+    decodeTexQueued(bytes, 'image/png', texCap(), true) // 내 기체 도색은 먼저
       .then(src => {
         const tex = new T.Texture(src);
         tex.flipY = false; // glTF UV 기준
@@ -127,7 +127,7 @@ function applyLoadedMiG29ToPlayer() {
 }
 // 단순 GLB 읽기: 이 모델이 쓰는 기능(메시 · 인덱스 · 위치/법선/UV · 기본 재질)만 읽는다.
 // CDN 의 GLTFLoader 없이도 모델이 뜨도록 게임 안에서 직접 읽는다.
-function parseSimpleGLB(buf, texScale = 1) {
+function parseSimpleGLB(buf, texScale = 1, texHi = false) {
   const dv = new DataView(buf);
   if (dv.getUint32(0, true) !== 0x46546c67) throw new Error('not a GLB');
   const jsonLen = dv.getUint32(12, true);
@@ -151,7 +151,7 @@ function parseSimpleGLB(buf, texScale = 1) {
     if (!im || im.bufferView == null) return (texCache[ti] = null);
     const v = g.bufferViews[im.bufferView],
       bytes = new Uint8Array(buf, binStart + (v.byteOffset || 0), v.byteLength);
-    return (texCache[ti] = decodeTexQueued(bytes, im.mimeType, texCap(texScale))
+    return (texCache[ti] = decodeTexQueued(bytes, im.mimeType, texCap(texScale), texHi)
       .then(src => {
         const tex = new T.Texture(src);
         tex.flipY = false; // glTF UV 기준
@@ -244,9 +244,7 @@ function parseSimpleGLB(buf, texScale = 1) {
 function loadUserMiG29GLB() {
   loadMiG29Paint();
   try {
-    const binary = atob(readAsset('asset-mig29-glb')),
-      bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const bytes = assetBytes('asset-mig29-glb');
     mig29GLBTemplate = parseSimpleGLB(bytes.buffer);
     mig29GLBTemplate.name = 'MiG29_GLB_Template';
     paintMiG29(mig29GLBTemplate);

@@ -10,9 +10,7 @@ const F16_GLB_Y = -1.89,
   F16_GLB_Z = -2.5;
 function loadF16GLB() {
   try {
-    const binary = atob(readAsset('asset-f16-glb')),
-      bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const bytes = assetBytes('asset-f16-glb');
     const root = parseSimpleGLB(bytes.buffer);
     root.name = 'F16_GLB_Template';
     root.traverse(n => {

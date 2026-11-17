@@ -33,6 +33,16 @@ const T = THREE,
 const MS2KMH = 3.6,
   kmh = v => Math.round(v * MS2KMH);
 const readAsset = id => document.getElementById(id).textContent.replace(/\s+/g, '');
+// 에셋을 바이트로 (V15.0.0-alpha.3): 브라우저 내장 디코더(Uint8Array.fromBase64)가 있으면 쓰고, 없으면 예전 방식.
+// 예전엔 모델마다 같은 반복문(atob → charCodeAt 한 바이트씩)을 따로 갖고 있었다.
+function assetBytes(id) {
+  const s = readAsset(id);
+  if (Uint8Array.fromBase64) return Uint8Array.fromBase64(s);
+  const bin = atob(s),
+    u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
 // 게임용 조정 파라미터 — 실제 기체/무장 성능값이 아님
 const P = {
   // g: 실기 한계 9G · gun: 기총 탄수. MiG-29 GSh-30-1 은 실기도 150발이다 (V14.4.2, 모든 모드 공통).
@@ -229,12 +239,28 @@ function decodeTexImageViaImg(bytes, mime, max) {
     img.src = 'data:' + (mime || 'image/png') + ';base64,' + btoa(bin);
   });
 }
-// 모델 텍스처는 한 번에 한 장씩만 펼친다 (동시에 펼치면 메모리가 몰린다)
-let texQueue = Promise.resolve();
-function decodeTexQueued(bytes, mime, max) {
-  const r = texQueue.then(() => decodeTexImage(bytes, mime, max));
-  texQueue = r.catch(() => {});
-  return r;
+// 모델 텍스처 펼치기 줄 (V15.0.0-alpha.3 개편):
+//  - 폰은 한 번에 한 장 (동시에 펼치면 메모리가 몰린다 — 10-1절), 그 밖은 두 장씩.
+//  - hi(먼저): 처음 화면에 크게 보이는 것 — 항모 갑판 · 내 기체 도색. 예전엔 항모가 맨 마지막에 읽혀
+//    출격 화면에서 갑판이 한동안 회색으로 보였다.
+const TEXQ = { hi: [], lo: [], run: 0, max: MOBILE ? 1 : 2 };
+function decodeTexQueued(bytes, mime, max, hi = false) {
+  return new Promise((res, rej) => {
+    (hi ? TEXQ.hi : TEXQ.lo).push({ bytes, mime, max, res, rej });
+    texPump();
+  });
+}
+function texPump() {
+  while (TEXQ.run < TEXQ.max && (TEXQ.hi.length || TEXQ.lo.length)) {
+    const j = TEXQ.hi.shift() || TEXQ.lo.shift();
+    TEXQ.run++;
+    decodeTexImage(j.bytes, j.mime, j.max)
+      .then(j.res, j.rej)
+      .finally(() => {
+        TEXQ.run--;
+        texPump();
+      });
+  }
 }
 // 이미지가 max 보다 크면 캔버스에 줄여 그려서 돌려준다
 function fitImage(img, max) {
@@ -383,13 +409,20 @@ function coneZ(r, l, c, z) {
   return m;
 }
 let f16Proto;
+let f16Merged = null;
 function f16Mesh() {
   if (!f16Proto && !f16GLBTemplate) {
     f16Proto = createF16({ tanks: true });
     f16Proto.userData = {};
   }
+  if (f16GLBTemplate && !f16Merged) {
+    // 실측 F-16 은 메시 61개(보이는 것 46개) — 적기 한 대에 그리기 호출 46번이었다. 재질별로 합친 원형을 한 번 만든다.
+    f16Merged = f16GLBTemplate.clone();
+    f16Merged.updateMatrixWorld(true);
+    mergeStaticInPlace(f16Merged);
+  }
   const gp = new T.Group(),
-    jet = f16GLBTemplate ? f16GLBTemplate.clone() : f16Proto.clone(); // 실측 GLB 가 있으면 그것을 쓴다
+    jet = f16GLBTemplate ? f16Merged.clone() : f16Proto.clone(); // 실측 GLB 가 있으면 그것을 쓴다 (형상 · 재질은 공유)
   if (!f16GLBTemplate) jet.position.z = -2.5;
   gp.add(jet);
   // 노즐 열기: 예전에는 지름 90(×3) 짜리 주황 광원이 기체 전체를 덮어 적기가 주황색으로 보였다.

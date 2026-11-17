@@ -114,13 +114,46 @@ function mergeByMaterial(root, skip) {
   return out;
 }
 
+// 움직이지 않는 메시를 재질별로 합쳐 root 아래 메시 하나씩으로 바꾼다 (그리기 호출 절감 · V15.0.0-alpha.3).
+// keep(o) 가 참인 것과 그 아래, 안 보이는 것, 투명 재질, renderOrder 가 있는 것은 그대로 둔다 (정렬 · 토글 · 애니메이션 보존).
+// 같은 재질이 한 개뿐이면 합칠 이득이 없어 원래 메시를 둔다. 반환: 줄어든 메시 수.
+function mergeStaticInPlace(root, keep) {
+  const skip = o => (keep && keep(o)) || !o.visible || (o.isMesh && (o.renderOrder || o.material?.transparent)),
+    before = [];
+  root.traverse(o => o.isMesh && before.push(o));
+  let saved = 0;
+  for (const part of mergeByMaterial(root, skip)) {
+    if (part.from.length < 2) {
+      part.geometry.dispose();
+      continue;
+    }
+    const mesh = new T.Mesh(part.geometry, part.material);
+    mesh.name = 'merged_' + (part.material.name || 'mat');
+    mesh.castShadow = part.from.some(o => o.castShadow);
+    mesh.receiveShadow = part.from.some(o => o.receiveShadow);
+    part.from.forEach(o => o.parent.remove(o)); // 형상은 다른 메시와 같이 쓸 수 있어 해제하지 않는다
+    root.add(mesh);
+    saved += part.from.length - 1;
+  }
+  return saved;
+}
+// 복제하면서 메시마다 따로 생긴 똑같은 재질을 하나로 모은다 (합치기 전에 — 재질이 다르면 못 합친다)
+function dedupeMaterials(root) {
+  const canon = new Map(),
+    key = m =>
+      [m.type, m.name, m.map?.uuid, m.color?.getHex(), m.emissive?.getHex(), m.roughness, m.metalness, m.opacity, m.transparent, m.side, m.normalMap?.uuid, m.roughnessMap?.uuid, m.metalnessMap?.uuid, m.emissiveMap?.uuid, m.alphaTest].join('|');
+  root.traverse(n => {
+    if (!n.isMesh || Array.isArray(n.material)) return;
+    const k = key(n.material);
+    if (canon.has(k)) n.material = canon.get(k);
+    else canon.set(k, n.material);
+  });
+}
 let carrierGLB = null;
 function applyCarrierGLB() {
   try {
-    const binary = atob(readAsset('asset-carrier-glb')),
-      bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const model = parseSimpleGLB(bytes.buffer, 2); // 갑판이 가까이 보이므로 텍스처 두 배
+    const bytes = assetBytes('asset-carrier-glb');
+    const model = parseSimpleGLB(bytes.buffer, 2, true); // 갑판이 가까이 보이므로 텍스처 두 배 · 먼저 펼친다
     model.name = 'Kuznetsov_GLB';
     // 옛 모델은 물보라 · 항적만 남긴다
     CV.children.forEach(c => {
@@ -174,6 +207,10 @@ function applyCarrierGLB() {
         m.rotation.y = (hd * Math.PI) / 180;
         m.name = 'Parked_MiG29';
         paintMiG29(m);
+        // 주기 기체는 움직이지 않는다 → 재질별로 합친다 (50 메시 → 재질 수). 도색은 재질에 걸리므로 나중에 와도 그대로 먹는다
+        m.updateMatrixWorld(true);
+        dedupeMaterials(m);
+        mergeStaticInPlace(m);
         mig29Extras.push(m);
         deckParking(model).add(m);
       }
@@ -216,8 +253,12 @@ function deckParking(model) {
 }
 // 5 km 보다 멀면 한 대가 몇 픽셀이라 그릴 값어치가 없다 (월드 단위 = m × 3)
 const PARKING_DRAW_DIST = 15000;
+// 함포 · 발사기(메시 150개)도 작아서 약 6.7 km 밖에서는 몇 픽셀이다 → 끈다. 보이지 않아도 위치 행렬은 계속 갱신된다(판정 무관).
+const CVW_DRAW_DIST = 20000;
 function deckParkingUpdate(camPos) {
-  if (CV_PARKING) CV_PARKING.visible = camPos.distanceToSquared(CV.position) < PARKING_DRAW_DIST * PARKING_DRAW_DIST;
+  const d2 = camPos.distanceToSquared(CV.position);
+  if (CV_PARKING) CV_PARKING.visible = d2 < PARKING_DRAW_DIST * PARKING_DRAW_DIST;
+  if (typeof CVW !== 'undefined' && CVW.root) CVW.root.visible = d2 < CVW_DRAW_DIST * CVW_DRAW_DIST;
 }
 // 같은 Su-33 네 대: 기체 하나를 재질별로 합친 형상(52 → 10 조각)을 만들고, 네 자리에 같은 형상을 공유하는 메시로 놓는다.
 // 예전엔 복제본 4개 × 메시 52개 = 그리기 호출 208번(그림자 패스까지 두 배) → 이제 40번. 형상은 복사하지 않는다.

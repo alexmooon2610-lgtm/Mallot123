@@ -23,9 +23,7 @@
     if (ov) return;
     try {
       if (!url) {
-        const bin = atob(readAsset('asset-teaser-mp4')),
-          bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const bytes = assetBytes('asset-teaser-mp4');
         url = URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }));
       }
     } catch (err) {

@@ -16,6 +16,7 @@ function cvBuildWeapons() {
   const root = new T.Group();
   root.name = 'cv_weapons';
   CV.add(root);
+  CVW.root = root; // 거리 컬링 · 거울에서 끄기 (13-carrier-glb deckParkingUpdate · 81-rear-mirror)
   const std = (color, rough = 0.7, metal = 0.25) =>
       new T.MeshStandardMaterial({ color, roughness: rough, metalness: metal }),
     grey = std(0x8a949b),

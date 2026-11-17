@@ -43,11 +43,27 @@ function shadowFlag(o) {
   o.castShadow = small;
   o.receiveShadow = true;
 }
+// 그림자 켜고 끄기 (V15.0.0-alpha.3 개편): 예전엔 sun.castShadow 를 바꿔 껐는데, 그러면 그림자를 받는 셰이더가
+// 전부(하늘 · 바다 · 기체 · 입자 등 8개 이상) 다시 컴파일된다. 해상도가 3단 떨어질 때(=기기가 힘들 때) 꺼지고
+// 회복하면 다시 켜져서, 버거운 순간마다 긴 멈칫이 왕복으로 생겼다.
+// 이제 castShadow 는 그대로 두고, 끌 때는 그림자 상자를 아무것도 없는 먼 곳으로 한 번 옮겨 그린 뒤(모든 면이 '그림자 밖' = 밝음)
+// 그림자 지도 갱신을 멈춘다. 셰이더는 바뀌지 않는다. shadowLive 가 거짓이면 메인 루프가 그림자 지도를 다시 그리지 않는다.
+let shadowLive = true,
+  shadowParked = false;
 function sunShadowUpdate(dt, focus) {
-  // 품질 설정 OFF 거나 해상도가 많이 떨어졌으면 그림자를 끈다 (켜고 끌 때 셰이더가 한 번 다시 컴파일된다)
   const want = typeof FXS !== 'undefined' && FXS.q > 0 && (typeof resStep === 'undefined' || resStep < 3);
-  if (sun.castShadow !== want) sun.castShadow = want;
-  if (!want) return;
+  if (!want) {
+    if (!shadowParked) {
+      // 마지막으로 한 번: 상자를 하늘 높이 빈 곳으로 → 그 지도로 그리면 모든 면이 상자 밖이라 그림자가 없다
+      sun.target.position.set(0, 4e5, 0);
+      sun.position.set(0, 4e5, 0).addScaledVector(SUN_DIR, 1500);
+      shadowParked = true;
+      shadowLive = true; // 이번 프레임만 그린다
+    } else shadowLive = false;
+    return;
+  }
+  shadowParked = false;
+  shadowLive = true;
   if ((shadowScanT -= dt) <= 0) {
     shadowScanT = 1;
     scene.traverse(shadowFlag);

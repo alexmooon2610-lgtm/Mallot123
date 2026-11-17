@@ -11,9 +11,7 @@ const LA17_SCALE = 3,
   LA17_PROP = V(0, 1.285, -3.83);
 function loadLa17GLB() {
   try {
-    const binary = atob(readAsset('asset-la17-glb')),
-      bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const bytes = assetBytes('asset-la17-glb');
     const model = parseSimpleGLB(bytes.buffer, 0.5); // 작은 드론: 텍스처 절반
     const prop = new T.Group(),
       blades = [];

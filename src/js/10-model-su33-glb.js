@@ -22,9 +22,7 @@ let su33GLBTemplate = null;
 const SU33_SCALE = 3;
 function loadSu33GLB() {
   try {
-    const binary = atob(readAsset('asset-su33-glb')),
-      bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const bytes = assetBytes('asset-su33-glb');
     const model = parseSimpleGLB(bytes.buffer, 1); // 갑판에 여러 대 — 텍스처는 이미 작게 넣었다
     const root = new T.Group();
     root.name = 'Su33_GLB_Template';

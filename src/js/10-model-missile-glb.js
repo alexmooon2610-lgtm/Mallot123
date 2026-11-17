@@ -13,9 +13,7 @@ function loadMissileGLBs() {
     ['IR', 'asset-r73-glb', 'R73'],
   ]) {
     try {
-      const binary = atob(readAsset(id)),
-        bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const bytes = assetBytes(id);
       const model = parseSimpleGLB(bytes.buffer, 0.5); // 4096×1024 띠 텍스처: 절반이면 충분
       const root = new T.Group();
       root.name = name + '_GLB_Template';
