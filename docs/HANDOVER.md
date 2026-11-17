@@ -677,6 +677,6 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 - `claude/r73_model_spec.md` — R-73
 - `claude/su33_model_spec.md` — Su-33. V14.7.0 부터 `su33_painted.glb` 원본을 그대로 넣었다 (`src/assets/su33.glb`).
   `su33_folded.glb` 원본은 `src/assets/source/` 에 보관 (빌드에는 안 들어감 — 바깥 날개 두 노드 회전만 다르고 바이너리는 같아서
-  `su33Folded()` 가 그 회전값으로 접는다). 날개 편 모델은 아직 쓰는 곳이 없다.
+  `su33Folded()` 가 그 회전값으로 접는다). 날개 편 모델은 V15.0.0-alpha.3 부터 플레이어 · 멀티 상대 Su-33 (`createSu33()`) 으로 쓴다.
 
 저장소 안: `README.md` (짧은 안내). 예전 README 의 전체 버전 이력은 저장소와 함께 사라졌다 — 13절이 남은 이력이다.
