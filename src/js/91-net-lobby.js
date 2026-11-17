@@ -44,12 +44,14 @@
     const st = NET.st;
     $id('mf-net-code').textContent = st.role === 'host' && st.code ? st.code : '— — — — — —';
     $id('mf-net-codehint').textContent =
-      st.role === 'host' && st.code ? '이 코드를 상대에게 알려 줘라. 들어오면 아래에 보인다.' : '방을 만들면 코드가 나온다. 상대에게 알려 줘라.';
+      st.role === 'host' && st.code
+        ? '이 코드를 상대에게 알려 줘라. 들어오면 아래에 보인다.'
+        : '방을 만들면 코드가 나온다. 상대에게 알려 줘라.';
     $id('mf-net-roster').innerHTML = st.roster.length
       ? st.roster
           .map(
             r =>
-              `<span class="mf-chip${r.slot === st.slot ? ' me' : ''}">${r.slot === 0 ? '방장' : '참가자'} ${r.slot}${r.slot === st.slot ? ' (나)' : ''}</span>`
+              `<span class="mf-chip${r.slot === st.slot ? ' me' : ''}">${r.slot === 0 ? '방장' : '참가자'} ${r.slot}${r.slot === st.slot ? ' (나)' : ''}</span>`,
           )
           .join('') + (st.rtt ? `<span class="mf-chip">핑 ${Math.round(st.rtt)} ms</span>` : '')
       : '';
@@ -58,10 +60,18 @@
     $id('mf-net-host').disabled = st.status === 'connecting';
     $id('mf-net-join').disabled = st.status === 'connecting';
   }
+  const waited = () => (NET.st.since ? Math.floor((Date.now() - NET.st.since) / 1000) + '초' : '');
   NET.on('status', st => {
-    if (st.status === 'connecting') status(st.role === 'host' ? '방 만드는 중…' : `${st.code} 방에 접속하는 중…`);
+    if (st.status === 'connecting')
+      status(
+        st.role === 'host'
+          ? `방 만드는 중… ${waited()} (중개 서버 접속 — 보통 몇 초, 길면 20초)`
+          : `${st.code} 방에 접속하는 중… ${waited()}`,
+      );
     else if (st.status === 'open')
-      status(st.role === 'host' ? '방 열림 — 상대를 기다리는 중' : `${st.code} 방에 들어왔다 — 방장이 출격하길 기다리는 중`);
+      status(
+        st.role === 'host' ? '방 열림 — 상대를 기다리는 중' : `${st.code} 방에 들어왔다 — 방장이 출격하길 기다리는 중`,
+      );
     else if (st.status === 'error' || st.status === 'closed') status(st.error || '연결 실패', true);
     paint();
   });
@@ -78,10 +88,22 @@
     activeMission = 'VERSUS';
     start();
   });
-  setInterval(() => box.classList.contains('open') && paint(), 1000); // 핑 표시 갱신
+  // 1초마다: 핑 표시 · 연결 중이면 기다린 시간
+  const waitMsg = () =>
+    NET.st.role === 'host'
+      ? `방 만드는 중… ${waited()} (중개 서버 접속 — 보통 몇 초, 길면 20초)`
+      : `${NET.st.code} 방에 접속하는 중… ${waited()}`;
+  setInterval(() => {
+    if (!box.classList.contains('open')) return;
+    paint();
+    if (NET.st.status === 'connecting') status(waitMsg());
+  }, 1000);
   btn.addEventListener('click', () => {
     box.classList.add('open');
     paint();
+    // 멀티가 막힌 환경(claude.ai 링크 등)이면 열자마자 알려 준다
+    const env = /[?&]net=relay/.test(location.search) ? '' : NET.envProblem();
+    if (env && NET.st.status === 'idle') status(env, true);
   });
   $id('mf-net-close').addEventListener('click', () => box.classList.remove('open'));
   $id('mf-net-host').addEventListener('click', () => NET.host());

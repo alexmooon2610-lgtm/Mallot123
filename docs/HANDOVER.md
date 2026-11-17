@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-17 · 버전 **V15.0.0-alpha.1** (멀티플레이 기틀 — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-17 · 버전 **V15.0.0-alpha.2** (멀티플레이 기틀 — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -62,6 +62,11 @@ C3  3장 귀환      루트별 3개씩 — D(방어) · J(일본) · A(공산 �
 
 ## 3. 저장소 · 빌드 · 배포
 
+### 3-A. 공개 링크
+게임은 claude.ai 아티팩트 `https://claude.ai/artifact/1LxwE2ryzg7Z6F5S8tEu3j` (slug `02c99a4d-4ecd-4755-9001-7f3d8ce4e7c6`,
+**공개**)로 올린다. 새 버전은 같은 아티팩트에 다시 올려 주소를 유지한다 (`publish_files`, `shared_live: public`).
+**아티팩트에서는 멀티가 안 된다** (`docs/MULTIPLAYER.md` 2-5). 16 MiB 한도.
+
 ### 3-0. 저장소 복원 이력 (2026-11-17) — 먼저 읽을 것
 11-16 세션이 끊기면서 원래 저장소(44개 파일 · git 이력)와 검사 하네스가 **둘 다 사라졌다**.
 원격이 없었고 하네스는 세션 임시 폴더에 있었기 때문이다. 남은 것은 빌드된 HTML 하나였다.
@@ -94,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_1.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_2.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -480,7 +485,7 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_1.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_2.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -536,7 +541,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_1.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_2.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -594,6 +599,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V14.7.0 | **비행 물리 개편**(수직 상승 실속 · 고도 효과 · 실속 벡터 적분 · 추력 현실화) · **Su-33 원본 모델**(날개 편 GLB 그대로, 접은 모양은 노드 회전으로) |
 | V14.8.0 | **공중 재보급 삭제 · 웨이브 사이 30초**(갑판 위에서는 멈춤) · HUD 안내 · 브리핑 팁 |
 | V15.0.0-alpha.1 | **멀티플레이 기틀** — 전송 계층 · 방 코드 로비 · 1대1 공역 · 비행 동기화/보간 · 끊김 처리 · 두 페이지 시험. 싱글 판정 변화 없음 |
+| V15.0.0-alpha.2 | 멀티 연결 시간 제한(중개 20초 · 직접 연결 15초) · claude.ai 링크 감지 · 원인별 오류 문구 · 기다린 시간 표시 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

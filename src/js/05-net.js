@@ -9,6 +9,8 @@ const NET_PROTO = 1, // 통신 규약 버전. 바꾸면 서로 다른 버전끼�
   NET_MAX = 4, // 방장 포함 최대 인원
   NET_PREFIX = 'steeltempest-v1-',
   NET_TIMEOUT = 3000, // 이 시간(ms) 동안 아무것도 안 오면 끊긴 것으로 본다
+  NET_SIGNAL_WAIT = 20000, // 중개 서버(PeerJS) 접속을 기다리는 최대 시간 (ms)
+  NET_LINK_WAIT = 15000, // 참가자: 중개 서버 접속 뒤 방장과 직접 연결(WebRTC)되기까지 기다리는 최대 시간 (ms)
   PEERJS_URL = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
 
 const NET = (() => {
@@ -22,7 +24,38 @@ const NET = (() => {
     peers: new Map(), // 전송 아이디 → { slot, last, rtt, hello }
     started: false,
     rtt: 0,
+    since: 0, // 연결을 시작한 시각 (Date.now) — 로비가 기다린 시간을 보여 준다
+    welcomed: false, // 참가자: 방장과 실제로 연결된 적이 있는가 (끊김 · 처음부터 실패 구분)
   };
+  // 이 실행 환경에서 멀티가 막혀 있는지 미리 본다. claude.ai 링크(아티팩트)는 바깥 웹소켓과 WebRTC 를 막는다.
+  function envProblem() {
+    let inFrame = false;
+    try {
+      inFrame = window.self !== window.top;
+    } catch (e) {
+      inFrame = true;
+    }
+    const host = (location.hostname || '') + ' ' + (document.referrer || '');
+    if (inFrame && /claude|anthropic/i.test(host))
+      return 'claude.ai 링크(아티팩트)에서는 멀티가 막혀 있다 — 게임 파일을 내려받아 브라우저로 직접 열어라';
+    if (typeof RTCPeerConnection === 'undefined')
+      return '이 브라우저(또는 실행 환경)는 WebRTC 를 쓸 수 없다 — 크롬 · 엣지 · 파이어폭스 최신판으로 열어라';
+    return '';
+  }
+  // PeerJS 오류 종류 → 사람 말
+  const peerErr = t =>
+    ({
+      'browser-incompatible': '이 브라우저는 WebRTC 를 쓸 수 없다',
+      network: '중개 서버에 연결하지 못했다 — 인터넷 연결을 확인하라',
+      'server-error': '중개 서버(PeerJS) 오류 — 잠시 뒤 다시 해 봐라',
+      'socket-error': '중개 서버 연결이 끊겼다',
+      'socket-closed': '중개 서버 연결이 끊겼다',
+      'peer-unavailable': '방을 찾을 수 없다 — 코드를 확인하라 (방장이 방을 닫았을 수도 있다)',
+      webrtc: '상대와 직접 연결하지 못했다 (WebRTC)',
+    })[t] || String(t);
+  // 약속(promise)에 시간 제한
+  const timed = (pr, ms, why) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(why)), ms))]);
+  let linkTimer = 0;
   const handlers = {};
   let tr = null,
     pingT = 0;
@@ -81,19 +114,19 @@ const NET = (() => {
         await new Promise((res, rej) => {
           peer = new window.Peer(NET_PREFIX + code, { debug: 0 });
           peer.on('open', () => res());
-          peer.on('error', e => rej(new Error(e.type === 'unavailable-id' ? 'ID_TAKEN' : e.type || String(e))));
+          peer.on('error', e => rej(new Error(e.type === 'unavailable-id' ? 'ID_TAKEN' : peerErr(e.type || e))));
           peer.on('connection', c => wire(c, h));
         });
-        peer.on('error', e => h.error(e.type || String(e)));
+        peer.on('error', e => h.error(peerErr(e.type || e)));
       },
       async join(code, h) {
         await load();
         await new Promise((res, rej) => {
           peer = new window.Peer(undefined, { debug: 0 });
           peer.on('open', () => res());
-          peer.on('error', e => rej(new Error(e.type || String(e))));
+          peer.on('error', e => rej(new Error(peerErr(e.type || e))));
         });
-        peer.on('error', e => h.error(e.type === 'peer-unavailable' ? '방을 찾을 수 없다 — 코드를 확인하라' : e.type || String(e)));
+        peer.on('error', e => h.error(peerErr(e.type || e)));
         // 1단계는 신뢰 연결 하나로 모든 메시지를 보낸다 (순서 보장). 상태 전송용 비신뢰 채널은 나중에 나눈다.
         wire(peer.connect(NET_PREFIX + code, { reliable: true, serialization: 'json' }), h);
       },
@@ -145,7 +178,7 @@ const NET = (() => {
   };
   function sendRoster() {
     st.roster = [{ slot: 0 }, ...[...st.peers.values()].filter(q => q.slot > 0).map(q => ({ slot: q.slot }))].sort(
-      (a, b) => a.slot - b.slot
+      (a, b) => a.slot - b.slot,
     );
     for (const id of st.peers.keys()) tr.send(id, { t: 'roster', players: st.roster });
     emit('roster', st.roster);
@@ -216,6 +249,8 @@ const NET = (() => {
       const q = st.peers.get(id);
       if (q) q.last = now();
       if (m.t === 'welcome') {
+        clearTimeout(linkTimer);
+        st.welcomed = true;
         st.slot = m.slot;
         st.status = 'open';
         emit('status', st);
@@ -243,13 +278,15 @@ const NET = (() => {
       emit('msg', m);
     },
     close() {
-      if (st.status === 'closed') return;
-      st.status = 'closed';
-      st.error = st.error || '방장과 연결이 끊겼다';
+      if (st.status === 'closed' || st.status === 'error') return;
+      clearTimeout(linkTimer);
+      st.status = st.welcomed ? 'closed' : 'error';
+      st.error = st.error || (st.welcomed ? '방장과 연결이 끊겼다' : '방장과 연결하지 못했다');
       emit('status', st);
-      emit('left', 0);
+      if (st.welcomed) emit('left', 0);
     },
     error(e) {
+      clearTimeout(linkTimer);
       st.status = 'error';
       st.error = String(e);
       emit('status', st);
@@ -257,16 +294,30 @@ const NET = (() => {
   };
 
   // ---------- 바깥에 보이는 것
+  const fail = why => {
+    st.status = 'error';
+    st.error = why;
+    emit('status', st);
+  };
   async function host() {
     leave();
+    const relay = /[?&]net=relay/.test(location.search),
+      env = relay ? '' : envProblem();
+    if (env) return (fail(env), null);
     st.role = 'host';
     st.status = 'connecting';
+    st.since = Date.now();
     emit('status', st);
     tr = pickTransport();
     for (let i = 0; i < 4; i++) {
       const code = makeCode();
       try {
-        await tr.host(code, hostHandlers);
+        await timed(
+          tr.host(code, hostHandlers),
+          NET_SIGNAL_WAIT,
+          `중개 서버(PeerJS)에 ${NET_SIGNAL_WAIT / 1000}초 동안 연결하지 못했다 — 인터넷 · 방화벽을 확인하라. ` +
+            'claude.ai 링크로 열었다면 거기서는 멀티가 막혀 있다 (게임 파일을 내려받아 직접 열어라)',
+        );
         st.code = code;
         st.slot = 0;
         st.status = 'open';
@@ -276,9 +327,9 @@ const NET = (() => {
         return code;
       } catch (e) {
         if (e.message !== 'ID_TAKEN') {
-          st.status = 'error';
-          st.error = e.message;
-          emit('status', st);
+          if (tr) tr.close();
+          tr = null;
+          fail(e.message);
           return null;
         }
       }
@@ -297,22 +348,44 @@ const NET = (() => {
       emit('status', st);
       return false;
     }
+    const relay = /[?&]net=relay/.test(location.search),
+      env = relay ? '' : envProblem();
+    if (env) return (fail(env), false);
     st.role = 'client';
     st.code = code;
     st.status = 'connecting';
+    st.since = Date.now();
+    st.welcomed = false;
     emit('status', st);
     tr = pickTransport();
     try {
-      await tr.join(code, clientHandlers);
-      return true;
+      await timed(
+        tr.join(code, clientHandlers),
+        NET_SIGNAL_WAIT,
+        `중개 서버(PeerJS)에 ${NET_SIGNAL_WAIT / 1000}초 동안 연결하지 못했다 — 인터넷 · 방화벽을 확인하라. ` +
+          'claude.ai 링크로 열었다면 거기서는 멀티가 막혀 있다 (게임 파일을 내려받아 직접 열어라)',
+      );
     } catch (e) {
-      st.status = 'error';
-      st.error = e.message;
-      emit('status', st);
+      if (tr) tr.close();
+      tr = null;
+      fail(e.message);
       return false;
     }
+    // 중개 서버까지는 됐다. 이제 방장과 직접 연결(WebRTC)이 열려 welcome 이 와야 한다
+    clearTimeout(linkTimer);
+    linkTimer = setTimeout(() => {
+      if (st.welcomed || st.role !== 'client' || st.status !== 'connecting') return;
+      if (tr) tr.close();
+      tr = null;
+      fail(
+        `방장과 ${NET_LINK_WAIT / 1000}초 동안 직접 연결하지 못했다 — 코드가 맞는지, 방장 화면에 방이 열려 있는지 확인하라. ` +
+          '회사망 · 휴대폰 데이터 등 일부 네트워크는 직접 연결을 막는다 (그때는 다른 네트워크로)',
+      );
+    }, NET_LINK_WAIT);
+    return true;
   }
   function leave() {
+    clearTimeout(linkTimer);
     if (tr) {
       for (const id of st.peers.keys()) tr.send(id, { t: 'bye' });
       tr.close();
@@ -320,7 +393,18 @@ const NET = (() => {
     tr = null;
     hostId = null;
     st.peers.clear();
-    Object.assign(st, { role: null, code: '', slot: -1, status: 'idle', error: '', roster: [], started: false, rtt: 0 });
+    Object.assign(st, {
+      role: null,
+      code: '',
+      slot: -1,
+      status: 'idle',
+      error: '',
+      roster: [],
+      started: false,
+      rtt: 0,
+      since: 0,
+      welcomed: false,
+    });
   }
   // 모두에게 (참가자는 방장에게 → 방장이 중계)
   function send(m) {
@@ -354,6 +438,7 @@ const NET = (() => {
   setInterval(tick, 250); // 메뉴(로비)에서도 핑 · 끊김 감지가 돌게
   return {
     st,
+    envProblem,
     on,
     host,
     join,
