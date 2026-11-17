@@ -80,7 +80,7 @@ function init() {
   });
   fx.forEach(f => freeSprite(f.s));
   es.forEach(x => scene.remove(x.mesh));
-  bl.forEach(b => scene.remove(b.m));
+  bl.forEach(b => b.m && scene.remove(b.m));
   cvTracers.forEach(q => {
     scene.remove(q.line);
     q.line.geometry?.dispose();

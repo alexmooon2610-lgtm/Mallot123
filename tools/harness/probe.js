@@ -3,7 +3,7 @@
 window.__probe = (() => {
   const vec = v => (v.w !== undefined ? [v.x, v.y, v.z, v.w] : [v.x, v.y, v.z]);
   // 연출 전용 필드 (판정에 안 쓰임). 연출 난수 vrnd 로 채워지므로 비행 효과 설정에 따라 달라도 된다.
-  const VIS = new Set(['viz']);
+  const VIS = new Set(['viz', 'off']); // off: 예광탄을 포구에서 그리는 화면용 오프셋
   // 객체의 숫자 · 문자 · 참거짓 · 벡터 · 쿼터니언 필드만 1단계로 펼친다 (메시 같은 three 객체는 건너뜀)
   const flat = (o, d = 0) => {
     if (!o || typeof o !== 'object') return o;

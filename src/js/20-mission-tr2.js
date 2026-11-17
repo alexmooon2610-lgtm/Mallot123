@@ -46,7 +46,7 @@ function tr2Merge() {
   // 날아다니던 탄 · 플레어 정리
   ms.forEach(m => scene.remove(m.mesh));
   ms = [];
-  bl.forEach(b => scene.remove(b.m));
+  bl.forEach(b => b.m && scene.remove(b.m));
   bl = [];
   fl.forEach(q => {
     freeSprite(q.s);

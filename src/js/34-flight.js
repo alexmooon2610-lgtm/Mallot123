@@ -100,11 +100,14 @@ function updP(dt) {
   }
   if (p.chT > 0) p.chT -= dt;
   p.cd -= dt;
+  // 기총: 남는 시간을 다음 발로 넘겨서(누산) 프레임 속도와 무관하게 정확히 rof 발/초를 쏜다.
+  // 방아쇠를 놓으면 쌓인 시간을 버린다 (다시 당겼을 때 몰아서 나가지 않게).
   p.gc -= dt;
-  if (K.g && p.gun > 0 && p.gc <= 0) {
+  if (!K.g && p.gc < 0) p.gc = 0;
+  while (K.g && p.gun > 0 && p.gc <= 1e-6) {
     bullet(p, f);
     p.gun--;
-    p.gc = 0.05;
+    p.gc += 1 / p.prm.rof;
     tone(140, 0.04, 'square', 0.04);
   }
   if (AC) {

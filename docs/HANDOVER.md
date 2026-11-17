@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-17 · 버전 **V14.4.2** · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-17 · 버전 **V14.5.0** · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -94,13 +94,13 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V14_4_2.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V14_5_0.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
 임무 파일은 반드시 `21-campaign.js` 보다 **앞**에 와야 한다. **새 파일을 만들면 manifest 에 넣어야 빌드에 들어간다.**
 에셋은 base64(120자 줄바꿈)로 `<script id="asset-...">` 블록에 넣고 런타임에 `readAsset(id)` 로 읽는다.
-버전을 올릴 때는 버전 문자열을 전부 바꾼다 (`grep -rn "14\.4\.2" src` — 템플릿 2곳 · `70-input.js` 1곳).
+버전을 올릴 때는 버전 문자열을 전부 바꾼다 (`grep -rn "14\.5\.0" src` — 템플릿 2곳 · `70-input.js` 1곳).
 
 ### 버전 번호 규칙 (사용자 지시, 2026-11-17)
 `V큰.중간.작은` — 예: V14.4.2
@@ -223,6 +223,18 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
   회복은 `0.5 + (7−g)*0.1`. 시야가 좁아지고 HUD가 흐려진다.
   (튜닝을 네 번 반복했다: 5.5G/0.28 → 7/0.12 → 6.3/0.25 → 7/0.13)
 - 바다 충돌: 고도 8 m 미만
+
+### 기총 (`34-flight.js` 발사 · `30-hitbox-guns.js` 탄) — V14.5.0
+- **30발/초** (`P.mig.rof`). 남는 시간을 다음 발로 넘기는 누산 방식이라 프레임 속도와 무관하게 정확하다
+  (예전 `gc = 0.05` 재설정 방식은 60 fps 에서 3프레임마다 = 20발/초였다). 방아쇠를 놓으면 쌓인 시간을 버린다.
+  적기 발사 간격(`36-enemy-ai.js` 0.09초 재설정)은 건드리지 않았다.
+- **예광탄 · 무광탄**: `P.mig.tracer = 4` → 4발에 1발이 예광탄(F-16 은 3발에 1발). 탄 기록 `b.p` 가 판정 위치이고,
+  예광탄만 3D 막대 `b.m` 을 가진다. **무광탄도 똑같이 날아가 똑같이 맞는다** — 화면에만 안 그린다.
+  `bl` 을 다루는 코드는 `b.m` 이 없을 수 있음을 지킬 것 (`b.m && scene.remove(b.m)`).
+- 예광탄 그리기 (판정과 무관): 톤매핑 · 안개 끔, 주황 불투명(가산 혼합은 밝은 하늘에서 하얗게 묻혀 안 씀),
+  카메라 거리 90 단위마다 굵기 1배씩 키움. 내 예광탄은 왼쪽 날개뿌리 포구 쪽(`b.off`)에서 나와 0.35초에 걸쳐
+  조준선으로 모여드는 것처럼 그린다 — 그냥 그리면 눈앞에서 정면으로 멀어져 HUD 한가운데 점이 되어 안 보였다
+  (V14.4 까지 예광탄이 사실상 안 보였던 이유).
 
 ### 레이더 · IRST (`35-sensors.js`)
 - 레이더 모드: SEARCH / MULTI-TRK / STT. `T` 전환, `Tab` 표적 선택, `Y` 락
@@ -359,7 +371,7 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 **발상**: 과거로 떨어져 재보급이 불가능하다. 항모 무장 재고를 관리하며 싸운다.
 - 워프 이후 캠페인에만 적용 (훈련·자유 모드는 무제한)
 - **기총 150발 제한** — **V14.4.2 에서 먼저 넣음. 모든 모드 공통**(훈련 · 자유 · 캠페인, 사용자 결정 2026-11-17).
-  `P.mig.gun = 150` 한 곳에서 정한다. 연사 속도는 그대로(20발/초 → 7.5초면 바닥). 항모 착함 보급은 150까지,
+  `P.mig.gun = 150` 한 곳에서 정한다. 연사 속도는 V14.5.0 에서 **30발/초**(`P.mig.rof`) — 5초면 바닥. 항모 착함 보급은 150까지,
   LEGACY 웨이브 격파 보급은 +50(예전 500발 중 +150 과 같은 비율). TR-2 상대 MiG-29 도 150발.
   **균형 주의**: 기총 1발 피해가 적기에 0.045 라 F-16(hp 1)을 잡으려면 23발 = 탄창의 15%를 맞혀야 한다.
   실기 30 mm 는 몇 발이면 치명적이다. 재미가 깎이면 피해량을 올릴 것 (아직 미결).
@@ -409,8 +421,8 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V14_4_2.html /tmp/new.json      # 시나리오 전부 (약 1분)
-python3 tools/harness/run.py diff tools/harness/baseline/V14_4_2.json /tmp/new.json  # 프레임 단위 비교
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V14_5_0.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py diff tools/harness/baseline/V14_5_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
 ```
@@ -423,7 +435,8 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `det.js` | 게임보다 먼저 주입. `Math.random` 을 시드 난수로, `performance.now` · `requestAnimationFrame` 을 가짜 시계로 바꾼다. 프레임은 `__det.step()` 을 불러야만 돈다. 키 입력도 정해진 프레임에 넣는다 |
 | `probe.js` | 매 프레임 판정 상태(플레이어 · 적 · 미사일 · 플레어 · 탄 · 레이더 · 임무 · 항모/비행장 운용)를 JSON 으로 모아 FNV 해시. 연출 상태(`FXS` · `CVW` · `fx` 입자 · 플레어의 `viz`)는 넣지 않는다 |
 | `run.py` | 시나리오 실행 · 비교. 3D 렌더(`R.render`)는 끄고 돌린다 — 판정과 무관하고, SwiftShader 에서 한 프레임 0.4초 걸려서다 |
-| `baseline/V14_4_2.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
+| `baseline/V14_5_0.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
+| `baseline/V14_4_2.json` | 기총 30발/초 이전 기준 |
 | `baseline/V14_4_1.json` | 기총 150발 이전 기준 (V14.4.2 와는 `p.gun` 만 다르다 — 난수 상태는 전 시나리오 동일) |
 | `baseline/V14_4_0.json` | 복원 직후 V14.4.0 기준 (참고용 — V14.4.1 과는 난수열이 달라 전부 `다름`) |
 
@@ -443,7 +456,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `carrier` | LEGACY. 갑판 대기 → Shift 발진 → 상승 → 레이더 · 락 · SARH/IR 발사 · 기총 · 플레어/채프 · 선회 (3000 프레임) |
 | `carrier-fx0` | 위와 같은 조작, 비행 효과 OFF. `fxcheck` 용 |
 | `carrier-ext` | 위와 같은 조작, 외부 시점. `fxcheck` 용 |
-| `gun-empty` | 발진 후 기총 10초 연사 → 탄창이 0 이 되는지 |
+| `gun-empty` | 발진 후 기총 10초 연사 → 탄창이 0 이 되는지 (30발/초면 5초) |
 | `carrier-s2` | 시드 2. 시드가 실제로 판정을 바꾸는지 확인용 |
 | `idle` | LEGACY 아무 조작 없이 30초 |
 | `airbase` | AIRBASE 29 이륙 활주 · 상승 · 기어 |
@@ -483,6 +496,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | (11-17) | 저장소 · 하네스 복원 (3-0 · 12절). 게임 코드 변경 없음 |
 | V14.4.1 | **판정 난수 분리** — `rnd` 를 독립 함수로. 비행 효과 · 폭발 퍼프 · 실속 카메라 흔들림을 `vrnd` 로. 비행 효과 설정과 콕핏/외부 시점이 더 이상 게임 결과를 바꾸지 않는다 (의도된 변경: 난수열이 달라져 같은 상황에서 적 행동이 V14.4.0 과 다르다) |
 | V14.4.2 | **기총 150발** (모든 모드) — `P.mig.gun`. 착함 보급 150 · 웨이브 보급 +50 · TR-2 상대도 150 |
+| V14.5.0 | **기총 30발/초 · 예광탄/무광탄** — 4발에 1발만 그린다. 예광탄이 낮 하늘에서 보이게 재질 · 굵기 · 포구 위치 연출 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 
