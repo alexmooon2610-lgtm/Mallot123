@@ -64,7 +64,7 @@ mirrorRT.texture.magFilter = T.LinearFilter;
 // 화면과 같은 sRGB 로 그린다 (V15.0.0-alpha.3): three r128 은 렌더 타깃의 encoding 을 셰이더 키에 넣어서,
 // 선형(기본값)이면 거울을 처음 그릴 때 장면의 셰이더를 전부 한 벌 더 컴파일했다(측정 +8개 · 교전 중 멈칫).
 // sRGB 로 저장하면 어두운 쪽 계조도 더 좋다. 콕핏의 거울 재질은 이 텍스처를 sRGB 로 읽어 색은 그대로다.
-mirrorRT.texture.encoding = T.sRGBEncoding;
+if (!MOBILE) mirrorRT.texture.encoding = T.sRGBEncoding; // 폰은 예전대로 선형 (01-environment RENDER_SAFE)
 const mirrorCam = new T.PerspectiveCamera(70, 512 / 192, 0.5, 60000);
 const mirrorYaw = new T.Quaternion().setFromAxisAngle(V(0, 1, 0), Math.PI);
 const mirrorInterval = 1000 / 15;

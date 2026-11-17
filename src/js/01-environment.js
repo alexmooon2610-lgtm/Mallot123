@@ -50,9 +50,17 @@ function shadowFlag(o) {
 // 그림자 지도 갱신을 멈춘다. 셰이더는 바뀌지 않는다. shadowLive 가 거짓이면 메인 루프가 그림자 지도를 다시 그리지 않는다.
 let shadowLive = true,
   shadowParked = false;
+// 폰 예외 (alpha.3 핫픽스): 사용자 폰에서 이 업데이트 뒤 항모 · 기체가 처음부터 검게 나왔다(PC · 에뮬레이션은 정상, 원인 미확정).
+// 폰에서만 바뀐 렌더 경로 셋(이 그림자 방식 · 셰이더 미리 굽기 · 거울 sRGB)을 예전대로 돌린다 — RENDER_SAFE.
+const RENDER_SAFE = MOBILE;
 function sunShadowUpdate(dt, focus) {
   const want = typeof FXS !== 'undefined' && FXS.q > 0 && (typeof resStep === 'undefined' || resStep < 3);
-  if (!want) {
+  if (RENDER_SAFE) {
+    // 예전 방식: 끄면 castShadow 를 내린다 (셰이더가 다시 컴파일되지만 V15.0.0-alpha.2 까지 폰에서 문제없던 길)
+    shadowLive = true;
+    if (sun.castShadow !== want) sun.castShadow = want;
+    if (!want) return;
+  } else if (!want) {
     if (!shadowParked) {
       // 마지막으로 한 번: 상자를 하늘 높이 빈 곳으로 → 그 지도로 그리면 모든 면이 상자 밖이라 그림자가 없다
       sun.target.position.set(0, 4e5, 0);

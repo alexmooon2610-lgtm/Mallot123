@@ -319,6 +319,7 @@ function start() {
 // 출격할 때 장면에 잠깐 넣고 R.compile 로 미리 굽는다. 그리지는 않는다. 판정 난수(rnd)는 건드리지 않는다.
 let warmGroup = null;
 function warmShaders() {
+  if (RENDER_SAFE) return; // 폰은 예전대로 (01-environment RENDER_SAFE)
   try {
     if (!warmGroup) {
       warmGroup = new T.Group();
@@ -443,6 +444,8 @@ function showOv() {
     debrief +
     `<p class="ov-act">${buttons}</p>` +
     `<details class="ov-more"${debrief ? '' : ' open'}><summary>${[menuVisible ? '모드 · 임무 선택' : '', '조작 키', status ? '상태' : ''].filter(Boolean).join(' · ')}</summary>${modes}${keyTable}${status}</details>` +
-    `<p style="color:#789;font-size:11px">수치는 모두 게임용 조정값이며 실제 기체·무장 성능이 아닙니다.</p></div>`;
+    `<p style="color:#789;font-size:11px">수치는 모두 게임용 조정값이며 실제 기체·무장 성능이 아닙니다.</p>` +
+    // 렌더 진단 한 줄 (alpha.3): 화면이 이상하면 이 줄을 스크린샷으로 보내면 원인을 좁힐 수 있다
+    `<p style="color:#789;font-size:10px">렌더: ${renderDiag()}</p></div>`;
   o.innerHTML = h;
 }
