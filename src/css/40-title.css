@@ -1,0 +1,279 @@
+/* ===== 타이틀 화면 (에이스 컴뱃 풍) =====
+   전면 사진 위에 큰 제목, 빨강·파랑·초록 띠(말롯 3색), 깜박이는 PRESS ENTER.
+   글꼴은 설치된 것만 쓴다: Bahnschrift(윈도) → Segoe UI → Arial Narrow. */
+#mallot-front #mf-cover {
+  padding: 0;
+  background: #020406;
+}
+#mf-cover .ac-title {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  font-family: Bahnschrift, 'DIN Alternate', 'Segoe UI', 'Arial Narrow', Arial, sans-serif;
+  color: #eef3f6;
+}
+#mf-cover .ac-title-bg {
+  position: absolute;
+  inset: -3%;
+  width: 106%;
+  height: 106%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 50% 42%;
+  filter: saturate(0.7) contrast(1.12) brightness(0.72);
+  animation: ac-drift 38s ease-in-out infinite alternate;
+  border: 0;
+  box-shadow: none;
+}
+@keyframes ac-drift {
+  from {
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    transform: scale(1.07) translate(-1.5%, 1%);
+  }
+}
+#mf-cover .ac-title-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.62) 100%),
+    linear-gradient(
+      180deg,
+      rgba(1, 4, 8, 0.72) 0%,
+      rgba(1, 4, 8, 0) 26%,
+      rgba(1, 4, 8, 0) 55%,
+      rgba(1, 4, 8, 0.92) 100%
+    );
+}
+#mf-cover .ac-title-flare {
+  position: absolute;
+  left: 72%;
+  top: 16%;
+  width: 46vmax;
+  height: 46vmax;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 236, 200, 0.32) 0%,
+    rgba(255, 200, 140, 0.1) 22%,
+    rgba(255, 190, 120, 0) 55%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: ac-flare 7s ease-in-out infinite alternate;
+}
+@keyframes ac-flare {
+  to {
+    opacity: 0.65;
+  }
+}
+#mf-cover .ac-title-top {
+  position: absolute;
+  left: 4vw;
+  right: 4vw;
+  top: 3.2vh;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(238, 243, 246, 0.22);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  color: rgba(238, 243, 246, 0.7);
+}
+#mf-cover .ac-title-brand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  transform: translateY(-50%);
+  text-align: center;
+}
+#mf-cover .ac-title-kicker {
+  font-size: clamp(10px, 1.1vw, 14px);
+  letter-spacing: 0.6em;
+  color: rgba(238, 243, 246, 0.72);
+  margin-bottom: 1.2vh;
+  animation: ac-rise 1.4s 0.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#mf-cover .ac-title-name {
+  margin: 0;
+  font-weight: 300;
+  font-size: clamp(42px, 8.4vw, 132px);
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  color: #f4f7f9;
+  text-shadow:
+    0 0 24px rgba(160, 200, 255, 0.35),
+    0 2px 0 rgba(0, 0, 0, 0.4);
+  animation: ac-rise 1.6s both cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#mf-cover .ac-title-name b {
+  display: block;
+  font-weight: 700;
+  font-size: 0.52em;
+  letter-spacing: 0.62em;
+  text-indent: 0.62em;
+  margin-top: 0.12em;
+  color: #ffffff;
+}
+@keyframes ac-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    letter-spacing: 0.4em;
+  }
+}
+#mf-cover .ac-title-stripe {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 2.4vh auto 1.4vh;
+  width: min(520px, 60vw);
+  animation: ac-wipe 1.2s 0.6s both cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#mf-cover .ac-title-stripe i {
+  flex: 1;
+  height: 3px;
+  background: #d8323a;
+  box-shadow: 0 0 10px rgba(216, 50, 58, 0.6);
+}
+#mf-cover .ac-title-stripe i:nth-child(2) {
+  background: #2f74e0;
+  box-shadow: 0 0 10px rgba(47, 116, 224, 0.6);
+}
+#mf-cover .ac-title-stripe i:nth-child(3) {
+  background: #2fbf74;
+  box-shadow: 0 0 10px rgba(47, 191, 116, 0.6);
+}
+@keyframes ac-wipe {
+  from {
+    clip-path: inset(0 50% 0 50%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+#mf-cover .ac-title-sub {
+  font-size: clamp(10px, 1vw, 13px);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  color: rgba(238, 243, 246, 0.6);
+}
+#mf-cover .ac-title-start {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 15vh;
+  text-align: center;
+}
+#mf-cover .ac-title-btn {
+  font: inherit;
+  font-size: clamp(13px, 1.3vw, 17px);
+  font-weight: 600;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  color: #f4f7f9;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid rgba(238, 243, 246, 0.35);
+  border-bottom: 1px solid rgba(238, 243, 246, 0.35);
+  padding: 12px 42px;
+  cursor: pointer;
+  animation: ac-blink 1.6s ease-in-out infinite;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+#mf-cover .ac-title-btn:hover,
+#mf-cover .ac-title-btn:focus-visible {
+  background: rgba(244, 247, 249, 0.92);
+  color: #071018;
+  animation: none;
+  outline: none;
+}
+@keyframes ac-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+#mf-cover .ac-title-ro {
+  position: absolute;
+  left: 4vw;
+  bottom: 3.4vh;
+  right: auto;
+  top: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font:
+    500 11px ui-monospace,
+    Menlo,
+    Consolas,
+    monospace;
+  letter-spacing: 0.12em;
+  color: rgba(140, 255, 180, 0.75);
+}
+#mf-cover .ac-title-credit {
+  position: absolute;
+  right: 4vw;
+  bottom: 3.4vh;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(238, 243, 246, 0.4);
+}
+@media (max-width: 760px) {
+  #mf-cover .ac-title-top span:last-child,
+  #mf-cover .ac-title-ro {
+    display: none;
+  }
+  #mf-cover .ac-title-credit {
+    left: 4vw;
+    text-align: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #mf-cover .ac-title-bg,
+  #mf-cover .ac-title-flare,
+  #mf-cover .ac-title-btn {
+    animation: none;
+  }
+}
+
+/* ============ 타이틀의 티저 버튼 · 티저 재생 화면 ============ */
+#mf-cover .ac-title-btn2 {
+  display: block;
+  margin: 14px auto 0;
+  padding: 7px 26px;
+  font-size: clamp(10px, 0.95vw, 13px);
+  border-color: rgba(238, 243, 246, 0.2);
+  opacity: 0.85;
+  animation: none;
+}
+#st-teaser {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+#st-teaser video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#st-teaser span {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  font:
+    600 11px ui-monospace,
+    Consolas,
+    monospace;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.45);
+}

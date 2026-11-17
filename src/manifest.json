@@ -1,0 +1,160 @@
+{
+  "css": [
+    "00-base.css",
+    "10-front-menu.css",
+    "20-campaign-opening.css",
+    "30-cabin-terminal.css",
+    "40-title.css"
+  ],
+  "js": [
+    "00-core.js",
+    "01-environment.js",
+    "01-cloud-layer.js",
+    "10-model-f16.js",
+    "10-model-mig29.js",
+    "10-model-mig29-glb.js",
+    "10-model-f16-glb.js",
+    "10-model-la17-glb.js",
+    "10-model-missile-glb.js",
+    "10-model-su33-glb.js",
+    "10-model-nike-hercules.js",
+    "11-terrain-airbase.js",
+    "12-carrier-model.js",
+    "13-carrier-glb.js",
+    "20-game-state.js",
+    "20-mission-registry.js",
+    "20-game-init.js",
+    "20-mission-tr1.js",
+    "20-mission-tr2.js",
+    "20-mission-tr3.js",
+    "21-campaign.js",
+    "30-hitbox-guns.js",
+    "31-audio-fx.js",
+    "32-missiles.js",
+    "33-carrier-weapons.js",
+    "33-carrier-defense.js",
+    "34-flight.js",
+    "35-sensors.js",
+    "36-enemy-ai.js",
+    "38-trails-fx.js",
+    "39-music.js",
+    "40-deck.js",
+    "41-mission-flow.js",
+    "42-carrier-ops.js",
+    "43-airbase-ops.js",
+    "50-ground-threats.js",
+    "60-cockpit.js",
+    "70-input.js",
+    "80-hud.js",
+    "81-rear-mirror.js",
+    "90-main-loop.js",
+    "91-front-menu.js",
+    "92-flight-fx.js",
+    "93-menu-fx.js",
+    "94-teaser.js",
+    "95-intro-logo.js",
+    "96-opening.js",
+    "97-cabin-terminal.js",
+    "98-ace-hud.js",
+    "99-radio.js",
+    "99-dtg-clock.js",
+    "99-boot.js"
+  ],
+  "assets": [
+    {
+      "id": "asset-mig29-glb",
+      "file": "mig29.glb",
+      "mime": null
+    },
+    {
+      "id": "asset-mig29-paint",
+      "file": "mig29-paint.png",
+      "mime": null
+    },
+    {
+      "id": "asset-carrier-glb",
+      "file": "carrier.glb",
+      "mime": null
+    },
+    {
+      "id": "asset-f16-glb",
+      "file": "f16.glb",
+      "mime": null
+    },
+    {
+      "id": "asset-la17-glb",
+      "file": "la17.glb",
+      "mime": null
+    },
+    {
+      "id": "asset-r27r-glb",
+      "file": "r27r.glb",
+      "mime": null
+    },
+    {
+      "id": "asset-r73-glb",
+      "file": "r73.glb",
+      "mime": null
+    },
+    {
+      "id": "asset-su33-glb",
+      "file": "su33.glb",
+      "mime": null
+    },
+    {
+      "id": "asset-cover-jpeg",
+      "file": "cover.jpg",
+      "mime": null
+    },
+    {
+      "id": "asset-teaser-mp4",
+      "file": "teaser.mp4",
+      "mime": null
+    },
+    {
+      "id": "asset-op-a1",
+      "file": "opening/a1.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-a3",
+      "file": "opening/a3.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-a4",
+      "file": "opening/a4.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-a5",
+      "file": "opening/a5.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-a6",
+      "file": "opening/a6.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-r1",
+      "file": "opening/r1.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-r2",
+      "file": "opening/r2.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-r3",
+      "file": "opening/r3.jpg",
+      "mime": "image/jpeg"
+    },
+    {
+      "id": "asset-op-r4",
+      "file": "opening/r4.jpg",
+      "mime": "image/jpeg"
+    }
+  ]
+}
