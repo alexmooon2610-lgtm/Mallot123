@@ -207,6 +207,7 @@ function loop(n) {
   sunShadowUpdate(dt, p ? p.pos : cam.position);
   fxNearFade();
   R.clear();
+  R.shadowMap.needsUpdate = true; // 그림자 지도는 여기서만 갱신 (01-environment)
   R.render(scene, cam);
   if (cameraMode === 'cockpit') {
     R.clearDepth();

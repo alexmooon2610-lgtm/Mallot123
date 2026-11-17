@@ -4,6 +4,7 @@
     python3 tools/harness/run.py run  <game.html> <out.json> [시나리오 ...]   # 기본: 전부
     python3 tools/harness/run.py diff <a.json> <b.json>                      # 프레임 단위 비교
     python3 tools/harness/run.py fxcheck <out.json>                        # 비행 효과 · 시점이 판정을 바꾸는지
+    python3 tools/harness/run.py weapons <game.html>                         # 무장 단위 시험 (미사일 유도 · 기총 · 대응수단)
     python3 tools/harness/run.py list
 
 가짜 시계(det.js)로 프레임을 직접 돌리고, 매 프레임 판정 상태(probe.js)를 해시한다.
@@ -44,6 +45,24 @@ COMBAT = [tap('KeyT', 1000), tap('Tab', 1060), tap('KeyY', 1100), tap('Space', 1
           tap('Digit2', 1300), tap('Space', 1400), hold('KeyG', 1600, 1700),
           tap('KeyX', 1800), tap('KeyC', 1820), hold('ArrowLeft', 1900, 1960), hold('ArrowUp', 1960, 2100)]
 
+# 착함 직전 자세를 만든다. z: 항모 로컬 앞뒤 위치(+ 가 함미 쪽) · spd: 속도 · sink: 강하 기울기
+TRAP = """
+setSt('fly'); ops.safe = 0;
+es.forEach(e => scene.remove(e.mesh)); es = []; wt = 1e9;
+p.pos.copy(CV.localToWorld(V(0, DECK_Y + EYE + 2.5, {z})));
+p.q.copy(CV.quaternion);
+p.vd.set(0, -{sink}, -1).applyQuaternion(CV.quaternion).normalize();
+p.speed = {spd}; p.thr = 0.35; p.ab = 0; p.gearDown = true; p.flap = 1;
+"""
+ABLAND = """
+missionPhase = 'final'; missionGate = curM().gates.length;
+airbaseOps.phase = 'airborne'; airbaseOps.far = true; airbaseOps.airT = 60;
+p.pos.set(0, 14, -1500);
+p.q.setFromRotationMatrix(new T.Matrix4().lookAt(V(), V(0, 0, 1), V(0, 1, 0)));
+p.vd.set(0, -0.02, 1).normalize();
+p.speed = 110; p.thr = 0.3; p.ab = 0; p.gearDown = true; p.flap = 1;
+"""
+
 SCENARIOS = {
     # 이름: (env, 임무 id, 프레임 수, 입력, 시드[, localStorage 초기값])
     'carrier': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1),
@@ -53,6 +72,15 @@ SCENARIOS = {
     'carrier-ext': ('CARRIER', 'LEGACY', 3000, keys(tap('KeyV', 5), *CARRIER_LAUNCH, *COMBAT), 1),
     # 기총 연사로 탄창 비우기 (V14.4.2: 150발 = 20발/초 × 7.5초 → 약 450프레임)
     'gun-empty': ('CARRIER', 'LEGACY', 1800, keys(*CARRIER_LAUNCH, hold('KeyG', 1000, 1600), tap('KeyG', 1700)), 1),
+    # ---- 상태를 직접 만들어 넣는 시나리오 (setup 코드는 출격 직후 같은 프레임에서 돈다)
+    # 착함: 갑판 뒤쪽 120 단위 · 갑판 위 2.5 단위에서 완만히 내려온다 → 와이어 포착 → 급유 · 재무장 (탄을 줄여 두고 보급 확인)
+    'trap': ('CARRIER', 'LEGACY', 900, {}, 1, {}, TRAP.format(z=120, spd=140, sink=0.04) + 'p.gun = 10; p.fl = 3; p.am.IR = 0;'),
+    # 볼터: 착함 지점(z 10)을 지나서 닿음 → 재상승
+    'bolter': ('CARRIER', 'LEGACY', 300, {}, 1, {}, TRAP.format(z=5, spd=140, sink=0.04)),
+    # 갑판 충돌: 너무 빠름 (220) → 격추
+    'deckcrash': ('CARRIER', 'LEGACY', 120, {}, 1, {}, TRAP.format(z=120, spd=220, sink=0.04)),
+    # 비행장 착륙: T-02 최종 접근 단계 · 활주로 앞 1.5 km 고도 14 m → 활주로 포착 → 접지 · 감속 → 평가
+    'abland': ('AIRBASE', 'T02', 600, {}, 1, {}, ABLAND),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),
@@ -65,48 +93,96 @@ SCENARIOS = {
 }
 
 
+# 기총으로 F-16(hp 1)을 격추하는 데 필요한 명중 수 (사용자 결정 2026-11-17: 10발). weapons 시험이 확인한다
+GUN_HITS_TO_KILL = 10
+
+
 # ---------------------------------------------------------------- 실행
-async def run_one(browser, html, name, spec, shots_dir):
-    env, mission, frames, inputs, seed = spec[:5]
-    storage = spec[5] if len(spec) > 5 else {}
+async def open_game(browser, html, seed, storage=None, errs=None):
+    """게임을 열고 모델 로딩이 끝날 때까지 기다린다. 3D 렌더는 끈다."""
     page = await browser.new_page(viewport={'width': 480, 'height': 270})
-    errs, logs = [], []
-    page.on('pageerror', lambda e: errs.append(str(e)[:300]))
-    page.on('console', lambda m: logs.append(m.text))
+    if errs is not None:
+        page.on('pageerror', lambda e: errs.append(str(e)[:300]))
     await page.add_init_script(path=os.path.join(HERE, 'det.js'))
     if storage:
-        await page.add_init_script('(' + json.dumps(storage) + ') && Object.entries(' + json.dumps(storage)
-                                   + ').forEach(([k, v]) => localStorage.setItem(k, v))')
+        await page.add_init_script('Object.entries(' + json.dumps(storage) + ').forEach(([k, v]) => localStorage.setItem(k, v))')
     await page.goto(f'file://{os.path.abspath(html)}?unlock&seed={seed}', timeout=180000)
-    # 모델 로딩(비동기)이 끝날 때까지 실제 시간으로 기다린다. 로딩 도중에 프레임을 돌리면 결과가 흔들린다.
     t0 = time.time()
-    READY = """() => [typeof mig29GLBTemplate !== 'undefined' && !!mig29GLBTemplate, !!f16GLBTemplate, !!la17GLBTemplate,
-                    !!su33GLBTemplate, !!(mslGLBTemplate.SARH && mslGLBTemplate.IR)]"""
-    ready = []
     while time.time() - t0 < 90:
         try:
-            ready = await page.evaluate(READY)
-            if all(ready):
+            if all(await page.evaluate(READY)):
                 break
         except Exception:
             pass
         await page.wait_for_timeout(250)
+    await page.wait_for_timeout(500)
+    await page.evaluate('() => { __det.render = R.render.bind(R); R.render = () => {}; '
+                        'const f = document.getElementById("mallot-front"); if (f) f.style.display = "none"; }')
+    return page
+
+
+READY = """() => [typeof mig29GLBTemplate !== 'undefined' && !!mig29GLBTemplate, !!f16GLBTemplate, !!la17GLBTemplate,
+                !!su33GLBTemplate, !!(mslGLBTemplate.SARH && mslGLBTemplate.IR)]"""
+
+
+async def weapons(html, gun_hits=None):
+    from playwright.async_api import async_playwright
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(executable_path=CHROME, args=[
+            '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--mute-audio'])
+        errs = []
+        page = await open_game(browser, html, 1, errs=errs)
+        await page.add_script_tag(path=os.path.join(HERE, 'weapons.js'))
+        await page.evaluate('() => { __det.reseed(1); if (rnd.seed) __det.rndState = rnd.state; }')
+        bad = 0
+        print('— 직접 시험 (updMsl 만, 표적은 정해진 대로 이동)')
+        for name in await page.evaluate('() => Object.keys(__wpn.direct)'):
+            r = await page.evaluate(f'() => __wpn.direct.{name}()')
+            exp = await page.evaluate(f'() => __wpn.EXPECT.{name}')
+            ok = r['hit'] == exp
+            bad += not ok
+            print(f"  {'OK ' if ok else 'BAD'} {name:15s} {'명중' if r['hit'] else '빗나감':4s} {r['t']:6.2f}s"
+                  f"  (기대: {'명중' if exp else '빗나감'}){'  ' + r.get('why', '') if not r['hit'] else ''}")
+        g = await page.evaluate('() => __wpn.gunHits()')
+        gok = g['killed'] and (gun_hits is None or g['hits'] == gun_hits)
+        bad += not gok
+        print(f"  {'OK ' if gok else 'BAD'} gun_hits        {'격추' if g['killed'] else '생존'} — {g['hits']}발 명중 / {g['shots']}발 발사"
+              + (f'  (기대: {gun_hits}발)' if gun_hits else ''))
+        print('— 대응수단 (실제 게임 루프 · 적 IR 꼬리 3 km · 플레이어 직진 · 시드 1~20)')
+        for n in (0, 2, 4):
+            hits = 0
+            for seed in range(1, 21):
+                hits += await page.evaluate(f'() => __wpn.cmTrial({seed}, {n})')
+            print(f'  플레어 {n}번: {hits}/20 피격')
+        if errs:
+            print('  페이지 오류:', errs[:3])
+        await browser.close()
+        return 1 if bad or errs else 0
+
+
+async def run_one(browser, html, name, spec, shots_dir):
+    env, mission, frames, inputs, seed = spec[:5]
+    storage = spec[5] if len(spec) > 5 else {}
+    setup = spec[6] if len(spec) > 6 else ''
+    errs, logs = [], []
+    t0 = time.time()
+    page = await open_game(browser, html, seed, storage, errs)
+    page.on('console', lambda m: logs.append(m.text))
+    ready = await page.evaluate(READY)
     if not all(ready):
         errs.append(f'모델 로딩 미완료 (mig29,f16,la17,su33,msl) = {ready}')
-    await page.wait_for_timeout(500)
     t_load = time.time() - t0
     await page.add_script_tag(path=os.path.join(HERE, 'probe.js'))
-    # 3D 렌더는 판정에 관여하지 않으므로 끈다 (SwiftShader 에서 한 프레임 0.4초 → 수 ms). 스크린숏 때만 되살린다.
-    await page.evaluate('() => { __det.render = R.render.bind(R); R.render = () => {}; }')
-    await page.evaluate('() => { const f = document.getElementById("mallot-front"); if (f) f.style.display = "none"; }')
     # 판정 난수 시드 고정. V14.4.0 까지는 rnd 가 Math.random 이라 det.js 의 시드가 곧 판정 시드였고,
     # V14.4.1 부터는 rnd 가 독립 함수라 rnd.seed() 로 따로 고정한다. 해시 옆에는 rnd 상태(=당긴 횟수)를 붙인다.
     await page.evaluate(f'''() => {{
         __det.reseed({seed});
         if (rnd.seed) {{ rnd.seed({seed}); __det.rndState = rnd.state; }}
     }}''')
-    # 출격은 첫 프레임 안에서 한다 (init() 이 판정 난수를 당기므로 프레임 밖에서 부르면 안 된다)
-    pre = f"activeMode = {json.dumps(env)}; activeMission = {json.dumps(mission)} || defaultMission(activeMode); start();"
+    # 출격은 첫 프레임 안에서 한다 (init() 이 판정 난수를 당기므로 프레임 밖에서 부르면 안 된다).
+    # setup: 출격 직후 같은 프레임에서 상태를 바로 만들어 넣는 코드 (착함 직전 자세 등)
+    pre = (f"activeMode = {json.dumps(env)}; activeMission = {json.dumps(mission)} || defaultMission(activeMode); start();"
+           + setup)
     hashes = []
     CH = 300  # 한 번에 돌리는 프레임 수
     js_inputs = {str(k): v for k, v in inputs.items()}
@@ -127,7 +203,7 @@ async def run_one(browser, html, name, spec, shots_dir):
         await page.screenshot(path=os.path.join(shots_dir, name + '.png'))
     await page.close()
     return {'frames': frames, 'final': hashes[-1], 'hashes': hashes, 'brief': brief, 'state': state,
-            'errors': errs + det_errs, 'load_s': round(t_load, 1), 'glb_logs': [l for l in logs if 'GLB' in l]}
+            'errors': errs + det_errs, 'load_s': round(t_load, 1)}
 
 
 async def run(html, out, names, shots_dir=None):
@@ -205,7 +281,7 @@ def fxcheck(path):
 
 if __name__ == '__main__':
     a = sys.argv[1:]
-    if not a or a[0] not in ('run', 'diff', 'list', 'fxcheck'):
+    if not a or a[0] not in ('run', 'diff', 'list', 'fxcheck', 'weapons'):
         print(__doc__)
         sys.exit(2)
     if a[0] == 'list':
@@ -218,6 +294,8 @@ if __name__ == '__main__':
             del a[i:i + 2]
         names = a[3:] or list(SCENARIOS)
         asyncio.run(run(a[1], a[2], names, shots))
+    elif a[0] == 'weapons':
+        sys.exit(asyncio.run(weapons(a[1], GUN_HITS_TO_KILL)))
     elif a[0] == 'fxcheck':
         sys.exit(fxcheck(a[1]))
     else:

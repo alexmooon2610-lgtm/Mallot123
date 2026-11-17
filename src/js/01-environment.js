@@ -21,6 +21,9 @@ const SHADOW_HALF = 520, // 그림자 상자 반경 (월드 단위 = m × 3 → 
   SHADOW_MAP = MOBILE ? 1024 : 2048;
 R.shadowMap.enabled = true;
 R.shadowMap.type = T.PCFSoftShadowMap;
+// 그림자 지도는 프레임마다 월드 렌더 직전에 한 번만 다시 그린다 (90-main-loop 에서 needsUpdate).
+// 자동이면 R.render 를 부를 때마다 다시 그려서, 후방 거울 렌더 때 그림자 패스(항모 · 주기기)를 한 번 더 그렸다.
+R.shadowMap.autoUpdate = false;
 sun.castShadow = true;
 sun.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
 sun.shadow.camera.left = sun.shadow.camera.bottom = -SHADOW_HALF;

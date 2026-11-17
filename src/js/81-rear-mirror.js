@@ -1,4 +1,5 @@
 // ---------- 후방 거울 렌더링
+let parkVis = null;
 function updateRearMirror(now) {
   if (!p || S !== 'play' || cameraMode !== 'cockpit' || now - mirrorLast < mirrorInterval) return;
   mirrorLast = now;
@@ -17,8 +18,12 @@ function updateRearMirror(now) {
     R.setRenderTarget(mirrorRT);
     R.setScissorTest(false);
     R.clear(true, true, true);
+    // 손바닥만 한 거울에 갑판 주기기(삼각형 20만 개)까지 그릴 필요는 없다. 거울에서만 잠깐 끈다.
+    parkVis = CV_PARKING ? CV_PARKING.visible : null;
+    if (CV_PARKING) CV_PARKING.visible = false;
     R.render(scene, mirrorCam);
   } finally {
+    if (CV_PARKING && parkVis !== null) CV_PARKING.visible = parkVis;
     R.setRenderTarget(previousTarget);
     R.setViewport(previousViewport);
     R.setScissor(previousScissor);

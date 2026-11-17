@@ -86,6 +86,7 @@
       },
     };
   }
+  let logoWords = null;
   function drawLogo(k) {
     k = k == null ? 1 : k;
     const c = logo,
@@ -107,8 +108,8 @@
     const tw = [...word].reduce((t, ch, i) => t + G[ch].w + (i ? gap : 0), 0) * u,
       x0 = (W - tw) / 2 + 9,
       y0 = 16;
-    // 글자 한 겹 그리기 (기울임 + 스텐실 틈)
-    const word1 = (dx, dy, fill) => {
+    // 글자 한 겹 그리기 (기울임 + 스텐실 틈). dst 에 붙인다
+    const word1 = (dst, dx, dy, fill) => {
       const off = document.createElement('canvas');
       off.width = W * R;
       off.height = H * R;
@@ -133,18 +134,30 @@
         o.globalCompositeOperation = 'source-over';
         cx += (g.w + gap) * u;
       }
-      x.save();
-      x.setTransform(1, 0, 0, 1, 0, 0);
-      x.drawImage(off, 0, 0);
-      x.restore();
+      dst.save();
+      dst.setTransform(1, 0, 0, 1, 0, 0);
+      dst.drawImage(off, 0, 0);
+      dst.restore();
     };
-    word1(5, 5, '#02050d');
-    word1(2.5, 2.5, '#40587d');
-    const gr = x.createLinearGradient(0, y0, 0, y0 + 10 * u);
-    gr.addColorStop(0, '#fbfaf3');
-    gr.addColorStop(0.62, '#e9e6da');
-    gr.addColorStop(1, '#b9c5d3');
-    word1(0, 0, gr);
+    // 글자는 애니메이션 내내 같다: 처음 한 번만 세 겹을 캔버스에 구워 두고, 프레임마다 붙여 넣기만 한다
+    // (예전엔 프레임마다 2160×760 캔버스를 세 장씩 새로 만들어 인트로 2초 동안 폰이 버벅였다)
+    if (!logoWords) {
+      logoWords = document.createElement('canvas');
+      logoWords.width = W * R;
+      logoWords.height = H * R;
+      const w = logoWords.getContext('2d');
+      word1(w, 5, 5, '#02050d');
+      word1(w, 2.5, 2.5, '#40587d');
+      const gr = w.createLinearGradient(0, y0, 0, y0 + 10 * u); // 그라데이션 좌표는 칠하는 쪽(o) 변환 기준이라 원래 값 그대로
+      gr.addColorStop(0, '#fbfaf3');
+      gr.addColorStop(0.62, '#e9e6da');
+      gr.addColorStop(1, '#b9c5d3');
+      word1(w, 0, 0, gr);
+    }
+    x.save();
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.drawImage(logoWords, 0, 0);
+    x.restore();
     // 비행운: 왼쪽에서 흘러와 오른쪽 끝의 한 점(전투기)으로 모인다
     const jx = W - 46,
       jy = y0 + 10 * u + 16,

@@ -34,6 +34,86 @@ function cvRampY(z) {
 // 경사(라디안): 앞뒤 4 m 평균 기울기
 const cvRampPitch = z => (z < -105.75 ? Math.atan((cvRampY(z - 2) - cvRampY(z + 2)) / 4) : 0);
 
+// ---------- 정적 메시 합치기 (그리기 호출 줄이기)
+// root 아래 메시를 root 좌표로 구워 재질마다 형상 하나로 합친다. 반환: [{ material, geometry }]
+// skip(o) 이 참인 객체(와 그 아래)는 건너뛴다. 속성 구성이 다른 메시가 섞인 재질은 합치지 않고 그대로 둔다(keep).
+function mergeByMaterial(root, skip) {
+  root.updateMatrixWorld(true);
+  const inv = new T.Matrix4().copy(root.matrixWorld).invert(),
+    groups = new Map(),
+    keep = [];
+  const walk = o => {
+    if (skip && skip(o)) return;
+    if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh && !Array.isArray(o.material) && o.geometry.attributes.position) {
+      if (!groups.has(o.material)) groups.set(o.material, []);
+      groups.get(o.material).push(o);
+    }
+    o.children.forEach(walk);
+  };
+  walk(root);
+  const out = [],
+    m = new T.Matrix4();
+  for (const [material, list] of groups) {
+    const names = Object.keys(list[0].geometry.attributes).sort(),
+      sig = g => Object.keys(g.attributes).sort().map(n => n + g.attributes[n].itemSize).join();
+    if (list.some(o => sig(o.geometry) !== sig(list[0].geometry))) {
+      keep.push(...list);
+      continue;
+    }
+    let nv = 0,
+      ni = 0;
+    for (const o of list) {
+      nv += o.geometry.attributes.position.count;
+      ni += o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count;
+    }
+    const geo = new T.BufferGeometry(),
+      arrs = {};
+    for (const n of names) arrs[n] = new Float32Array(nv * list[0].geometry.attributes[n].itemSize);
+    const idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
+    let vo = 0,
+      io = 0;
+    for (const o of list) {
+      m.multiplyMatrices(inv, o.matrixWorld);
+      const g = o.geometry.clone().applyMatrix4(m),
+        cnt = g.attributes.position.count;
+      for (const n of names) {
+        const a = g.attributes[n],
+          s = a.itemSize,
+          dst = arrs[n];
+        for (let i = 0; i < cnt; i++) {
+          dst[(vo + i) * s] = a.getX(i);
+          if (s > 1) dst[(vo + i) * s + 1] = a.getY(i);
+          if (s > 2) dst[(vo + i) * s + 2] = a.getZ(i);
+          if (s > 3) dst[(vo + i) * s + 3] = a.getW(i);
+        }
+      }
+      // 거울상(음수 배율)으로 놓인 메시는 구우면 면 방향이 뒤집히므로 삼각형 순서를 바꿔 준다
+      const flip = m.determinant() < 0,
+        src = g.index ? g.index.array : null,
+        n3 = g.index ? g.index.count : cnt;
+      for (let i = 0; i < n3; i += 3) {
+        const a = src ? src[i] : i,
+          b = src ? src[i + 1] : i + 1,
+          c = src ? src[i + 2] : i + 2;
+        idx[io++] = vo + a;
+        idx[io++] = vo + (flip ? c : b);
+        idx[io++] = vo + (flip ? b : c);
+      }
+      g.dispose();
+      vo += cnt;
+    }
+    for (const n of names) {
+      const a0 = list[0].geometry.attributes[n];
+      geo.setAttribute(n, new T.BufferAttribute(arrs[n], a0.itemSize, a0.normalized));
+    }
+    geo.setIndex(new T.BufferAttribute(idx, 1));
+    geo.computeBoundingSphere();
+    geo.computeBoundingBox();
+    out.push({ material, geometry: geo, from: list });
+  }
+  return out;
+}
+
 let carrierGLB = null;
 function applyCarrierGLB() {
   try {
@@ -98,6 +178,17 @@ function applyCarrierGLB() {
         deckParking(model).add(m);
       }
     su33Park(model);
+    // 선체 메시 51개 → 재질 수(8개)로. 주기장은 따로(인스턴스) 처리했으니 건너뛴다.
+    // 월드 렌더 · 그림자 패스 둘 다 그리기 호출이 줄어든다. 판정(deckEdges · rampY)은 위에서 이미 뽑았다.
+    for (const part of mergeByMaterial(model, o => o === CV_PARKING)) {
+      part.from.forEach(o => {
+        o.parent.remove(o);
+        o.geometry.dispose();
+      });
+      const mesh = new T.Mesh(part.geometry, part.material);
+      mesh.name = 'cv_hull_' + (part.material.name || 'mat');
+      model.add(mesh);
+    }
   } catch (e) {
     console.warn('[STEEL TEMPEST] carrier GLB failed; procedural carrier stays', e);
     CV.children.forEach(c => (c.visible = true));
@@ -128,13 +219,19 @@ const PARKING_DRAW_DIST = 15000;
 function deckParkingUpdate(camPos) {
   if (CV_PARKING) CV_PARKING.visible = camPos.distanceToSquared(CV.position) < PARKING_DRAW_DIST * PARKING_DRAW_DIST;
 }
+// 같은 Su-33 네 대: 기체 하나를 재질별로 합친 형상(52 → 10 조각)을 만들고, 네 자리에 같은 형상을 공유하는 메시로 놓는다.
+// 예전엔 복제본 4개 × 메시 52개 = 그리기 호출 208번(그림자 패스까지 두 배) → 이제 40번. 형상은 복사하지 않는다.
+// 인스턴스 메시 한 개로 묶으면 10번까지 줄지만, 네 대를 한 경계구로 컬링해 안 보일 때도 삼각형 18만 개를
+// 그리게 돼서(화면 아래 가장자리에 걸칠 때) 기체마다 따로 컬링되는 이 방식을 쓴다.
 function su33Park(model) {
   if (!su33GLBTemplate) return;
+  const parts = mergeByMaterial(su33GLBTemplate);
   for (const [x, z, hd] of SU33_PARK) {
-    const m = su33GLBTemplate.clone();
-    m.position.set(x, CV_DECK_Y, z);
-    m.rotation.y = (hd * Math.PI) / 180;
-    m.name = 'Parked_Su33';
-    deckParking(model).add(m);
+    const g = new T.Group();
+    g.position.set(x, CV_DECK_Y, z);
+    g.rotation.y = (hd * Math.PI) / 180;
+    g.name = 'Parked_Su33';
+    for (const part of parts) g.add(new T.Mesh(part.geometry, part.material));
+    deckParking(model).add(g);
   }
 }
