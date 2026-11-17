@@ -195,7 +195,7 @@ function applyCarrierGLB() {
   }
 }
 
-// 우현 주기장의 Su-33 (날개 접음). 항모 로컬 좌표 [x(우현 +), z(함미 +), 기수 방위°] — 단위 m.
+// 우현 주기장의 Su-33 (날개 접음 — su33Folded). 항모 로컬 좌표 [x(우현 +), z(함미 +), 기수 방위°] — 단위 m.
 // 갑판 우현 가장자리는 z 20~100 에서 x +28~31, z 110 뒤로는 +26 까지 좁아진다 (CV.userData.deckEdges).
 // MiG-29 주기 2 대가 z 97 · 112 를 쓰므로 그 앞뒤로 비켜 세운다.
 const SU33_PARK = [
@@ -225,7 +225,7 @@ function deckParkingUpdate(camPos) {
 // 그리게 돼서(화면 아래 가장자리에 걸칠 때) 기체마다 따로 컬링되는 이 방식을 쓴다.
 function su33Park(model) {
   if (!su33GLBTemplate) return;
-  const parts = mergeByMaterial(su33GLBTemplate);
+  const parts = mergeByMaterial(su33Folded()); // 날개 접은 모양 (10-model-su33-glb)
   for (const [x, z, hd] of SU33_PARK) {
     const g = new T.Group();
     g.position.set(x, CV_DECK_Y, z);

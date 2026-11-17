@@ -365,7 +365,7 @@ function showOv() {
     ['P / Esc', '일시정지'],
     ['Enter', '출격 / 재시작'],
   ];
-  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V14.6.0</span>';
+  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V14.7.0</span>';
   // 결과(디브리핑)와 버튼을 먼저 보여 주고, 모드 선택 · 조작 키 · 상태는 접어 둔다
   const debrief =
     S == 'over' && (isAirbase() || curM().campaign) && (missionComplete || missionFailed) && missionResult

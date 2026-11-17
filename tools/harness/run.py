@@ -63,6 +63,13 @@ p.vd.set(0, -0.02, 1).normalize();
 p.speed = 110; p.thr = 0.3; p.ab = 0; p.gearDown = true; p.flap = 1;
 """
 
+VCLIMB = """
+setSt('fly'); ops.safe = 0;
+es.forEach(e => scene.remove(e.mesh)); es = []; wt = 1e9;
+p.pos.set(0, 1000, 0); p.q.setFromEuler(new T.Euler(Math.PI / 2, 0, 0)); p.vd.set(0, 1, 0);
+p.speed = 250; p.thr = 1; p.ab = 0; p.gearDown = false; p.flap = 0;
+"""
+
 SCENARIOS = {
     # 이름: (env, 임무 id, 프레임 수, 입력, 시드[, localStorage 초기값])
     'carrier': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1),
@@ -81,6 +88,8 @@ SCENARIOS = {
     'deckcrash': ('CARRIER', 'LEGACY', 120, {}, 1, {}, TRAP.format(z=120, spd=220, sink=0.04)),
     # 비행장 착륙: T-02 최종 접근 단계 · 활주로 앞 1.5 km 고도 14 m → 활주로 포착 → 접지 · 감속 → 평가
     'abland': ('AIRBASE', 'T02', 600, {}, 1, {}, ABLAND),
+    # 수직 상승 (V14.7.0 물리): 고도 1000 m · 900 km/h 에서 기수 수직 · 애프터버너. 약 36초 · 8 km 에서 실속 → 기수가 떨어진다
+    'vclimb': ('CARRIER', 'LEGACY', 3000, keys(hold('ShiftLeft', 0, 3000)), 1, {}, VCLIMB),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),
