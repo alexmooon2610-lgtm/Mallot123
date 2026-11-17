@@ -282,7 +282,7 @@ function kill(a) {
       wt = 6;
       p.am.SARH = Math.min(6, p.am.SARH + 2);
       p.am.IR = Math.min(6, p.am.IR + 2);
-      p.gun = Math.min(500, p.gun + 150);
+      p.gun = Math.min(P.mig.gun, p.gun + 50); // 탄창의 1/3 (예전 500발 중 +150 과 같은 비율)
       p.fl = Math.min(30, p.fl + 8);
       p.ch = Math.min(30, p.ch + 8);
       p.hp = Math.min(1, p.hp + 0.3);

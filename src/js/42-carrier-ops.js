@@ -208,8 +208,8 @@ function opsUpdate(dt) {
       msg(`급유 완료 · 연료 100% · 미사일 장착 (SARH ${L.SARH} / IR ${L.IR})`);
     });
     once('c', 5.5, () => {
-      p.gun = Math.max(p.gun, 500);
-      msg('기총탄 보충 (500)');
+      p.gun = Math.max(p.gun, P.mig.gun);
+      msg(`기총탄 보충 (${P.mig.gun})`);
     });
     once('d', 7, () => {
       p.fl = Math.max(p.fl, 30);

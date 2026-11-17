@@ -12,7 +12,7 @@ const mkAc = s => ({
   fuel: 100,
   fuelWarn: 0,
   am: { SARH: s == 'P' ? 4 : 2, IR: s == 'P' ? 4 : 2 },
-  gun: s == 'P' ? 500 : 300,
+  gun: (s == 'P' ? P.mig : P.f16).gun,
   gc: 0,
   vd: V(0, 0, -1),
   g: 1,

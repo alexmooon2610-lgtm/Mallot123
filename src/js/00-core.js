@@ -35,8 +35,9 @@ const MS2KMH = 3.6,
 const readAsset = id => document.getElementById(id).textContent.replace(/\s+/g, '');
 // 게임용 조정 파라미터 — 실제 기체/무장 성능값이 아님
 const P = {
-  mig: { maxV: 270, stall: 85, thr: 16, ab: 15, pit: 1.5, rol: 3, yaw: 0.5, g: 9, vc: 135 }, // g: 실기 한계 9G
-  f16: { maxV: 265, stall: 90, thr: 15, ab: 14, pit: 1.35, rol: 4.2, yaw: 0.4, g: 9, vc: 140 },
+  // g: 실기 한계 9G · gun: 기총 탄수. MiG-29 GSh-30-1 은 실기도 150발이다 (V14.4.2, 모든 모드 공통).
+  mig: { maxV: 270, stall: 85, thr: 16, ab: 15, pit: 1.5, rol: 3, yaw: 0.5, g: 9, vc: 135, gun: 150 },
+  f16: { maxV: 265, stall: 90, thr: 15, ab: 14, pit: 1.35, rol: 4.2, yaw: 0.4, g: 9, vc: 140, gun: 300 }, // gun: 게임값 (실기 M61 511발)
   flapLim: [999, 210, 160],
   // range 는 미사일이 실제로 도달할 수 있는 거리에 맞춘 값 (예전 10000 / 6500 은 도달 불가 거리까지 발사 허용)
   // g: 최대 횡가속(G) · vq: 해면에서 그 G 를 다 낼 수 있는 속도(m/s) · gimbal: 시커 시야 반각(°) · seek: IR 시커 탐지 거리(m)

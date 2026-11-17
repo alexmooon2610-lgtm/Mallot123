@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-17 · 버전 **V14.4.1** · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-17 · 버전 **V14.4.2** · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -94,13 +94,13 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V14_4_1.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V14_4_2.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
 임무 파일은 반드시 `21-campaign.js` 보다 **앞**에 와야 한다. **새 파일을 만들면 manifest 에 넣어야 빌드에 들어간다.**
 에셋은 base64(120자 줄바꿈)로 `<script id="asset-...">` 블록에 넣고 런타임에 `readAsset(id)` 로 읽는다.
-버전을 올릴 때는 버전 문자열을 전부 바꾼다 (`grep -rn "14\.4\.1" src` — 템플릿 2곳 · `70-input.js` 1곳).
+버전을 올릴 때는 버전 문자열을 전부 바꾼다 (`grep -rn "14\.4\.2" src` — 템플릿 2곳 · `70-input.js` 1곳).
 
 ### 파일 크기 (중요)
 base64 때문에 원본의 1.33배가 된다. 현재 **13.8 MB**.
@@ -349,7 +349,11 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 11-1. 보급 관리 시스템
 **발상**: 과거로 떨어져 재보급이 불가능하다. 항모 무장 재고를 관리하며 싸운다.
 - 워프 이후 캠페인에만 적용 (훈련·자유 모드는 무제한)
-- **기총 150발 제한**도 이때 같이 넣기로 결정됨
+- **기총 150발 제한** — **V14.4.2 에서 먼저 넣음. 모든 모드 공통**(훈련 · 자유 · 캠페인, 사용자 결정 2026-11-17).
+  `P.mig.gun = 150` 한 곳에서 정한다. 연사 속도는 그대로(20발/초 → 7.5초면 바닥). 항모 착함 보급은 150까지,
+  LEGACY 웨이브 격파 보급은 +50(예전 500발 중 +150 과 같은 비율). TR-2 상대 MiG-29 도 150발.
+  **균형 주의**: 기총 1발 피해가 적기에 0.045 라 F-16(hp 1)을 잡으려면 23발 = 탄창의 15%를 맞혀야 한다.
+  실기 30 mm 는 몇 발이면 치명적이다. 재미가 깎이면 피해량을 올릴 것 (아직 미결).
 - 동료기가 쏘는 미사일도 같은 재고에서 나가게 하면, "동료를 믿고 맡길까 / 내가 아껴 쏠까"라는
   선택이 매 판 생긴다 (윙맨 시스템과 묶이는 지점)
 
@@ -396,8 +400,8 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V14_4_1.html /tmp/new.json      # 시나리오 전부 (약 1분)
-python3 tools/harness/run.py diff tools/harness/baseline/V14_4_1.json /tmp/new.json  # 프레임 단위 비교
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V14_4_2.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py diff tools/harness/baseline/V14_4_2.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
 ```
@@ -410,7 +414,8 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `det.js` | 게임보다 먼저 주입. `Math.random` 을 시드 난수로, `performance.now` · `requestAnimationFrame` 을 가짜 시계로 바꾼다. 프레임은 `__det.step()` 을 불러야만 돈다. 키 입력도 정해진 프레임에 넣는다 |
 | `probe.js` | 매 프레임 판정 상태(플레이어 · 적 · 미사일 · 플레어 · 탄 · 레이더 · 임무 · 항모/비행장 운용)를 JSON 으로 모아 FNV 해시. 연출 상태(`FXS` · `CVW` · `fx` 입자 · 플레어의 `viz`)는 넣지 않는다 |
 | `run.py` | 시나리오 실행 · 비교. 3D 렌더(`R.render`)는 끄고 돌린다 — 판정과 무관하고, SwiftShader 에서 한 프레임 0.4초 걸려서다 |
-| `baseline/V14_4_1.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
+| `baseline/V14_4_2.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
+| `baseline/V14_4_1.json` | 기총 150발 이전 기준 (V14.4.2 와는 `p.gun` 만 다르다 — 난수 상태는 전 시나리오 동일) |
 | `baseline/V14_4_0.json` | 복원 직후 V14.4.0 기준 (참고용 — V14.4.1 과는 난수열이 달라 전부 `다름`) |
 
 **해시 옆 값**은 판정 난수(`rnd`)의 상태다 — V14.4.1 부터는 rnd 내부 상태(16진수), V14.4.0 기준값에서는 누적 호출 횟수. 해시가 같아도 이 숫자가 다르면 난수열이 밀린 것이라 곧 갈라진다.
@@ -429,6 +434,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `carrier` | LEGACY. 갑판 대기 → Shift 발진 → 상승 → 레이더 · 락 · SARH/IR 발사 · 기총 · 플레어/채프 · 선회 (3000 프레임) |
 | `carrier-fx0` | 위와 같은 조작, 비행 효과 OFF. `fxcheck` 용 |
 | `carrier-ext` | 위와 같은 조작, 외부 시점. `fxcheck` 용 |
+| `gun-empty` | 발진 후 기총 10초 연사 → 탄창이 0 이 되는지 |
 | `carrier-s2` | 시드 2. 시드가 실제로 판정을 바꾸는지 확인용 |
 | `idle` | LEGACY 아무 조작 없이 30초 |
 | `airbase` | AIRBASE 29 이륙 활주 · 상승 · 기어 |
@@ -467,6 +473,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V14.4.0 | **그래픽 개편** — 색 파이프라인 · 환경맵 · 그림자 · 바다 · 폭발 |
 | (11-17) | 저장소 · 하네스 복원 (3-0 · 12절). 게임 코드 변경 없음 |
 | V14.4.1 | **판정 난수 분리** — `rnd` 를 독립 함수로. 비행 효과 · 폭발 퍼프 · 실속 카메라 흔들림을 `vrnd` 로. 비행 효과 설정과 콕핏/외부 시점이 더 이상 게임 결과를 바꾸지 않는다 (의도된 변경: 난수열이 달라져 같은 상황에서 적 행동이 V14.4.0 과 다르다) |
+| V14.4.2 | **기총 150발** (모든 모드) — `P.mig.gun`. 착함 보급 150 · 웨이브 보급 +50 · TR-2 상대도 150 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

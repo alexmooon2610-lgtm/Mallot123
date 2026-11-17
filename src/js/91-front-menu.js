@@ -305,8 +305,8 @@
       )
       .join('');
     $id('mf-loadout-info').textContent = ko()
-      ? '기총 500 · 플레어 30 · 채프 30  |  함내 재고: 제한 없음 (1999)'
-      : 'GUN 500 · FLARE 30 · CHAFF 30  |  SHIP STOCK: UNLIMITED (1999)';
+      ? '기총 150 · 플레어 30 · 채프 30  |  함내 재고: 제한 없음 (1999)'
+      : 'GUN 150 · FLARE 30 · CHAFF 30  |  SHIP STOCK: UNLIMITED (1999)';
   }
   function setStage(next) {
     stage = next;

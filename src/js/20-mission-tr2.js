@@ -60,7 +60,7 @@ function tr2Merge() {
   p.speed = 235;
   p.hp = 1;
   p.fl = p.ch = 30;
-  p.gun = 500;
+  p.gun = P.mig.gun;
   p.am.SARH = loadout().SARH;
   p.am.IR = loadout().IR;
   rd.lock = null;
@@ -78,7 +78,7 @@ function tr2Merge() {
   x.hp = 1;
   x.ab = 0;
   x.am = { SARH: 0, IR: 2 };
-  x.gun = 300;
+  x.gun = P.mig.gun; // 상대도 MiG-29
   x.fl = x.ch = 12;
   x.rd = { phase: 'SEARCH', t: 0, lost: 0, relock: 0 };
   x.ai.fd = 0;

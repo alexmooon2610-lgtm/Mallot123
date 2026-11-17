@@ -51,6 +51,8 @@ SCENARIOS = {
     'carrier-fx0': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1, {'stFx': '0'}),
     # 외부 시점(V)으로 같은 조작. 시점도 연출이라 'carrier' 와 판정이 같아야 한다
     'carrier-ext': ('CARRIER', 'LEGACY', 3000, keys(tap('KeyV', 5), *CARRIER_LAUNCH, *COMBAT), 1),
+    # 기총 연사로 탄창 비우기 (V14.4.2: 150발 = 20발/초 × 7.5초 → 약 450프레임)
+    'gun-empty': ('CARRIER', 'LEGACY', 1800, keys(*CARRIER_LAUNCH, hold('KeyG', 1000, 1600), tap('KeyG', 1700)), 1),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),
