@@ -80,6 +80,13 @@ es.forEach((e, i) => { e.pos.set(20000 + (i ? 400 : -400), 3000, 20000); e.q.ide
 ACFT.su33.locks = 2;
 """
 
+COBRA_SET = """
+setSt('fly'); ops.safe = 0;
+es.forEach(e => scene.remove(e.mesh)); es = []; wt = 1e9;
+p.pos.set(20000, 1000, 20000); p.q.identity(); p.vd.set(0, 0, -1);
+p.speed = 480 / 3.6; p.thr = 0.8; p.ab = 0; p.gearDown = false; p.flap = 0; p.mesh.userData.setGear?.(false);
+"""
+
 WAVECLEAR = """
 setSt('fly'); ops.safe = 0;
 p.pos.set(0, 3000, -20000); p.q.setFromEuler(new T.Euler(0, 0, 0)); p.vd.set(0, 0, -1);
@@ -127,6 +134,8 @@ SCENARIOS = {
     # 무장 구성 (alpha.3): MiG 를 R-27R 2 · R-73 6 으로 골라 둔 상태 → 출격 무장 · 착함 보급이 그 구성대로인지
     'loadout-trap': ('CARRIER', 'LEGACY', 900, {}, 1, {'stLoad': '{"mig":2}'},
                      TRAP.format(z=120, spd=140, sink=0.04) + 'p.am.SARH = 0; p.am.IR = 1;'),
+    # 코브라 (alpha.3, Su-33 카나드): 1000 m · 480 km/h 수평 → Q → 약 2.4초 뒤 실속속도 1.05배 언저리로 빠져나오는지
+    'su33-cobra': ('CARRIER', 'LEGACY', 400, keys(tap('KeyQ', 10)), 1, {'stAc': 'su33'}, COBRA_SET),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),

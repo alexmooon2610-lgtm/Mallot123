@@ -255,6 +255,9 @@ window.addEventListener('keydown', ev => {
     case 'x':
       if (!flare(p)) rej('플레어 없음');
       break;
+    case 'q':
+      cobraStart(); // 카나드 기체(Su-33) 코브라 기동 (34-flight)
+      break;
     case 'c':
       if (!chaff(p)) rej('채프 없음'); // chaff() 가 이미 효과음을 낸다 (중복 재생 제거)
       break;
@@ -366,6 +369,7 @@ function showOv() {
     ['1 / 2', 'SARH / IR 선택'],
     ['Space', '발사'],
     ['G', '기총'],
+    ['Q', '코브라 기동 (Su-33 전용 · 수평 비행 · 실속속도 1.3배~600 km/h)'],
     ['M', 'HMD 켜기/끄기'],
     ['I J K L', 'HMD 시커 조준선 이동'],
     ['U', 'HMD 정면 복귀'],

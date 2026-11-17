@@ -115,6 +115,8 @@ function init() {
   CVO.th = Math.PI / 2;
   // 출격 기체: 설정에서 고른 것 (캠페인은 이야기 설정상 MiG-29 고정)
   playerAc = curM().campaign ? 'mig' : pickedAc();
+  cobra = null;
+  cobraCd = 0;
   p = mkAc('P');
   p.pos.set(0, 3000, 0);
   p.speed = 210;

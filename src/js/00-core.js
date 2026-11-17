@@ -51,7 +51,8 @@ const P = {
   //   최고속도 해면 1,300~1,400 km/h (MiG 1,500) → maxV 245 (AB 해면 최고속 약 1,090 km/h, MiG 의 약 0.92 배)
   //   G 한계 +9 (MiG 와 같다). 날개 62 m² · 카나드 → 실속 82 (MiG 85). 무거워 선회 기준속도 140 · 롤 2.6 (게임 판단)
   //   기총은 MiG 와 같은 GSh-30-1 150발이다.
-  su33: { maxV: 245, stall: 82, thr: 7.7, ab: 4.1, pit: 1.5, rol: 2.6, yaw: 0.45, g: 9, vc: 140, gun: 150, rof: 30, tracer: 4, gunDmg: 0.1 },
+  //   vc 141: 익면하중 연료 가득 441 kg/m² (29,940 / 67.84) vs MiG 401 → 135 × √(441/401). 연료를 쓰면 vc/√무게배율 로 내려간다 (34-flight)
+  su33: { maxV: 245, stall: 82, thr: 7.7, ab: 4.1, pit: 1.5, rol: 2.6, yaw: 0.45, g: 9, vc: 141, gun: 150, rof: 30, tracer: 4, gunDmg: 0.1 },
   MUZZLE_V: 1000, // 탄의 포구 속도 (월드 단위/초). V14.6.0 부터 쏜 기체의 속도가 더해진다
   flapLim: [999, 210, 160],
   // range 는 미사일이 실제로 도달할 수 있는 거리에 맞춘 값 (예전 10000 / 6500 은 도달 불가 거리까지 발사 허용)
@@ -66,6 +67,9 @@ const P = {
 //        2 이상이면 다중 락 코드(35-sensors)가 켜진다. 나중에 N001VE(2개 교전) 같은 기체를 넣을 때 쓴다.
 // mass: 연료를 쓰면 가벼워져 가속이 좋아지는가 · dryKg: 연료 뺀 무게(무장 · 조종사 포함) · fuelKg: 내부 연료 가득
 // fuel0: 항모 발진 · 보급 때 싣는 연료 % (비행장은 언제나 100)
+// canard: 카나드 — 높은 받음각에서 양력 · 기수 조종력을 더한다 (실기 Su-33 의 앞날개). 켜면
+//   받음각 한계 aoaL 0.25 → 0.30 rad (양력이 계속 느는 범위) · aoaM 0.6 → 0.7 rad, 저속 조종력 하한 0.2 → 0.35,
+//   Q 키 코브라 기동 (34-flight cobraStart). MiG 는 꺼져 있어 예전 값 그대로.
 //   Su-33: 빈 무게 18,400 + 무장 · 조종사 ≈ 20,540 kg, 연료 9,400 kg → 가득 29,940 kg (P.su33 추력은 이 무게 기준).
 //          연료 70% 면 추력/무게 ×1.10, 40% 면 ×1.23. 항모 스키점프 발진은 무게 제한이 있어 70% 로 뜬다 (게임 판단 — 그래도 체공은 MiG 의 약 1.2배).
 //   MiG-29 는 아직 고정 무게 (mass: false) — 켜면 MiG 기준선이 바뀐다.
@@ -80,12 +84,12 @@ const ACFT = {
   mig: {
     name: 'MiG-29 9.12', short: 'MiG-29', load: { SARH: 4, IR: 4 }, cm: 30,
     radar: 1, hold: 1, trk: 1.5, acq: 1.2, locks: 1, burn: 1, hb: [1, 1, 1],
-    mass: false, dryKg: 11740, fuelKg: 3500, fuel0: 100, msl: 8, sarhMin: 2, sarhMax: 6,
+    mass: false, dryKg: 11740, fuelKg: 3500, fuel0: 100, msl: 8, sarhMin: 2, sarhMax: 6, canard: false,
   },
   su33: {
     name: 'Su-33', short: 'Su-33', load: { SARH: 6, IR: 4 }, cm: 48,
     radar: 1.4, hold: 1.3, trk: 1.5, acq: 1.2, locks: 1, burn: 0.57, hb: [1.29, 1.25, 1.22],
-    mass: true, dryKg: 20540, fuelKg: 9400, fuel0: 70, msl: 10, sarhMin: 2, sarhMax: 8,
+    mass: true, dryKg: 20540, fuelKg: 9400, fuel0: 70, msl: 10, sarhMin: 2, sarhMax: 8, canard: true,
   },
 };
 let playerAc = 'mig'; // 이번 출격 기체 (init 에서 정한다)
