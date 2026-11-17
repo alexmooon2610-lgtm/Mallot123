@@ -25,7 +25,9 @@ function cobraStart() {
   const kmh = p.speed * 3.6,
     up = V(0, 1, 0).applyQuaternion(p.q),
     bank = Math.acos(clamp(up.y, -1, 1)) / D;
-  if ((typeof ops !== 'undefined' && ops.st !== 'fly') || p.gearDown) return rej('코브라: 비행 중 · 기어 올린 상태에서만');
+  // 비행 중인지: 항모 모드는 ops.st, 비행장 모드는 airbaseOps.phase (버그 수정 — 예전엔 비행장에서 늘 거부됐다)
+  const flying = isAirbase() ? airbaseOps.phase === 'airborne' : ops.st === 'fly';
+  if (!flying || p.gearDown) return rej('코브라: 비행 중 · 기어 올린 상태에서만');
   const lo = Math.max(300, Math.round(stallSpeed(p) * 3.6 * 1.3));
   if (kmh < lo || kmh > 600) return rej(`코브라: 속도 ${lo}~600 km/h 에서만 (지금 ${Math.round(kmh)})`);
   // 수평 판정 (11-17 완화): 뱅크 45° · 경로각 ±30° 안 (예전 30° · ±20°)

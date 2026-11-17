@@ -133,8 +133,9 @@ const loadFor = ac => {
 };
 // 이번 출격 기체의 무장 (출격 · 항모 보급 때 이만큼 싣는다)
 const loadout = () => loadFor(playerAc);
-// 출격 · 보급 때 싣는 연료 % — 비행장 활주로는 무게 제한이 없다
-const launchFuel = () => (activeMode === 'AIRBASE' ? 100 : ACFT[playerAc].fuel0);
+// 출격 · 보급 때 싣는 연료 % — 무게 제한은 항모 스키점프 발진에만 있다 (활주로 · 공중 출발 · 멀티는 100%).
+// 버그 수정(alpha.3): 예전엔 비행장만 뺐더니 멀티 대전(공중 출발)에서도 Su-33 이 70% 로 떠서 더 가벼웠다.
+const launchFuel = () => (activeMode !== 'AIRBASE' && curM().start === 'deck' ? ACFT[playerAc].fuel0 : 100);
 const pickedAc = () => {
   try {
     return localStorage.getItem('stAc') === 'su33' ? 'su33' : 'mig';

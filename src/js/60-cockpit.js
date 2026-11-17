@@ -1133,7 +1133,11 @@ function ckUpdate(dt = 0) {
   setNeedle(NDL.var, DIAL.var(p.vd.y * p.speed));
   setNeedle(NDL.ita1, DIAL.ita(CKS.rpm1));
   setNeedle(NDL.ita2, DIAL.ita(CKS.rpm2));
-  setNeedle(NDL.fuel, DIAL.fuel((p.fuel / 100) * 3800));
+  // 연료계 눈금은 0~4,000 kg (MiG 계기). 내부 연료가 그보다 많은 기체(Su-33 9,400 kg)는 가득일 때 눈금 끝이 되게 줄여 그린다
+  {
+    const A = ACFT[playerAc];
+    setNeedle(NDL.fuel, DIAL.fuel((p.fuel / 100) * Math.min(A.fuelKg, 4000)));
+  }
   setNeedle(NDL.egt1, DIAL.egt(CKS.egt1));
   setNeedle(NDL.egt2, DIAL.egt(CKS.egt2));
   const now = new Date(),
