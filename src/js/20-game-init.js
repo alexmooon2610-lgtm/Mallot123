@@ -125,10 +125,11 @@ function init() {
   p.mesh = playerAc === 'su33' ? createSu33({ gearDown: true }) : createMiG29({ gearDown: true });
   p.mesh.scale.setScalar(3);
   scene.add(p.mesh);
-  if (curM().loadout) {
-    // 캠페인 출격 전 무장 구성 (자유 모드는 mkAc 기본값 4/4 그대로)
-    p.am.SARH = loadout().SARH;
-    p.am.IR = loadout().IR;
+  {
+    // 출격 전 무장 구성 — 설정 · 브리핑 · 멀티 로비에서 고른 레이더/열추적 비율 (모든 모드)
+    const L = loadout();
+    p.am.SARH = L.SARH;
+    p.am.IR = L.IR;
   }
   CV.visible = !isAirbase();
   AIRBASE.visible = isAirbase();

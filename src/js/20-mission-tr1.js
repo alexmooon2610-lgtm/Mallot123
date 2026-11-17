@@ -3,15 +3,8 @@
 //  - 1999-12-18, 항모 「자랴」 훈련 공역. 무장을 쏘지 않는 표적 드론 5기를 단계별로 격추한다.
 //    1단계 레이더 유도(R-27R · SARH) 2기 → 2단계 열추적(R-73 · IR) 2기 → 3단계 기총 1기 → 귀함 · 착함
 //  - 드론은 적(E) 진영 기체로 es 에 들어가지만 공격·회피·방공 판정에서 빠진다 (e.drone).
-//  - 출격 전 무장 구성(LOADOUTS)은 캠페인 임무에만 적용된다. 자유 모드는 늘 표준(4/4).
+//  - 출격 전 무장 구성은 00-core 의 loadout() (V15.0.0-alpha.3 부터 모든 모드 공통 · 레이더/열추적 비율 선택).
 // =====================================================================
-const LOADOUTS = {
-  STD: { SARH: 4, IR: 4, ko: '표준', en: 'STANDARD', note: { ko: 'R-27R ×4 · R-73 ×4', en: 'R-27R ×4 · R-73 ×4' } },
-  BVR: { SARH: 6, IR: 2, ko: '요격', en: 'INTERCEPT', note: { ko: 'R-27R ×6 · R-73 ×2', en: 'R-27R ×6 · R-73 ×2' } },
-  WVR: { SARH: 2, IR: 6, ko: '근접', en: 'DOGFIGHT', note: { ko: 'R-27R ×2 · R-73 ×6', en: 'R-27R ×2 · R-73 ×6' } },
-};
-let loadoutPick = 'STD';
-const loadout = () => (curM().campaign && LOADOUTS[loadoutPick]) || LOADOUTS.STD;
 
 // ---------- 표적 드론: La-17M 실측 GLB (10-model-la17-glb). 못 읽었으면 아래 단순 모델을 쓴다.
 function droneMesh() {

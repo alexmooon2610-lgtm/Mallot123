@@ -80,12 +80,12 @@ const ACFT = {
   mig: {
     name: 'MiG-29 9.12', short: 'MiG-29', load: { SARH: 4, IR: 4 }, cm: 30,
     radar: 1, hold: 1, trk: 1.5, acq: 1.2, locks: 1, burn: 1, hb: [1, 1, 1],
-    mass: false, dryKg: 11740, fuelKg: 3500, fuel0: 100,
+    mass: false, dryKg: 11740, fuelKg: 3500, fuel0: 100, msl: 8, sarhMin: 2, sarhMax: 6,
   },
   su33: {
     name: 'Su-33', short: 'Su-33', load: { SARH: 6, IR: 4 }, cm: 48,
     radar: 1.4, hold: 1.3, trk: 1.5, acq: 1.2, locks: 1, burn: 0.57, hb: [1.29, 1.25, 1.22],
-    mass: true, dryKg: 20540, fuelKg: 9400, fuel0: 70,
+    mass: true, dryKg: 20540, fuelKg: 9400, fuel0: 70, msl: 10, sarhMin: 2, sarhMax: 8,
   },
 };
 let playerAc = 'mig'; // 이번 출격 기체 (init 에서 정한다)
@@ -94,6 +94,31 @@ const acMassK = a => {
   const A = ACFT[playerAc];
   return a === p && A.mass ? (A.dryKg + A.fuelKg) / (A.dryKg + (A.fuelKg * a.fuel) / 100) : 1;
 };
+// ---------- 무장 구성 (V15.0.0-alpha.3): 미사일 칸 수(msl)는 기체마다 고정, 그 안에서 레이더(R-27R) · 열추적(R-73) 비율을 고른다.
+// 칸 수 · 범위는 게임 판단 (MiG 8 · Su-33 10, 종류마다 최소 2발 — TR-1 처럼 두 종류를 다 쓰는 임무가 있어서).
+// 고른 값은 기체마다 localStorage 'stLoad' = { mig: R-27R 수, su33: R-27R 수 }. 싱글 · 멀티 · 캠페인 모두 같은 값을 쓴다.
+const loadSarh = ac => {
+  const A = ACFT[ac];
+  let n = A.load.SARH;
+  try {
+    const v = JSON.parse(localStorage.getItem('stLoad') || '{}')[ac];
+    if (Number.isInteger(v)) n = v;
+  } catch (e) {}
+  return Math.min(A.sarhMax, Math.max(A.sarhMin, n));
+};
+const setLoadSarh = (ac, n) => {
+  try {
+    const o = JSON.parse(localStorage.getItem('stLoad') || '{}');
+    o[ac] = n;
+    localStorage.setItem('stLoad', JSON.stringify(o));
+  } catch (e) {}
+};
+const loadFor = ac => {
+  const s = loadSarh(ac);
+  return { SARH: s, IR: ACFT[ac].msl - s };
+};
+// 이번 출격 기체의 무장 (출격 · 항모 보급 때 이만큼 싣는다)
+const loadout = () => loadFor(playerAc);
 // 출격 · 보급 때 싣는 연료 % — 비행장 활주로는 무게 제한이 없다
 const launchFuel = () => (activeMode === 'AIRBASE' ? 100 : ACFT[playerAc].fuel0);
 const pickedAc = () => {

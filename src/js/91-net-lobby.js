@@ -30,18 +30,22 @@
           <p class="mf-net-sub">방장이 출격을 누르면 시작한다.</p>
         </section>
       </div>
+      <div class="mf-net-load"><h4>탑재 무장</h4><div id="mf-net-loadpick"></div></div>
       <div class="mf-net-roster" id="mf-net-roster"></div>
       <div class="mf-net-status" id="mf-net-status">대기</div>
       <div class="mf-go-row"><button class="mf-btn" id="mf-net-leave">방 나가기</button>
         <button class="mf-btn mf-go" id="mf-net-go" disabled>출격 <span aria-hidden="true">➜</span></button></div>
     </div>`;
   front.appendChild(box);
+  // 무장 고르기 — 기체는 설정 화면 05 / 기체 에서 고른 것
+  const loadPick = mountLoadPicker($id('mf-net-loadpick'), { ac: () => pickedAc(), lang: () => 'ko' });
   const status = (s, bad) => {
     $id('mf-net-status').textContent = s;
     $id('mf-net-status').classList.toggle('bad', !!bad);
   };
   function paint() {
     const st = NET.st;
+    loadPick.paint();
     $id('mf-net-code').textContent = st.role === 'host' && st.code ? st.code : '— — — — — —';
     $id('mf-net-codehint').textContent =
       st.role === 'host' && st.code

@@ -202,7 +202,7 @@ function opsUpdate(dt) {
       ops.hose = 0;
       p.fuel = launchFuel(); // Su-33 은 스키점프 무게 제한으로 70%
       p.fuelWarn = 0;
-      const L = curM().campaign ? loadout() : ACFT[playerAc].load; // 자유 모드는 기체 기본 무장
+      const L = loadout(); // 출격 때 고른 무장 구성까지
       p.am.SARH = Math.max(p.am.SARH, L.SARH);
       p.am.IR = Math.max(p.am.IR, L.IR);
       msg(`급유 완료 · 연료 100% · 미사일 장착 (SARH ${L.SARH} / IR ${L.IR})`);

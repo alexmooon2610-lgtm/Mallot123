@@ -78,30 +78,8 @@
 }
 
 /* ============ 출격 전 무장 구성 (캠페인 항모 임무) ============ */
-.mf-loadout-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.mf-loadout-pick {
   margin-top: 6px;
-}
-.mf-loadout-row .mf-btn.mf-loadout-b {
-  flex: 1 1 0;
-  min-width: 110px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 8px 10px;
-  text-align: left;
-}
-.mf-loadout-b b {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-}
-.mf-loadout-b span {
-  font-size: 10px;
-  opacity: 0.78;
-  letter-spacing: 0.02em;
 }
 .mf-loadout-note {
   margin: 8px 0 0;
@@ -597,4 +575,96 @@
   #st-op .op-stage::after {
     animation: none !important;
   }
+}
+/* ============ 무장 고르기 (V15.0.0-alpha.3 · 91-loadout-picker) — 레이더 유도 파랑 · 열추적 빨강 ============ */
+.mf-lp-head {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+  margin: 4px 0 6px;
+}
+.mf-lp-wing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 0 10px;
+}
+.mf-lp-pip {
+  width: 9px;
+  height: 26px;
+  border-radius: 5px 5px 2px 2px;
+  border: 1px solid currentColor;
+}
+.mf-lp-pip.sarh {
+  color: #6fc3ff;
+  background: rgba(111, 195, 255, 0.35);
+}
+.mf-lp-pip.ir {
+  color: #ff6b5e;
+  background: rgba(255, 107, 94, 0.35);
+}
+.mf-lp-body {
+  width: 34px;
+  height: 8px;
+  margin: 0 6px;
+  border-radius: 4px;
+  background: rgba(200, 255, 220, 0.35);
+}
+.mf-lp-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.mf-lp-row .mf-btn {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.mf-lp-count {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(160, 255, 200, 0.25);
+  padding: 4px 6px;
+}
+.mf-lp-count span {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.mf-lp-count span.sarh {
+  color: #6fc3ff;
+}
+.mf-lp-count span.ir {
+  color: #ff6b5e;
+}
+.mf-lp-count small {
+  font-size: 10px;
+  opacity: 0.75;
+}
+.mf-lp-presets {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.mf-lp-presets .mf-btn {
+  flex: 1 1 0;
+  padding: 5px 6px;
+  font-size: 10px;
+}
+.mf-net-load {
+  margin: 12px 0 4px;
+}
+.mf-net-load h4 {
+  margin: 0 0 4px;
+  color: #80caff;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+.mf-lp-presets .mf-btn.selected {
+  background: linear-gradient(#f5d78a, #d7a64a);
+  color: #1a1205;
 }

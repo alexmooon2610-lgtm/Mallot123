@@ -51,6 +51,7 @@
     "80-hud.js",
     "81-rear-mirror.js",
     "90-main-loop.js",
+    "91-loadout-picker.js",
     "91-front-menu.js",
     "91-net-lobby.js",
     "91-aircraft-select.js",

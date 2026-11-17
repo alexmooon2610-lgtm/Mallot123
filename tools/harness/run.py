@@ -124,6 +124,9 @@ SCENARIOS = {
     'multilock': ('CARRIER', 'LEGACY', 1500, keys(tap('KeyT', 10), tap('KeyY', 150), tap('Tab', 170), tap('KeyY', 260),
                                                        tap('Space', 290), tap('Tab', 340), tap('Space', 380)),
                        1, {'stAc': 'su33'}, MULTILOCK),
+    # 무장 구성 (alpha.3): MiG 를 R-27R 2 · R-73 6 으로 골라 둔 상태 → 출격 무장 · 착함 보급이 그 구성대로인지
+    'loadout-trap': ('CARRIER', 'LEGACY', 900, {}, 1, {'stLoad': '{"mig":2}'},
+                     TRAP.format(z=120, spd=140, sink=0.04) + 'p.am.SARH = 0; p.am.IR = 1;'),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),

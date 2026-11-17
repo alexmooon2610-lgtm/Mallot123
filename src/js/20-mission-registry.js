@@ -283,6 +283,7 @@ const MISSIONS = {
     weather: 'CLEAR',
     requires: null,
     start: 'deck',
+    loadout: true, // 브리핑에서 무장 구성을 고른다
     sub: { ko: '항모 발진·착함 + 웨이브 전투', en: 'Carrier launch/recovery + wave combat' },
     intro: '',
     brief: {

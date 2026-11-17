@@ -292,21 +292,21 @@
         ? '출격 전 브리핑을 확인하십시오'
         : 'REVIEW THE BRIEFING BEFORE FLIGHT';
   }
-  // 출격 전 무장 구성 (캠페인 항모 임무). 1999년에는 함내 재고 제한이 없다 — 워프 뒤 보급 시스템이 붙는다.
+  // 출격 전 무장 구성 (LEGACY · 캠페인 항모 임무). 1999년에는 함내 재고 제한이 없다 — 워프 뒤 보급 시스템이 붙는다.
+  let briefLoad = null,
+    briefAc = 'mig';
   function renderLoadout(M) {
     const box = $id('mf-brief-load');
     box.hidden = !M.loadout;
     if (!M.loadout) return;
     $id('mf-brief-h5').textContent = ko() ? '탑재 무장' : 'LOADOUT';
-    $id('mf-loadout-list').innerHTML = Object.entries(LOADOUTS)
-      .map(
-        ([k, L]) =>
-          `<button class="mf-btn mf-loadout-b${k === loadoutPick ? ' selected' : ''}" data-load="${k}"><b>${L[lang]}</b><span>${L.note[lang]}</span></button>`
-      )
-      .join('');
+    briefAc = M.campaign ? 'mig' : pickedAc(); // 캠페인은 MiG-29 고정
+    (briefLoad = briefLoad || mountLoadPicker($id('mf-loadout-list'), { ac: () => briefAc, lang: () => lang })).paint();
+    const A = ACFT[briefAc],
+      gun = P[briefAc].gun;
     $id('mf-loadout-info').textContent = ko()
-      ? '기총 150 · 플레어 30 · 채프 30  |  함내 재고: 제한 없음 (1999)'
-      : 'GUN 150 · FLARE 30 · CHAFF 30  |  SHIP STOCK: UNLIMITED (1999)';
+      ? `기총 ${gun} · 플레어 ${A.cm} · 채프 ${A.cm}  |  함내 재고: 제한 없음 (1999)`
+      : `GUN ${gun} · FLARE ${A.cm} · CHAFF ${A.cm}  |  SHIP STOCK: UNLIMITED (1999)`;
   }
   function setStage(next) {
     stage = next;
@@ -508,12 +508,6 @@
     setStage('brief');
   });
   $id('mf-brief-back').addEventListener('click', () => setStage('settings'));
-  $id('mf-loadout-list').addEventListener('click', e => {
-    const b = e.target.closest('[data-load]');
-    if (!b || !LOADOUTS[b.dataset.load]) return;
-    loadoutPick = b.dataset.load;
-    renderLoadout(MISSIONS[activeMission]);
-  });
   $id('mf-brief-launch').addEventListener('click', () => {
     hideFront();
     start();
