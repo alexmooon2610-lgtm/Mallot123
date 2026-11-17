@@ -161,7 +161,7 @@ function loop(n) {
       cam.fov = 78; // 전체 화면 HUD: 콕핏 시야를 넓힌다
       cam.position.copy(p.pos);
       cam.quaternion.copy(p.q);
-      if (p.stl || p.ovs) cam.position.add(V(rnd() - 0.5, rnd() - 0.5, 0).multiplyScalar(0.4));
+      if (p.stl || p.ovs) cam.position.add(V(vrnd() - 0.5, vrnd() - 0.5, 0).multiplyScalar(0.4)); // 연출 난수 (시점 전환이 판정을 바꾸면 안 된다)
     } else {
       const f = p.fwd(),
         aircraftUp = V(0, 1, 0).applyQuaternion(p.q);

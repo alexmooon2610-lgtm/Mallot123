@@ -2,11 +2,14 @@
 // 판정에 관여하는 상태만 담는다. 연출 상태(FXS 화면 효과 · CVW 항모 무장 연출 · 입자 fx)는 뺀다.
 window.__probe = (() => {
   const vec = v => (v.w !== undefined ? [v.x, v.y, v.z, v.w] : [v.x, v.y, v.z]);
+  // 연출 전용 필드 (판정에 안 쓰임). 연출 난수 vrnd 로 채워지므로 비행 효과 설정에 따라 달라도 된다.
+  const VIS = new Set(['viz']);
   // 객체의 숫자 · 문자 · 참거짓 · 벡터 · 쿼터니언 필드만 1단계로 펼친다 (메시 같은 three 객체는 건너뜀)
   const flat = (o, d = 0) => {
     if (!o || typeof o !== 'object') return o;
     const r = {};
     for (const k of Object.keys(o).sort()) {
+      if (VIS.has(k)) continue;
       const v = o[k];
       const ty = typeof v;
       if (ty === 'number' || ty === 'string' || ty === 'boolean') r[k] = v;

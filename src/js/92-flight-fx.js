@@ -111,7 +111,7 @@ function fxWind(k) {
     const n = AC.sampleRate * 2,
       b = AC.createBuffer(1, n, AC.sampleRate),
       d = b.getChannelData(0);
-    for (let i = 0; i < n; i++) d[i] = rnd() * 2 - 1;
+    for (let i = 0; i < n; i++) d[i] = vrnd() * 2 - 1;
     const s = AC.createBufferSource(),
       f = AC.createBiquadFilter(),
       g = AC.createGain();
@@ -185,9 +185,9 @@ function flightFx() {
   FXS.imp *= Math.exp(-5 * dt);
   FXS.fl *= Math.exp(-3 * dt);
   const a = (FXS.sh + FXS.imp) * (Q === 1 ? 0.6 : 1) * (ext ? 0.5 : 1);
-  cam.position.add(V(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.7 * a));
-  cam.rotateZ((rnd() - 0.5) * 0.012 * a);
-  cam.rotateX((rnd() - 0.5) * 0.008 * a);
+  cam.position.add(V(vrnd() - 0.5, vrnd() - 0.5, vrnd() - 0.5).multiplyScalar(0.7 * a));
+  cam.rotateZ((vrnd() - 0.5) * 0.012 * a);
+  cam.rotateX((vrnd() - 0.5) * 0.008 * a);
   FXS.fov = sm(FXS.fov, (p.ab ? 5 : 0) + v * 5 + Math.max(0, g0 - 4) * 0.6, 3);
   cam.fov += FXS.fov;
   cam.updateProjectionMatrix();
@@ -226,13 +226,13 @@ function flightFx() {
       R0 = Math.hypot(w, h) / 2;
     fxg.lineCap = 'round';
     for (let i = 0; i < n; i++) {
-      const an = rnd() * 6.283,
-        r = R0 * (0.3 + 0.7 * rnd()),
+      const an = vrnd() * 6.283,
+        r = R0 * (0.3 + 0.7 * vrnd()),
         l = r * (0.05 + 0.22 * k),
         c = Math.cos(an),
         s = Math.sin(an);
-      fxg.strokeStyle = `rgba(225,240,255,${(0.04 + 0.2 * k * rnd()).toFixed(3)})`;
-      fxg.lineWidth = 1 + rnd() * 1.6;
+      fxg.strokeStyle = `rgba(225,240,255,${(0.04 + 0.2 * k * vrnd()).toFixed(3)})`;
+      fxg.lineWidth = 1 + vrnd() * 1.6;
       fxg.beginPath();
       fxg.moveTo(w / 2 + c * r, h / 2 + s * r);
       fxg.lineTo(w / 2 + c * (r + l), h / 2 + s * (r + l));
@@ -274,7 +274,7 @@ function flightFx() {
     if (FXS.c <= 0 && p.pos.y < 90 && p.speed > 80 && !isAirbase()) {
       FXS.c = 0.05;
       const sp = clamp(1 - p.pos.y / 90, 0.2, 1);
-      puff(V(p.pos.x + (rnd() - 0.5) * 30, 1, p.pos.z + (rnd() - 0.5) * 30), 0xcfe8ff, 6 + 16 * sp, 1.3, 1.6);
+      puff(V(p.pos.x + (vrnd() - 0.5) * 30, 1, p.pos.z + (vrnd() - 0.5) * 30), 0xcfe8ff, 6 + 16 * sp, 1.3, 1.6);
     }
   }
   fxWind(clamp(v * 0.6 + aoa * 1.2 + FXS.cl * 0.3, 0, 1.2));

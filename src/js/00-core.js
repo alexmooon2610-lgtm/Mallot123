@@ -9,7 +9,22 @@
    ===================================================================== */
 const T = THREE,
   V = (x = 0, y = 0, z = 0) => new T.Vector3(x, y, z),
-  rnd = Math.random,
+  // 판정 전용 난수 (mulberry32). 예전엔 Math.random 그 자체여서 three.js 가 객체 uuid 를 만들 때마다,
+  // 그리고 Math.random 을 쓰는 연출이 돌 때마다 판정 난수열이 밀렸다 (V14.4.1 에서 분리).
+  // 시드는 시작할 때 Math.random 에서 한 번만 받는다. 검사 하네스는 rnd.seed() 로 고정하고 rnd.state() 로 추적한다.
+  rnd = (() => {
+    let s = (Math.random() * 4294967296) >>> 0;
+    const f = () => {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let z = s;
+      z = Math.imul(z ^ (z >>> 15), z | 1);
+      z ^= z + Math.imul(z ^ (z >>> 7), z | 61);
+      return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+    };
+    f.seed = v => (s = v >>> 0);
+    f.state = () => s;
+    return f;
+  })(),
   D = Math.PI / 180,
   clamp = T.MathUtils.clamp,
   $ = i => document.getElementById(i),

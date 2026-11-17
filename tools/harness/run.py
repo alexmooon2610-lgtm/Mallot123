@@ -3,7 +3,7 @@
 
     python3 tools/harness/run.py run  <game.html> <out.json> [시나리오 ...]   # 기본: 전부
     python3 tools/harness/run.py diff <a.json> <b.json>                      # 프레임 단위 비교
-    python3 tools/harness/run.py fxcheck <out.json>                        # 비행 효과 ON/OFF 가 판정을 바꾸는지
+    python3 tools/harness/run.py fxcheck <out.json>                        # 비행 효과 · 시점이 판정을 바꾸는지
     python3 tools/harness/run.py list
 
 가짜 시계(det.js)로 프레임을 직접 돌리고, 매 프레임 판정 상태(probe.js)를 해시한다.
@@ -49,6 +49,8 @@ SCENARIOS = {
     'carrier': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1),
     # 비행 효과 OFF. 연출 설정이라 'carrier' 와 판정이 같아야 한다 (compare-fx 로 확인)
     'carrier-fx0': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1, {'stFx': '0'}),
+    # 외부 시점(V)으로 같은 조작. 시점도 연출이라 'carrier' 와 판정이 같아야 한다
+    'carrier-ext': ('CARRIER', 'LEGACY', 3000, keys(tap('KeyV', 5), *CARRIER_LAUNCH, *COMBAT), 1),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),
@@ -95,7 +97,12 @@ async def run_one(browser, html, name, spec, shots_dir):
     # 3D 렌더는 판정에 관여하지 않으므로 끈다 (SwiftShader 에서 한 프레임 0.4초 → 수 ms). 스크린숏 때만 되살린다.
     await page.evaluate('() => { __det.render = R.render.bind(R); R.render = () => {}; }')
     await page.evaluate('() => { const f = document.getElementById("mallot-front"); if (f) f.style.display = "none"; }')
-    await page.evaluate(f'() => __det.reseed({seed})')
+    # 판정 난수 시드 고정. V14.4.0 까지는 rnd 가 Math.random 이라 det.js 의 시드가 곧 판정 시드였고,
+    # V14.4.1 부터는 rnd 가 독립 함수라 rnd.seed() 로 따로 고정한다. 해시 옆에는 rnd 상태(=당긴 횟수)를 붙인다.
+    await page.evaluate(f'''() => {{
+        __det.reseed({seed});
+        if (rnd.seed) {{ rnd.seed({seed}); __det.rndState = rnd.state; }}
+    }}''')
     # 출격은 첫 프레임 안에서 한다 (init() 이 판정 난수를 당기므로 프레임 밖에서 부르면 안 된다)
     pre = f"activeMode = {json.dumps(env)}; activeMission = {json.dumps(mission)} || defaultMission(activeMode); start();"
     hashes = []
@@ -104,7 +111,7 @@ async def run_one(browser, html, name, spec, shots_dir):
     for i in range(0, frames, CH):
         n = min(CH, frames - i)
         hashes += await page.evaluate(
-            "([n, inp, pre]) => __det.step(n, inp, () => __probe.hash() + '/' + __det.calls, pre)",
+            "([n, inp, pre]) => __det.step(n, inp, () => __probe.hash() + '/' + (rnd.state ? rnd.state().toString(16) : __det.calls), pre)",
             [n, js_inputs, pre if i == 0 else None])
     brief = await page.evaluate('() => __probe.brief()')
     state = await page.evaluate('() => __probe.state()')
@@ -173,15 +180,25 @@ def diff(a_path, b_path):
     return 0 if same else 1
 
 
+# 연출 설정만 다른 짝. 판정이 같아야 한다.
+VIS_PAIRS = [('carrier', 'carrier-fx0', '비행 효과 ON/OFF'), ('carrier', 'carrier-ext', '콕핏/외부 시점')]
+
+
 def fxcheck(path):
     S = json.load(open(path))['scenarios']
-    a, b = S['carrier']['hashes'], S['carrier-fx0']['hashes']
-    first = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), None)
-    if first is None:
-        print('비행 효과 ON/OFF: 판정 동일')
-        return 0
-    print(f'비행 효과 ON/OFF: 프레임 {first} 부터 판정이 다름 ({a[first]} vs {b[first]}) — 연출 코드가 rnd() 를 당기고 있다')
-    return 1
+    bad = 0
+    for x, y, label in VIS_PAIRS:
+        if x not in S or y not in S:
+            print(f'{label}: 시나리오 없음 ({x}, {y})')
+            continue
+        a, b = S[x]['hashes'], S[y]['hashes']
+        first = next((i for i, (u, v) in enumerate(zip(a, b)) if u != v), None)
+        if first is None:
+            print(f'{label}: 판정 동일')
+        else:
+            bad = 1
+            print(f'{label}: 프레임 {first} 부터 판정이 다름 ({a[first]} vs {b[first]}) — 연출 코드가 rnd() 를 당기고 있다')
+    return bad
 
 
 if __name__ == '__main__':

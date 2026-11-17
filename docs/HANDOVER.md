@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-17 · 버전 **V14.4.0** · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-17 · 버전 **V14.4.1** · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -94,13 +94,13 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V14_4_0.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V14_4_1.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
 임무 파일은 반드시 `21-campaign.js` 보다 **앞**에 와야 한다. **새 파일을 만들면 manifest 에 넣어야 빌드에 들어간다.**
 에셋은 base64(120자 줄바꿈)로 `<script id="asset-...">` 블록에 넣고 런타임에 `readAsset(id)` 로 읽는다.
-버전을 올릴 때는 HTML 안의 버전 문자열(`V14.4.0`)을 전부 바꾼다 (`grep -rn "14.4.0" src`).
+버전을 올릴 때는 버전 문자열을 전부 바꾼다 (`grep -rn "14\.4\.1" src` — 템플릿 2곳 · `70-input.js` 1곳).
 
 ### 파일 크기 (중요)
 base64 때문에 원본의 1.33배가 된다. 현재 **13.8 MB**.
@@ -139,6 +139,12 @@ Actions에서 `python3 build.py` 를 돌리게 해야 한다. 저장소는 아�
 
 연출을 고치다 `rnd()` 를 한 번만 더 당겨도 그 뒤 모든 판정이 어긋난다. 회귀 검사가
 이것 때문에 매번 전부 잡아냈다.
+
+**V14.4.1 부터 `rnd` 는 독립 난수 함수다** (`00-core.js`, mulberry32). 예전엔 `rnd = Math.random` 이라
+three.js 가 객체를 만들 때(uuid)나 `Math.random` 을 쓰는 연출이 돌 때도 판정 난수열이 밀렸다.
+- 시드는 시작할 때 `Math.random` 에서 한 번 받는다. 하네스는 `rnd.seed(n)` 으로 고정하고 `rnd.state()` 로 추적한다.
+- 이제 `Math.random` 은 판정과 무관하다. 연출에서 써도 판정은 안 바뀌지만, 새 연출 코드는 `vrnd()` 를 쓴다.
+- 기체 대응수단의 플레어 · 채프 퍼짐(`32-missiles.js` `flare()` · `chaff()`)은 시커 시야 판정에 쓰이므로 `rnd()` 가 맞다.
 
 ### 4-2. 색은 sRGB로 들어간다
 V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16진수를 sRGB로 해석**하게 했다.
@@ -390,10 +396,10 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V14_4_0.html /tmp/new.json      # 시나리오 전부 (약 1분)
-python3 tools/harness/run.py diff tools/harness/baseline/V14_4_0.json /tmp/new.json  # 프레임 단위 비교
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V14_4_1.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py diff tools/harness/baseline/V14_4_1.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
-python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF 가 판정을 바꾸는지 (14절 알려진 문제)
+python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
 ```
 `diff` 는 시나리오마다 `동일` 또는 `처음 갈라진 프레임 · 그때 해시/난수 호출 수 · 마지막 상태 차이`를 보여 준다.
 연출만 바꿨는데 `다름`이 나오면 연출 코드가 판정을 건드린 것이다.
@@ -402,16 +408,18 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF 가 
 | 파일 | 하는 일 |
 |---|---|
 | `det.js` | 게임보다 먼저 주입. `Math.random` 을 시드 난수로, `performance.now` · `requestAnimationFrame` 을 가짜 시계로 바꾼다. 프레임은 `__det.step()` 을 불러야만 돈다. 키 입력도 정해진 프레임에 넣는다 |
-| `probe.js` | 매 프레임 판정 상태(플레이어 · 적 · 미사일 · 플레어 · 탄 · 레이더 · 임무 · 항모/비행장 운용)를 JSON 으로 모아 FNV 해시. 연출 상태(`FXS` · `CVW` · `fx` 입자)는 넣지 않는다 |
+| `probe.js` | 매 프레임 판정 상태(플레이어 · 적 · 미사일 · 플레어 · 탄 · 레이더 · 임무 · 항모/비행장 운용)를 JSON 으로 모아 FNV 해시. 연출 상태(`FXS` · `CVW` · `fx` 입자 · 플레어의 `viz`)는 넣지 않는다 |
 | `run.py` | 시나리오 실행 · 비교. 3D 렌더(`R.render`)는 끄고 돌린다 — 판정과 무관하고, SwiftShader 에서 한 프레임 0.4초 걸려서다 |
-| `baseline/V14_4_0.json` | V14.4.0 기준 결과. 새 빌드는 이것과 `diff` 한다 |
+| `baseline/V14_4_1.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
+| `baseline/V14_4_0.json` | 복원 직후 V14.4.0 기준 (참고용 — V14.4.1 과는 난수열이 달라 전부 `다름`) |
 
-**해시 옆 숫자**는 그 프레임까지 판정 난수(`rnd`)를 당긴 누적 횟수다. 해시가 같아도 이 숫자가 다르면 난수열이 밀린 것이라 곧 갈라진다.
+**해시 옆 값**은 판정 난수(`rnd`)의 상태다 — V14.4.1 부터는 rnd 내부 상태(16진수), V14.4.0 기준값에서는 누적 호출 횟수. 해시가 같아도 이 숫자가 다르면 난수열이 밀린 것이라 곧 갈라진다.
 
 ### 결정론을 지키려고 한 것 (만들면서 실제로 걸린 것들)
 - **모델 로딩이 끝날 때까지 기다린 뒤 출격한다.** 로딩 도중에 출격하면 결과가 달라진다(기체 생성이 모델 유무를 탄다).
 - **출격(`start()`)은 첫 프레임 안에서 한다.** `init()` 이 판정 난수를 당긴다.
-- **프레임 밖에서 불린 `Math.random` 은 별도 난수열로 돌린다.** 텍스처 업로드처럼 실제 시간에 맞춰 도는 비동기 콜백에서
+- **프레임 사이에 `rnd` 상태가 바뀌면 `ERRORS` 로 찍는다** (V14.4.1+, `rnd.state()` 비교).
+- **프레임 밖에서 불린 `Math.random` 은 별도 난수열로 돌린다** (V14.4.0 처럼 `rnd = Math.random` 인 빌드용). 텍스처 업로드처럼 실제 시간에 맞춰 도는 비동기 콜백에서
   three.js 가 uuid 를 만들며 `Math.random` 을 당기는데, 게임의 `rnd` 가 바로 `Math.random` 이라 판정 난수열이 밀렸다.
   게임 코드가 프레임 밖에서 난수를 당기면 결과에 `ERRORS` 로 찍힌다.
 
@@ -420,6 +428,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF 가 
 |---|---|
 | `carrier` | LEGACY. 갑판 대기 → Shift 발진 → 상승 → 레이더 · 락 · SARH/IR 발사 · 기총 · 플레어/채프 · 선회 (3000 프레임) |
 | `carrier-fx0` | 위와 같은 조작, 비행 효과 OFF. `fxcheck` 용 |
+| `carrier-ext` | 위와 같은 조작, 외부 시점. `fxcheck` 용 |
 | `carrier-s2` | 시드 2. 시드가 실제로 판정을 바꾸는지 확인용 |
 | `idle` | LEGACY 아무 조작 없이 30초 |
 | `airbase` | AIRBASE 29 이륙 활주 · 상승 · 기어 |
@@ -431,6 +440,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF 가 
 - 같은 빌드를 두 번 돌리면 8개 시나리오 전부 `동일`.
 - 연출만 바꾼 빌드(폭발 색 상수 하나 변경) → `동일`.
 - 메인 루프에서 `rnd()` 를 딱 한 번 더 당긴 빌드 → 정확히 그 프레임(1200)에서 `다름`.
+- `fxcheck`: V14.4.0 은 비행 효과(프레임 0) · 시점(프레임 380)에서 `다름` → V14.4.1 은 둘 다 `동일`.
 
 ### 사라져서 아직 다시 안 만든 것
 `beauty.js`(기준 샷) · `deckprobe.js`(갑판 배치 계산 검사) · `gpumem.js` · `prof.js`/`deckperf.js` · `msltest.js`(미사일 유도 단위 시험) ·
@@ -456,6 +466,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V14.3.0 | Su-33 갑판 주기 · 주기기 거리 컬링 · MiG 주기 위치 버그 수정 |
 | V14.4.0 | **그래픽 개편** — 색 파이프라인 · 환경맵 · 그림자 · 바다 · 폭발 |
 | (11-17) | 저장소 · 하네스 복원 (3-0 · 12절). 게임 코드 변경 없음 |
+| V14.4.1 | **판정 난수 분리** — `rnd` 를 독립 함수로. 비행 효과 · 폭발 퍼프 · 실속 카메라 흔들림을 `vrnd` 로. 비행 효과 설정과 콕핏/외부 시점이 더 이상 게임 결과를 바꾸지 않는다 (의도된 변경: 난수열이 달라져 같은 상황에서 적 행동이 V14.4.0 과 다르다) |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 
@@ -476,15 +487,9 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 - 내부 단위 (m/s · m)
 
 ### 알려진 문제
-- **판정 난수가 연출과 섞여 있다 (4-1 규칙 위반, 2026-11-17 하네스로 발견).** 셋 다 V14.4.0 이전부터 있던 것:
-  1. `92-flight-fx.js` 가 카메라 흔들림 · 구름 화이트아웃 줄무늬 · 저공 물보라 · 노이즈 텍스처에 `rnd()` 를 쓴다.
-     → **설정의 비행 효과(OFF/LIGHT/FULL)에 따라 게임 결과가 달라진다.** 첫 프레임에만 9만 번을 당긴다.
-     `fxcheck` 로 확인됨. 고치는 법: 이 파일의 `rnd()` 를 전부 `vrnd()` 로.
-  2. `12-carrier-model.js` 항모 물보라가 `Math.random()` 을 쓴다. `rnd = Math.random` 이라 같은 난수열이다.
-  3. three.js 가 객체(메시 · 재질 · 형상)를 만들 때마다 uuid 용으로 `Math.random` 을 4번 당긴다.
-     → 연출에서 메시를 하나 더 만들기만 해도 판정 난수열이 밀린다.
-  **근본 해결**: `00-core.js` 의 `rnd` 를 `Math.random` 이 아닌 독립 난수 함수로 만든다(시드만 `Math.random` 에서 한 번 받기).
-  그러면 2·3번이 같이 풀린다. 단, 고치면 난수열이 바뀌므로 하네스 기준(baseline)을 새로 떠야 한다 — 의도된 변경으로 기록할 것.
+- ~~판정 난수가 연출과 섞여 있다~~ → **V14.4.1 에서 해결.** V14.4.0 에서는 비행 효과 OFF/LIGHT/FULL 과
+  콕핏/외부 시점(V)에 따라 게임 결과가 달라졌다 (`92-flight-fx.js` 가 `rnd()` 를 첫 프레임에만 9만 번 당겼고,
+  `90-main-loop.js` 콕핏 실속 흔들림 · `31-audio-fx.js` 폭발 퍼프도 `rnd()` 였다). 하네스 `fxcheck` 가 이걸 지킨다.
 - **TR-3 비행장 HUD 겹침** — 화면 위쪽에서 "GROUND CLEAR"와 선회·고도 안내가 겹친다.
   지상 위협 HUD와 임무 안내가 같은 자리를 쓴다.
 - **외부 시점 무장 칸 가독성** — 밝은 바다 위에서 글씨가 묻힌다.

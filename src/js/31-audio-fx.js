@@ -133,10 +133,10 @@ function puff(pos, col, size, life, grow = 1.5, add) {
 function boom(pos, sz) {
   for (let i = 0; i < 9; i++)
     puff(
-      pos.clone().add(V(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(sz * 0.5)),
+      pos.clone().add(V(vrnd() - 0.5, vrnd() - 0.5, vrnd() - 0.5).multiplyScalar(sz * 0.5)),
       [0xffcc44, 0xff5500, 0x777777][i % 3],
-      sz * (0.7 + rnd() * 0.5),
-      1 + rnd(),
+      sz * (0.7 + vrnd() * 0.5),
+      1 + vrnd(),
       2.5,
       i % 3 < 2
     );

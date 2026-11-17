@@ -74,6 +74,12 @@
       for (let i = 0; i < n; i++) {
         const f = this.frame;
         now += DT;
+        // V14.4.1+: 판정 난수(rnd)가 Math.random 과 분리됐다. 프레임 사이(타이머 · 비동기 콜백)에 rnd 가 움직였으면 기록한다.
+        if (this.rndState) {
+          const st = this.rndState();
+          if (this.lastRnd !== undefined && st !== this.lastRnd && this.outside.length < 50)
+            this.outside.push(`${f}: 프레임 사이에 rnd 가 움직였다`);
+        }
         this.inFrame = true;
         if (pre && i === 0) (0, eval)(pre);
         for (const e of (inputs && inputs[f]) || []) this.key(e[0], e[1]);
@@ -87,6 +93,7 @@
           }
         }
         this.inFrame = false;
+        if (this.rndState) this.lastRnd = this.rndState();
         this.frame++;
         if (hash) out.push(hash());
       }
