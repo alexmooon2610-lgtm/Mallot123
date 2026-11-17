@@ -218,6 +218,7 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 | `93-menu-fx.js` · `95~99-*.js` | 메뉴 연출 · 인트로 로고 · 티저 · 오프닝 · 선실 단말기 · HUD 스킨 · 무전 |
 | `05-net.js` | **멀티 전송 계층** `NET` — PeerJS / 시험용 relay, 방 코드, 방장 중계, 핑, 끊김 (V15 기틀) |
 | `20-mission-versus.js` | **멀티 1대1** `MISSIONS.VERSUS` — 출발 자리, 원격 기체, 상태 송신 20 Hz, 보간 100 ms |
+| `91-aircraft-select.js` | **기체 고르기** — 설정 화면 05 / 기체 (MiG-29 · Su-33), `localStorage.stAc` (alpha.3) |
 | `91-net-lobby.js` · `css/50-net-lobby.css` | **멀티 로비** — 설정 화면 MULTI PLAYER 버튼 → 방 만들기 / 참가 / 출격 |
 
 ---
@@ -525,6 +526,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `probe.js` | 매 프레임 판정 상태(플레이어 · 적 · 미사일 · 플레어 · 탄 · 레이더 · 임무 · 항모/비행장 운용)를 JSON 으로 모아 FNV 해시. 연출 상태(`FXS` · `CVW` · `fx` 입자 · 플레어의 `viz`)는 넣지 않는다 |
 | `run.py` | 시나리오 실행 · 비교. 3D 렌더(`R.render`)는 끄고 돌린다 — 판정과 무관하고, SwiftShader 에서 한 프레임 0.4초 걸려서다 |
 | `baseline/V14_8_0.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
+| `baseline/V15_0_0_a3_su33.json` | Su-33 시나리오 3개의 기준 (alpha.3). `run ... su33-carrier su33-vclimb su33-trap` 결과와 `diff` |
 | `baseline/V14_7_0.json` | 공중 재보급 삭제 이전 기준 |
 | `baseline/V14_6_0.json` | 비행 물리 개편 이전 기준 |
 | `baseline/V14_5_0.json` | 기총 10발 · 탄 속도 이전 기준 (시나리오 14개) |
