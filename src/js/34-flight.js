@@ -30,10 +30,11 @@ function phys(a, dt) {
     turn = Math.min(aoa, rate * dt);
   if (aoa > 1e-4) a.vd.lerp(f, turn / aoa).normalize();
   const gu = ((turn / dt) * a.speed) / 9.8,
-    kd = pr.thr / (pr.maxV * pr.maxV),
+    mk = acMassK(a), // 연료가 줄면 가벼워진다 (Su-33). MiG · 적기는 1
+    kd = (pr.thr / (pr.maxV * pr.maxV)) * mk,
     // 추력: 높이 올라갈수록 줄어든다 (밀도^0.75). 항력: 밀도에 비례
     push =
-      (a.thr * pr.thr + a.ab * pr.ab) * rho ** 0.75 -
+      (a.thr * pr.thr + a.ab * pr.ab) * mk * rho ** 0.75 -
       kd * rho * a.speed * a.speed * (1 + 0.35 * a.flap + 3 * Math.max(0, aoa - aoaL)) -
       (gu / pr.g) ** 2 * 9;
   if (!a.stl) {

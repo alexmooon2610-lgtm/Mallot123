@@ -200,7 +200,7 @@ function opsUpdate(dt) {
     });
     once('b', 3.5, () => {
       ops.hose = 0;
-      p.fuel = 100;
+      p.fuel = launchFuel(); // Su-33 은 스키점프 무게 제한으로 70%
       p.fuelWarn = 0;
       const L = curM().campaign ? loadout() : ACFT[playerAc].load; // 자유 모드는 기체 기본 무장
       p.am.SARH = Math.max(p.am.SARH, L.SARH);

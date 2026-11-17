@@ -64,6 +64,11 @@ const P = {
 // trk: 접촉이 DET → TRK(락 가능)가 되기까지 초 · acq: QUICK-ACQ 자동 락까지 초
 // locks: 동시에 유도할 수 있는 레이더 락 수 — N019 · N001 둘 다 '10개 추적 · 1개 교전'이라 지금은 둘 다 1.
 //        2 이상이면 다중 락 코드(35-sensors)가 켜진다. 나중에 N001VE(2개 교전) 같은 기체를 넣을 때 쓴다.
+// mass: 연료를 쓰면 가벼워져 가속이 좋아지는가 · dryKg: 연료 뺀 무게(무장 · 조종사 포함) · fuelKg: 내부 연료 가득
+// fuel0: 항모 발진 · 보급 때 싣는 연료 % (비행장은 언제나 100)
+//   Su-33: 빈 무게 18,400 + 무장 · 조종사 ≈ 20,540 kg, 연료 9,400 kg → 가득 29,940 kg (P.su33 추력은 이 무게 기준).
+//          연료 70% 면 추력/무게 ×1.10, 40% 면 ×1.23. 항모 스키점프 발진은 무게 제한이 있어 70% 로 뜬다 (게임 판단 — 그래도 체공은 MiG 의 약 1.2배).
+//   MiG-29 는 아직 고정 무게 (mass: false) — 켜면 MiG 기준선이 바뀐다.
 // hb: 히트박스 배율 (가로 · 높이 · 길이) — 기체가 크면 맞기도 쉽다
 //   Su-33: R-27 6 + R-73 4 (12 하드포인트), APP-50 96발(48+48, MiG-29 는 60발),
 //          N001 레이더 — 3 m² 정면 탐지 80~100 km · 추적 65 km (N019: 50~70 · 40~60 km) → 탐지 ×1.4 · 락 유지 ×1.3.
@@ -75,13 +80,22 @@ const ACFT = {
   mig: {
     name: 'MiG-29 9.12', short: 'MiG-29', load: { SARH: 4, IR: 4 }, cm: 30,
     radar: 1, hold: 1, trk: 1.5, acq: 1.2, locks: 1, burn: 1, hb: [1, 1, 1],
+    mass: false, dryKg: 11740, fuelKg: 3500, fuel0: 100,
   },
   su33: {
     name: 'Su-33', short: 'Su-33', load: { SARH: 6, IR: 4 }, cm: 48,
     radar: 1.4, hold: 1.3, trk: 1.5, acq: 1.2, locks: 1, burn: 0.57, hb: [1.29, 1.25, 1.22],
+    mass: true, dryKg: 20540, fuelKg: 9400, fuel0: 70,
   },
 };
 let playerAc = 'mig'; // 이번 출격 기체 (init 에서 정한다)
+// 무게 배율: 연료 가득일 때 1, 가벼워질수록 커진다 (추력 · 항력 가속도에 곱한다 → 최고속은 그대로, 가속만 좋아진다)
+const acMassK = a => {
+  const A = ACFT[playerAc];
+  return a === p && A.mass ? (A.dryKg + A.fuelKg) / (A.dryKg + (A.fuelKg * a.fuel) / 100) : 1;
+};
+// 출격 · 보급 때 싣는 연료 % — 비행장 활주로는 무게 제한이 없다
+const launchFuel = () => (activeMode === 'AIRBASE' ? 100 : ACFT[playerAc].fuel0);
 const pickedAc = () => {
   try {
     return localStorage.getItem('stAc') === 'su33' ? 'su33' : 'mig';

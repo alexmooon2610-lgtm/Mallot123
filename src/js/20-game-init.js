@@ -20,7 +20,7 @@ const mkAc = s => ({
   ab: 0,
   flap: 0,
   hp: 1,
-  fuel: 100,
+  fuel: s == 'P' ? launchFuel() : 100,
   fuelWarn: 0,
   am: s == 'P' ? { ...ACFT[playerAc].load } : { SARH: 2, IR: 2 },
   gun: (s == 'P' ? P[playerAc] : P.f16).gun,
