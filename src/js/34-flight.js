@@ -28,7 +28,8 @@ function cobraStart() {
   if ((typeof ops !== 'undefined' && ops.st !== 'fly') || p.gearDown) return rej('코브라: 비행 중 · 기어 올린 상태에서만');
   const lo = Math.max(300, Math.round(stallSpeed(p) * 3.6 * 1.3));
   if (kmh < lo || kmh > 600) return rej(`코브라: 속도 ${lo}~600 km/h 에서만 (지금 ${Math.round(kmh)})`);
-  if (bank > 30 || Math.abs(p.vd.y) > 0.35) return rej('코브라: 날개를 수평으로 · 수평 비행에서만');
+  // 수평 판정 (11-17 완화): 뱅크 45° · 경로각 ±30° 안 (예전 30° · ±20°)
+  if (bank > 45 || Math.abs(p.vd.y) > 0.5) return rej(`코브라: 날개를 더 수평으로 (뱅크 ${Math.round(bank)}° → 45° 안) · 경로각 ±30° 안`);
   cobra = { t: 0, v0: kmh };
   msg('코브라!', '#ff4');
   tone(300, 0.5, 'sawtooth', 0.05, 160);
