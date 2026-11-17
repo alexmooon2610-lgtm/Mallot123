@@ -579,6 +579,7 @@
     'keydown',
     ev => {
       if (front.style.display !== 'block' || window.__stOpeningOpen) return;
+      if (document.getElementById('mf-net-modal')?.classList.contains('open')) return; // 멀티 로비가 열려 있으면 로비가 키를 받는다
       if (ev.key === 'Escape') {
         if ($id('mf-guide-modal').classList.contains('open')) $id('mf-guide-modal').classList.remove('open');
         else if (stage === 'brief') setStage('settings');

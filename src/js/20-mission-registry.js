@@ -345,7 +345,7 @@ for (const m of Object.values(MISSIONS)) {
 // MISSION_CATALOG is the public catalogue consumed by menus, progression and mission runtime.
 const MISSION_CATALOG = MISSIONS;
 const lastMission = { AIRBASE: 'T01', CARRIER: 'LEGACY' };
-const missionsOf = env => Object.values(MISSION_CATALOG).filter(m => m.env === env && !m.campaign);
+const missionsOf = env => Object.values(MISSION_CATALOG).filter(m => m.env === env && !m.campaign && !m.net); // net: 멀티 메뉴 전용
 const curM = () => MISSION_CATALOG[activeMission] || MISSION_CATALOG.LEGACY;
 const isAirbase = () => curM().env === 'AIRBASE';
 const isFinalPhase = () => missionPhase === 'return' || missionPhase === 'final';

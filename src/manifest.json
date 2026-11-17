@@ -4,10 +4,12 @@
     "10-front-menu.css",
     "20-campaign-opening.css",
     "30-cabin-terminal.css",
-    "40-title.css"
+    "40-title.css",
+    "50-net-lobby.css"
   ],
   "js": [
     "00-core.js",
+    "05-net.js",
     "01-environment.js",
     "01-cloud-layer.js",
     "10-model-f16.js",
@@ -27,6 +29,7 @@
     "20-mission-tr1.js",
     "20-mission-tr2.js",
     "20-mission-tr3.js",
+    "20-mission-versus.js",
     "21-campaign.js",
     "30-hitbox-guns.js",
     "31-audio-fx.js",
@@ -49,6 +52,7 @@
     "81-rear-mirror.js",
     "90-main-loop.js",
     "91-front-menu.js",
+    "91-net-lobby.js",
     "92-flight-fx.js",
     "93-menu-fx.js",
     "94-teaser.js",

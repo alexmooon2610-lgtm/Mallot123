@@ -46,6 +46,7 @@ function collide() {
     for (let j = i + 1; j < L.length; j++) {
       const a = L[i],
         b = L[j];
+      if (a.net || b.net) continue; // 멀티 원격 기체와의 충돌은 2단계에서 맞는 쪽 판정으로 (지금은 빼 둔다)
       if (
         a.hp > 0 &&
         b.hp > 0 &&

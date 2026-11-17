@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-17 · 버전 **V14.8.0** · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-17 · 버전 **V15.0.0-alpha.1** (멀티플레이 기틀 — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -94,13 +94,13 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V14_8_0.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_1.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
 임무 파일은 반드시 `21-campaign.js` 보다 **앞**에 와야 한다. **새 파일을 만들면 manifest 에 넣어야 빌드에 들어간다.**
 에셋은 base64(120자 줄바꿈)로 `<script id="asset-...">` 블록에 넣고 런타임에 `readAsset(id)` 로 읽는다.
-버전을 올릴 때는 버전 문자열을 전부 바꾼다 (`grep -rn "14\.8\.0" src` — 템플릿 2곳 · `70-input.js` 1곳).
+버전을 올릴 때는 버전 문자열을 전부 바꾼다 (`grep -rn "15\.0\.0" src` — 템플릿 2곳 · `70-input.js` 1곳).
 
 ### 버전 번호 규칙 (사용자 지시, 2026-11-17)
 `V큰.중간.작은` — 예: V14.4.2
@@ -109,6 +109,7 @@ prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 | **큰** (14 → 15) | **게임 콘텐츠나 시스템에 큰 변화가 생겼을 때.** 중간·작은 자리는 0으로 | 보급 시스템 · 윙맨 시스템 · 캠페인 장(章) 추가 · 피격 생존 굴림 |
 | 중간 (14.4 → 14.5) | 눈에 띄는 기능 · 그래픽 · 모델 추가, 작은 시스템 조정 | 새 모델 · 그래픽 개편 · 임무 하나 추가 |
 | 작은 (14.4.1 → 14.4.2) | 버그 수정 · 수치 조정 · 문구 | 난수 분리 · 기총 탄수 |
+| 꼬리표 `-alpha.N` | 큰 번호를 올릴 일을 만드는 중간 단계 (아직 공개 전) | V15.0.0-alpha.1 = 멀티 기틀 |
 애매하면 사용자에게 묻는다. 버전을 올리면 13절 이력과 하네스 기준값(`baseline/V*.json`)도 같이 남긴다.
 
 ### 파일 크기 (중요)
@@ -210,6 +211,9 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 | `91-front-menu.js` | 타이틀 · 설정 · 임무 선택 · 브리핑 |
 | `92-flight-fx.js` | G 효과(블랙아웃/레드아웃) · 화면 효과 층 |
 | `93-menu-fx.js` · `95~99-*.js` | 메뉴 연출 · 인트로 로고 · 티저 · 오프닝 · 선실 단말기 · HUD 스킨 · 무전 |
+| `05-net.js` | **멀티 전송 계층** `NET` — PeerJS / 시험용 relay, 방 코드, 방장 중계, 핑, 끊김 (V15 기틀) |
+| `20-mission-versus.js` | **멀티 1대1** `MISSIONS.VERSUS` — 출발 자리, 원격 기체, 상태 송신 20 Hz, 보간 100 ms |
+| `91-net-lobby.js` · `css/50-net-lobby.css` | **멀티 로비** — 설정 화면 MULTI PLAYER 버튼 → 방 만들기 / 참가 / 출격 |
 
 ---
 
@@ -476,7 +480,7 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V14_8_0.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_1.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -530,6 +534,14 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 시나리오에 7번째 값으로 **setup 코드**(문자열)를 주면 출격 직후 같은 프레임에서 실행된다 — 착함 직전 자세처럼
 조작으로 만들기 어려운 상황을 바로 넣을 때 쓴다 (`TRAP` · `ABLAND` 참고).
 
+### 멀티 두 페이지 시험 (`nettest.py`)
+```bash
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_1.html --latency 60 --jitter 20 [--shots DIR]
+```
+페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
+로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
+**멀티 코드는 싱글 판정을 바꾸면 안 된다** — 싱글 시나리오는 계속 `baseline/V14_8_0.json` 과 동일해야 한다.
+
 ### 무장 단위 시험 (`weapons.js` · `run.py weapons <html>`)
 게임 루프 없이 `updMsl` · `updBul` 을 직접 돌린다. 결과가 기대와 다르면 `BAD` 와 함께 종료 코드 1.
 | 시험 | 기대 |
@@ -581,6 +593,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V14.6.0 | **기총 10발 격추 · 탄에 기체 속도 · 연사음** · TR-3 HUD 겹침 · 외부 시점 받침판 |
 | V14.7.0 | **비행 물리 개편**(수직 상승 실속 · 고도 효과 · 실속 벡터 적분 · 추력 현실화) · **Su-33 원본 모델**(날개 편 GLB 그대로, 접은 모양은 노드 회전으로) |
 | V14.8.0 | **공중 재보급 삭제 · 웨이브 사이 30초**(갑판 위에서는 멈춤) · HUD 안내 · 브리핑 팁 |
+| V15.0.0-alpha.1 | **멀티플레이 기틀** — 전송 계층 · 방 코드 로비 · 1대1 공역 · 비행 동기화/보간 · 끊김 처리 · 두 페이지 시험. 싱글 판정 변화 없음 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 
@@ -588,10 +601,10 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 
 ## 14. 다음에 하면 좋을 순서
 
-> **노선 변경 검토 중 (2026-11-17 사용자)**: 스토리(캠페인) 전에 **멀티플레이를 먼저** 낼 계획.
-> 아래 순서는 그 결정이 나기 전의 것이다. 멀티 설계가 정해지면 이 절을 다시 쓴다.
-> 멀티에 유리한 점: 판정 난수 분리(V14.4.1) · 결정론 하네스 · 판정/연출 분리 원칙이 이미 있다.
-> 걸리는 점: 단일 HTML · 정적 호스팅(GitHub Pages)에는 서버가 없다 → 접속 중개(시그널링) 서버나 외부 서비스가 필요하다.
+> **노선 변경 (2026-11-17 사용자 결정)**: 스토리(캠페인) 전에 **멀티플레이를 먼저** 낸다.
+> 1대1 PvP · 최대 4명 · 방 코드 · 무료 PeerJS 중개. 설계와 단계는 **`docs/MULTIPLAYER.md`** (프로젝트 문서 `claude/multiplayer_design.md`).
+> 지금: 1단계(기틀) 끝 → **다음은 2단계: 무장 동기화 · 맞는 쪽 판정 · 판 진행**. 실제 PeerJS 연결은 사람이 두 창으로 먼저 확인할 것.
+> 아래 1~5 는 멀티 이후로 미룬다.
 
 1. **보급 시스템** — 덩치가 작고, 윙맨의 토대가 된다. 기총 150발도 여기 묶인다.
 2. **윙맨 시스템** — 미결 2개(격추 처리 · 편대 규모)를 먼저 정해야 한다. 11-2의 버그 4개를

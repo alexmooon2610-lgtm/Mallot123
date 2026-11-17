@@ -1,0 +1,83 @@
+/* ============ 멀티플레이 로비 (V15 기틀) — 91-net-lobby.js ============ */
+.mf-net h3 small {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid #f4d27e;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.mf-net-note {
+  margin: 0 0 14px;
+  color: #b9c8dc;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.mf-net-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.mf-net-grid section {
+  padding: 12px;
+  border: 1px solid #264a7b;
+  background: #06101f;
+}
+.mf-net-grid h4 {
+  margin: 0 0 10px;
+  color: #80caff;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+.mf-net-code {
+  margin: 12px 0 4px;
+  color: #f2c56b;
+  font: 700 30px/1.2 ui-monospace, Consolas, Menlo, monospace;
+  letter-spacing: 0.22em;
+  user-select: all;
+}
+.mf-net-sub {
+  margin: 6px 0 0;
+  color: #8ea4c2;
+  font-size: 12px;
+}
+#mf-net-input {
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid #315b8a;
+  background: #020711;
+  color: #f0f0e6;
+  font: 700 22px ui-monospace, Consolas, Menlo, monospace;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.mf-net-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+  margin: 14px 0 6px;
+}
+.mf-net-roster .me {
+  border-color: #62d18a;
+  color: #62d18a;
+}
+.mf-net-status {
+  color: #62d18a;
+  font-size: 13px;
+}
+.mf-net-status.bad {
+  color: #e74248;
+}
+#mf-net-go:disabled,
+#mf-net-host:disabled,
+#mf-net-join:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  .mf-net-grid {
+    grid-template-columns: 1fr;
+  }
+}

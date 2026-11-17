@@ -133,6 +133,8 @@ function cycleFlap() {
 }
 window.addEventListener('keydown', ev => {
   if (ev.metaKey || ev.ctrlKey) return;
+  // 글자 입력 칸(멀티 방 코드 등)에 치는 글자는 게임 조작이 아니다
+  if (ev.target && (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
   const k = gameKey(ev);
   if (!k) return;
   // 메뉴의 select/button은 브라우저 기본 키보드 조작(방향키/Enter)을 보존한다.
@@ -365,7 +367,7 @@ function showOv() {
     ['P / Esc', '일시정지'],
     ['Enter', '출격 / 재시작'],
   ];
-  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V14.8.0</span>';
+  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V15.0.0-alpha.1</span>';
   // 결과(디브리핑)와 버튼을 먼저 보여 주고, 모드 선택 · 조작 키 · 상태는 접어 둔다
   const debrief =
     S == 'over' && (isAirbase() || curM().campaign) && (missionComplete || missionFailed) && missionResult

@@ -48,7 +48,7 @@ def build():
     out = (tpl.replace('{{CSS}}\n', css)
               .replace('{{JS}}\n', js)
               .replace('{{ASSETS}}\n', ''.join(blocks)))
-    m = re.search(r'STEEL TEMPEST V(\d+\.\d+\.\d+)', out)
+    m = re.search(r'STEEL TEMPEST V(\d+\.\d+\.\d+(?:-[a-z]+\.\d+)?)', out)
     return out, (m.group(1) if m else 'dev')
 
 
@@ -57,7 +57,7 @@ def main():
     ap.add_argument('-o', '--out')
     args = ap.parse_args()
     html, ver = build()
-    out = args.out or os.path.join(ROOT, 'dist', f'STEEL_TEMPEST_V{ver.replace(".", "_")}.html')
+    out = args.out or os.path.join(ROOT, 'dist', f'STEEL_TEMPEST_V{ver.replace(".", "_").replace("-", "_")}.html')
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     with open(out, 'w', encoding='utf-8', newline='\n') as f:
         f.write(html)

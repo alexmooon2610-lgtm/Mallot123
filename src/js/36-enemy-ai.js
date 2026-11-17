@@ -1,5 +1,6 @@
 // ---------- 적군 F-16 AI (자체 센서 상태 준수)
 function aiUpdate(dt, e) {
+  if (e.net) return netRemoteUpdate(dt, e); // 멀티플레이 원격 기체: AI 대신 받은 상태를 보간 (20-mission-versus)
   if (e.drone) return droneUpdate(dt, e); // 캠페인 표적 드론 (20-mission-tr1)
   if (e.hp <= 0) return;
   const A = e.ai,
