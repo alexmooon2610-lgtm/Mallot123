@@ -35,3 +35,49 @@ function loadSu33GLB() {
     console.error('[STEEL TEMPEST] Su-33 GLB failed; deck stays without parked Flankers', err);
   }
 }
+
+// ---------- 플레이어 · 멀티 상대가 타는 Su-33 (날개 편 모양) — V15.0.0-alpha.3
+// MiG-29(createMiG29FromUserGLB)와 같은 약속: root.userData.setGear / setAfterburner, 바퀴 바닥을 y −1.09 에 맞춘다.
+// 형상 · 재질은 자기 것으로 복제한다 (플레이어 기체는 재출격 때 통째로 해제되는데, 템플릿은 갑판 주기기와 같이 쓰기 때문).
+const SU33_GEAR = /^(nose_|main_)/;
+function createSu33(opts = {}) {
+  if (!su33GLBTemplate) return createMiG29(opts); // 못 읽었으면 MiG 모양으로라도
+  const root = new T.Group();
+  root.name = 'Player_Su33_GLB';
+  const model = cloneGLBWithOwnedResources(su33GLBTemplate);
+  model.position.y = MIG29_GLB_Y;
+  root.add(model);
+  const gear = [];
+  model.traverse(n => {
+    if (n.isMesh && SU33_GEAR.test(n.name)) gear.push(n);
+  });
+  const setGear = on => gear.forEach(g => (g.visible = !!on));
+  setGear(opts.gearDown);
+  // 애프터버너 불꽃: 모델 노즐 출구(x ±1.18, 중심 높이 1.89, z 9.44) 뒤. 모양은 MiG 와 같은 단순 원뿔(사용자가 고른 것) —
+  // AL-31F 노즐이 커서 반지름 · 길이만 키웠다
+  const flames = [];
+  for (const x of [-1.18, 1.18]) {
+    const flame = new T.Mesh(
+      new T.ConeGeometry(0.34, 2.6, 16, 1, true),
+      new T.MeshBasicMaterial({
+        color: 0xffa34a,
+        transparent: true,
+        opacity: 0.76,
+        blending: T.AdditiveBlending,
+        depthWrite: false,
+        side: T.DoubleSide,
+      })
+    );
+    flame.rotation.x = Math.PI / 2;
+    flame.position.set(x, 1.89 + MIG29_GLB_Y, 9.44 + 1.3);
+    flame.visible = false;
+    flame.name = 'Game_Afterburner_Effect';
+    root.add(flame);
+    flames.push(flame);
+  }
+  root.userData.setGear = setGear;
+  root.userData.setAfterburner = on => flames.forEach(f => (f.visible = !!on));
+  root.userData.parts = { gear, flames };
+  if (opts.scale) root.scale.setScalar(opts.scale);
+  return root;
+}

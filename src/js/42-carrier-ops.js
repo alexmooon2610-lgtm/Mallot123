@@ -202,18 +202,18 @@ function opsUpdate(dt) {
       ops.hose = 0;
       p.fuel = 100;
       p.fuelWarn = 0;
-      const L = loadout();
+      const L = curM().campaign ? loadout() : ACFT[playerAc].load; // 자유 모드는 기체 기본 무장
       p.am.SARH = Math.max(p.am.SARH, L.SARH);
       p.am.IR = Math.max(p.am.IR, L.IR);
       msg(`급유 완료 · 연료 100% · 미사일 장착 (SARH ${L.SARH} / IR ${L.IR})`);
     });
     once('c', 5.5, () => {
-      p.gun = Math.max(p.gun, P.mig.gun);
-      msg(`기총탄 보충 (${P.mig.gun})`);
+      p.gun = Math.max(p.gun, p.prm.gun);
+      msg(`기총탄 보충 (${p.prm.gun})`);
     });
     once('d', 7, () => {
-      p.fl = Math.max(p.fl, 30);
-      p.ch = Math.max(p.ch, 30);
+      p.fl = Math.max(p.fl, ACFT[playerAc].cm);
+      p.ch = Math.max(p.ch, ACFT[playerAc].cm);
       msg('플레어 · 채프 보충 (30 / 30)');
     });
     once('e', 8.5, () => {

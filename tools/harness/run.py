@@ -102,6 +102,13 @@ SCENARIOS = {
     'waveclear': ('CARRIER', 'LEGACY', 2100, {}, 1, {}, WAVECLEAR),
     # 웨이브 격파 직후 착함: 갑판 위에서는 웨이브 시계가 멈춘다 (보급 · 견인이 끝나도 발진 전까지 30초 그대로)
     'wavedeck': ('CARRIER', 'LEGACY', 1200, {}, 1, {}, TRAP.format(z=120, spd=140, sink=0.04).replace('es = []; wt = 1e9;', '') + 'es.slice().forEach(e => kill(e));'),
+    # ---- Su-33 (V15.0.0-alpha.3): 설정에서 Su-33 을 고른 상태 (localStorage stAc)
+    # Su-33 은 추력이 작아 MiG 와 같은 수직 당김(820~900)이면 손을 놓은 채 실속해 바다에 떨어진다 → 짧게 당긴다
+    'su33-carrier': ('CARRIER', 'LEGACY', 3000, keys(hold('KeyW', 0, 150), hold('ShiftLeft', 380, 420),
+                                                     hold('ArrowUp', 820, 850), *COMBAT), 1, {'stAc': 'su33'}),
+    'su33-vclimb': ('CARRIER', 'LEGACY', 3000, keys(hold('ShiftLeft', 0, 3000)), 1, {'stAc': 'su33'}, VCLIMB),
+    'su33-trap': ('CARRIER', 'LEGACY', 900, {}, 1, {'stAc': 'su33'},
+                  TRAP.format(z=120, spd=140, sink=0.04) + 'p.gun = 10; p.fl = 3; p.am.SARH = 0;'),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),

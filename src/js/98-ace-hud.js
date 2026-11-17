@@ -184,7 +184,7 @@ function ahRadar(cx, cy, r) {
     hl = Math.hypot(f.x, f.z) || 1,
     hx = f.x / hl,
     hz = f.z / hl,
-    range = rd && rd.on ? RM[rd.mode].rng : 12000,
+    range = rd && rd.on ? rdRange() : 12000,
     sc = r / range;
   const toMap = pos => {
     const dx = pos.x - p.pos.x,
@@ -542,7 +542,13 @@ function aceHud(mode) {
       g.restore();
     }
     aT(
-      c.st == 'DET' ? 'UNKNOWN' : c.tg && c.tg.drone ? 'DRONE' : c.tg && c.tg.mock ? 'MiG-29' : 'F-16',
+      c.st == 'DET'
+        ? 'UNKNOWN'
+        : c.tg && c.tg.drone
+          ? 'DRONE'
+          : c.tg && c.tg.mock
+            ? ACFT[c.tg.acType || 'mig'].short // 모의전 상대 · 멀티 상대 (acType 은 멀티 원격 기체만)
+            : 'F-16',
       s.x + z + 6,
       s.y - z + 10,
       col,

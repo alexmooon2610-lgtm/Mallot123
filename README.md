@@ -3,12 +3,12 @@
 브라우저에서 도는 항모 공중전 게임. 빌드 결과는 HTML 파일 하나이고, 더블클릭하면 켜진다
 (three.js 를 CDN 에서 받으므로 인터넷이 필요하다).
 
-현재 버전: **V15.0.0-alpha.2**
+현재 버전: **V15.0.0-alpha.3**
 
 ## 빌드
 
 ```bash
-python3 build.py      # → dist/STEEL_TEMPEST_V15_0_0_alpha_2.html
+python3 build.py      # → dist/STEEL_TEMPEST_V15_0_0_alpha_3.html
 ```
 
 순서와 에셋 목록은 `src/manifest.json` 에서 정한다. 새 JS/CSS 파일은 여기에 넣어야 빌드에 들어간다.
@@ -17,7 +17,7 @@ python3 build.py      # → dist/STEEL_TEMPEST_V15_0_0_alpha_2.html
 
 ```bash
 pip install playwright
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_2.html /tmp/new.json
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_3.html /tmp/new.json
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json
 ```
 
@@ -25,7 +25,7 @@ python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.j
 
 ```bash
 python3 tools/harness/run.py fxcheck /tmp/new.json                     # 비행 효과 · 시점이 판정을 바꾸지 않는지
-python3 tools/harness/run.py weapons dist/STEEL_TEMPEST_V15_0_0_alpha_2.html   # 미사일 유도 · 기총 · 대응수단 단위 시험
+python3 tools/harness/run.py weapons dist/STEEL_TEMPEST_V15_0_0_alpha_3.html   # 미사일 유도 · 기총 · 대응수단 단위 시험
 ```
 
 ## 문서

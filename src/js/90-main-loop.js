@@ -60,7 +60,7 @@ function loop(n) {
   if (S == 'play' && dt > 0) {
     t += dt;
     if (p && p.fuel > 0) {
-      const burn = (0.01 + 0.1 * p.thr + 0.14 * (p.ab ? 1 : 0)) * dt;
+      const burn = (0.01 + 0.1 * p.thr + 0.14 * (p.ab ? 1 : 0)) * dt * ACFT[playerAc].burn; // 기체별 체공 (00-core ACFT)
       p.fuel = Math.max(0, p.fuel - burn);
     }
     if (p && p.fuel <= 20 && p.fuelWarn < 1) {

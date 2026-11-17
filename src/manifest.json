@@ -53,6 +53,7 @@
     "90-main-loop.js",
     "91-front-menu.js",
     "91-net-lobby.js",
+    "91-aircraft-select.js",
     "92-flight-fx.js",
     "93-menu-fx.js",
     "94-teaser.js",

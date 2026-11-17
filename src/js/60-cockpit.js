@@ -875,10 +875,10 @@ function drawIPV() {
     mode = on ? RM[rd.mode] : null;
   x.fillText(on ? mode.n : 'РЛС ОТКЛ', 6, 16);
   x.textAlign = 'right';
-  x.fillText(on ? (mode.rng / 1000).toFixed(0) + ' км' : '', w - 6, 16);
+  x.fillText(on ? (rdRange() / 1000).toFixed(0) + ' км' : '', w - 6, 16);
   if (on && p) {
     const az = mode.az,
-      rng = mode.rng,
+      rng = rdRange(),
       qi = p.q.clone().invert();
     // 탐색 빔 (좌우로 쓸기)
     const sw = Math.sin(performance.now() / 650) * az,

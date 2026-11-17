@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-17 · 버전 **V15.0.0-alpha.2** (멀티플레이 기틀 — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-17 · 버전 **V15.0.0-alpha.3** (멀티플레이 기틀 + **Su-33 선택** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -99,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_2.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_3.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -223,6 +223,31 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 ---
 
 ## 6. 비행 · 센서
+
+### 기체 고르기 — V15.0.0-alpha.3 (`00-core.js` `P.su33` · `ACFT`)
+설정 화면 **05 / 기체** 에서 MiG-29 · Su-33 을 고른다 (`localStorage.stAc`). `init()` 이 출격할 때 `playerAc` 를 정한다.
+**캠페인은 이야기 설정상 MiG-29 고정.** LEGACY · AIRBASE · 멀티에서 쓰인다.
+
+| | MiG-29 9.12 | Su-33 | 근거 (실기) |
+|---|---|---|---|
+| 추력 `thr` + AB `ab` | 10 + 5 | **7.7 + 4.1** | 추중비 정상 이륙중량 기준 AB 1.09 → 0.85 · 건식 0.66 → 0.51 |
+| 최고속 `maxV` | 270 | **245** | 해면 1,500 → 1,300~1,400 km/h |
+| 실속 `stall` | 85 | **82** | 날개 62 m² · 카나드 (MiG 38 m²) |
+| 롤 `rol` · 선회 기준속 `vc` | 3 · 135 | **2.6 · 140** | 무겁다 (게임 판단) |
+| G · 기총 | 9 · 150발 | 9 · 150발 | 둘 다 +9 G · GSh-30-1 |
+| 기본 무장 | R-27R 4 · R-73 4 | **R-27R 6 · R-73 4** | 하드포인트 7 → 12 |
+| 플레어 · 채프 | 30 · 30 | **48 · 48** | APP-50 96발 (MiG 60발) |
+| 레이더 거리 | ×1 | **×1.3** (SEARCH 16 → 20.8 km) | N019 → N001K |
+| 연료 소모 `burn` | ×1 | **×0.57** (체공 약 1.75배) | 내부 연료 3,500 → 9,400 kg, 추력 1.54배 |
+| 히트박스 | 기준 | **가로 1.29 · 높이 1.25 · 길이 1.22 배** | 전폭 · 전고 · 전장 비 |
+
+- 비행 제원은 `P[playerAc]` (= `p.prm`), 나머지 차이는 `ACFT[playerAc]`. **`P.mig` · `p` 에 필드를 더하면 싱글 해시가 바뀐다** —
+  그래서 기체 표는 따로 두었다. MiG 를 고르면 V14_8_0 기준선과 해시가 그대로다.
+- 레이더 거리는 반드시 `rdRange()` 로 읽는다 (`RM[...].rng` 를 직접 쓰면 Su-33 배율이 빠진다).
+- 모델: `createSu33()` (`10-model-su33-glb.js`) — 날개 편 원본 GLB 를 **수정 없이** 복제 · 기어 노드 표시 · 노즐 뒤 원뿔 불꽃.
+  늦게 읽힌 MiG GLB 가 Su-33 을 덮지 않게 `applyLoadedMiG29ToPlayer` 는 `playerAc === 'mig'` 일 때만 바꾼다.
+- 한계: 조종석은 MiG 것을 같이 쓴다. Su-33 전용 조종석 · 계기는 아직 없다.
+- 멀티: 상태 메시지에 `ac` 가 붙어, 상대 화면에 고른 기체 모양 · 레이더 표지(`Su-33`)가 나온다.
 
 ### 비행 (`34-flight.js`)
 - MiG-29 한계 **9 G** (실기 한계에 맞춰 8.5→9로 올림)
@@ -485,7 +510,7 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_2.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_3.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -531,6 +556,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `bolter` | 착함 지점을 지나 닿음 → 볼터 · 재상승 |
 | `deckcrash` | 너무 빨리(220) 닿음 → 갑판 충돌 |
 | `abland` | 비행장 T-02 최종 접근 자세 → 활주로 포착 → 접지 · 감속 → 임무 완료 |
+| `su33-carrier` · `su33-vclimb` · `su33-trap` | 위 시나리오를 Su-33 으로 (`stAc=su33`). Su-33 수직 상승은 50초에 5.1 km (MiG 8.0 km). MiG 와 같은 수직 당김을 손 놓고 하면 실속해 바다로 떨어져서 발진 당김은 짧게 했다 |
 | `carrier-s2` | 시드 2. 시드가 실제로 판정을 바꾸는지 확인용 |
 | `idle` | LEGACY 아무 조작 없이 30초 |
 | `airbase` | AIRBASE 29 이륙 활주 · 상승 · 기어 |
@@ -541,7 +567,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_2.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_3.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -600,6 +626,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V14.8.0 | **공중 재보급 삭제 · 웨이브 사이 30초**(갑판 위에서는 멈춤) · HUD 안내 · 브리핑 팁 |
 | V15.0.0-alpha.1 | **멀티플레이 기틀** — 전송 계층 · 방 코드 로비 · 1대1 공역 · 비행 동기화/보간 · 끊김 처리 · 두 페이지 시험. 싱글 판정 변화 없음 |
 | V15.0.0-alpha.2 | 멀티 연결 시간 제한(중개 20초 · 직접 연결 15초) · claude.ai 링크 감지 · 원인별 오류 문구 · 기다린 시간 표시 |
+| V15.0.0-alpha.3 | **Su-33 선택 기체** — 실기 제원 기반 차이(추력 · 속도 · 무장 6+4 · 대응수단 48 · 레이더 1.3배 · 체공 1.75배 · 큰 히트박스) · 설정 05/기체 · 멀티 기체 전달. MiG 싱글 판정 변화 없음 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

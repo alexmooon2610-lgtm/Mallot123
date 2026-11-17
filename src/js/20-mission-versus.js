@@ -25,14 +25,15 @@ function vsSpawn(slot) {
   return { pos, dir };
 }
 // 원격 기체 하나 만들기
-function vsRemote(slot) {
+function vsRemote(slot, ac) {
   const x = mkAc('E');
+  x.acType = ac === 'su33' ? 'su33' : 'mig'; // 상대가 고른 기체 (모양 · 레이더 표지용. 비행은 상대 컴퓨터가 계산)
   x.net = { slot, buf: [], base: Infinity, last: 0 };
   x.mock = 1;
   x.am = { SARH: 0, IR: 0 };
   x.rd = { phase: 'SEARCH', t: 0, lost: 0, relock: 0 };
   x.ai = { hint: 0, goal: V(0, 0, -1), irT: 0, fd: 0, tick: 0 };
-  x.mesh = createMiG29({ gearDown: false });
+  x.mesh = x.acType === 'su33' ? createSu33({ gearDown: false }) : createMiG29({ gearDown: false });
   x.mesh.scale.setScalar(3);
   scene.add(x.mesh);
   hbViz(x);
@@ -58,6 +59,7 @@ function vsSend() {
   NET.send({
     t: 's',
     slot: NET.st.slot,
+    ac: playerAc,
     n: vs.n++,
     tm: Math.round(performance.now()),
     p: [r1(p.pos.x), r1(p.pos.y), r1(p.pos.z)],
@@ -73,7 +75,7 @@ function vsSend() {
 // 받은 상태 쌓기
 function vsRecv(m) {
   if (!vs || activeMission !== 'VERSUS' || m.slot === NET.st.slot) return;
-  const x = vs.remotes.get(m.slot) || vsRemote(m.slot),
+  const x = vs.remotes.get(m.slot) || vsRemote(m.slot, m.ac),
     N = x.net,
     lt = performance.now();
   // 보낸 쪽 시계 → 내 시계: (받은 시각 − 보낸 시각) 의 최솟값을 기준으로 삼는다 (가장 빨리 온 것 = 지연 최소)

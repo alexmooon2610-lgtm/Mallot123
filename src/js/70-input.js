@@ -338,7 +338,7 @@ function showOv() {
   const menuVisible = S === 'menu' || S === 'over';
   const modeInfo =
     activeMode === 'AIRBASE'
-      ? 'AIRBASE 29 — 지상 비행장 기반 훈련. MiG-29 9.12로 이륙·접근·착륙 훈련을 수행합니다.'
+      ? 'AIRBASE 29 — 지상 비행장 기반 훈련. 고른 기체로 이륙·접근·착륙 훈련을 수행합니다.'
       : 'LEGACY CARRIER — 기존 항모 발진·착함 및 웨이브형 아케이드 전투를 유지하는 클래식 모드입니다.';
   const keys = [
     ['↑ ↓', '기수 상승/하강'],
@@ -367,7 +367,7 @@ function showOv() {
     ['P / Esc', '일시정지'],
     ['Enter', '출격 / 재시작'],
   ];
-  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V15.0.0-alpha.2</span>';
+  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V15.0.0-alpha.3</span>';
   // 결과(디브리핑)와 버튼을 먼저 보여 주고, 모드 선택 · 조작 키 · 상태는 접어 둔다
   const debrief =
     S == 'over' && (isAirbase() || curM().campaign) && (missionComplete || missionFailed) && missionResult

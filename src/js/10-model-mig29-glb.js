@@ -111,7 +111,7 @@ function createMiG29(opts = {}) {
   return mig29GLBTemplate ? createMiG29FromUserGLB(opts) : createMiG29Procedural(opts);
 }
 function applyLoadedMiG29ToPlayer() {
-  if (!mig29GLBTemplate || !p || !p.mesh) return;
+  if (!mig29GLBTemplate || !p || !p.mesh || playerAc !== 'mig') return;
   const previous = p.mesh;
   const replacement = createMiG29FromUserGLB({ gearDown: !!p.gearDown });
   replacement.scale.setScalar(3);

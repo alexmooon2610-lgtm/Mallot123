@@ -45,6 +45,13 @@ const P = {
   mig: { maxV: 270, stall: 85, thr: 10, ab: 5, pit: 1.5, rol: 3, yaw: 0.5, g: 9, vc: 135, gun: 150, rof: 30, tracer: 4, gunDmg: 0.1 },
   // gun: 게임값 (실기 M61 511발). 적기 발사 간격은 36-enemy-ai 의 0.09초 그대로. gunDmg 는 예전 값 그대로
   f16: { maxV: 265, stall: 90, thr: 9.4, ab: 4.7, pit: 1.35, rol: 4.2, yaw: 0.4, g: 9, vc: 140, gun: 300, tracer: 3, gunDmg: 0.03 }, // thr · ab: MiG 와 같은 비율로 낮춤 (V14.7.0)
+  // Su-33 (V15.0.0-alpha.3) — 실기 제원을 MiG-29 9.12 와의 비율로 옮겼다 (출처: DVIDS 제원표 · MILAVIA).
+  //   추력: AL-31F3 2기 AB 251 kN · 건식 149 kN, 정상 이륙중량 29,940 kg → 추중비 AB 0.85 · 건식 0.51
+  //         (MiG-29: RD-33 2기 AB 162.8 kN · 건식 98.8 kN, 15,240 kg → 1.09 · 0.66) → thr 10×0.77 = 7.7, 합 15×0.785 = 11.8
+  //   최고속도 해면 1,300~1,400 km/h (MiG 1,500) → maxV 245 (AB 해면 최고속 약 1,090 km/h, MiG 의 약 0.92 배)
+  //   G 한계 +9 (MiG 와 같다). 날개 62 m² · 카나드 → 실속 82 (MiG 85). 무거워 선회 기준속도 140 · 롤 2.6 (게임 판단)
+  //   기총은 MiG 와 같은 GSh-30-1 150발이다.
+  su33: { maxV: 245, stall: 82, thr: 7.7, ab: 4.1, pit: 1.5, rol: 2.6, yaw: 0.45, g: 9, vc: 140, gun: 150, rof: 30, tracer: 4, gunDmg: 0.1 },
   MUZZLE_V: 1000, // 탄의 포구 속도 (월드 단위/초). V14.6.0 부터 쏜 기체의 속도가 더해진다
   flapLim: [999, 210, 160],
   // range 는 미사일이 실제로 도달할 수 있는 거리에 맞춘 값 (예전 10000 / 6500 은 도달 불가 거리까지 발사 허용)
@@ -52,6 +59,27 @@ const P = {
   SARH: { v: 800, boost: 4, life: 22, range: 9000, min: 700, g: 25, vq: 450, gimbal: 50 },
   IR: { v: 700, boost: 3, life: 15, range: 5000, min: 300, g: 40, vq: 400, gimbal: 60, seek: 6000 },
 };
+// ---------- 플레이어가 고를 수 있는 기체 (V15.0.0-alpha.3). 비행 제원은 P[키], 나머지 차이는 여기에
+// load: 자유 모드 기본 무장 · cm: 플레어 · 채프 각각 · radar: 레이더 탐지 거리 배율 · burn: 연료 % 소모 배율
+// hb: 히트박스 배율 (가로 · 높이 · 길이) — 기체가 크면 맞기도 쉽다
+//   Su-33: R-27 6 + R-73 4 (12 하드포인트), APP-50 96발(48+48, MiG-29 는 60발), N001K 레이더(N019 보다 약 1.3 배),
+//          내부 연료 9,400 kg (MiG 약 3,500 kg) · 추력 1.54 배 → 같은 비율로 쓰면 체공 약 1.75 배 → burn 0.57,
+//          전장 21.18 / 17.32 · 전폭 14.70 / 11.36 · 전고 5.93 / 4.73
+// 캠페인은 이야기 설정상 MiG-29 고정 (20-game-init 의 init).
+const ACFT = {
+  mig: { name: 'MiG-29 9.12', short: 'MiG-29', load: { SARH: 4, IR: 4 }, cm: 30, radar: 1, burn: 1, hb: [1, 1, 1] },
+  su33: { name: 'Su-33', short: 'Su-33', load: { SARH: 6, IR: 4 }, cm: 48, radar: 1.3, burn: 0.57, hb: [1.29, 1.25, 1.22] },
+};
+let playerAc = 'mig'; // 이번 출격 기체 (init 에서 정한다)
+const pickedAc = () => {
+  try {
+    return localStorage.getItem('stAc') === 'su33' ? 'su33' : 'mig';
+  } catch (e) {
+    return 'mig';
+  }
+};
+// 지금 레이더 모드의 탐지 거리 (기체 배율 포함)
+const rdRange = () => RM[rd.mode].rng * ((p && ACFT[playerAc].radar) || 1);
 const RM = [
   { n: 'SEARCH', az: 60, rng: 16000, rate: 0.8 },
   { n: 'MULTI-TRK', az: 50, rng: 14000, rate: 1.6 },

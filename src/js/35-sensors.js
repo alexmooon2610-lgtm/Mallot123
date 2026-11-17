@@ -13,7 +13,7 @@ function radarUpdate(dt) {
       az = Math.atan2(l.x, -l.z) / D,
       el = Math.atan2(l.y, Math.hypot(l.x, l.z)) / D;
     let c = rd.ct.find(c => c.tg === tg);
-    const fov = Math.abs(az) < Mo.az && Math.abs(el) < 40 && rng < Mo.rng && l.z < 0,
+    const fov = Math.abs(az) < Mo.az && Math.abs(el) < 40 && rng < rdRange() && l.z < 0,
       onLock = rd.lock && rd.lock.tg === tg,
       allowed = rd.mode == 2 && rd.sel ? c && rd.sel === c : true,
       beam = onLock || (rd.mode >= 2 && c && rd.sel === c) || Math.abs(az - rd.sweep) < 9;

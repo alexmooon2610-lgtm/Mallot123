@@ -1,7 +1,18 @@
 // ---------- 기체 생성 · 게임 초기화(init) · 적 편대 생성(spawnWave)
+// 플레이어 히트박스 (MiG-29 기준) — 다른 기체는 ACFT[...].hb 배율로 늘린다
+const HB_MIG = () => [
+  { c: V(0, 0, 0), h: V(4, 3.3, 27.5) },
+  { c: V(0, -0.4, 1.5), h: V(14, 1.5, 10) },
+  { c: V(0, 3, 18), h: V(8.3, 4, 5.5) },
+];
+const hbFor = ac => {
+  const [sx, sy, sz] = ACFT[ac].hb,
+    sc = v => v.set(v.x * sx, v.y * sy, v.z * sz);
+  return HB_MIG().map(b => (sc(b.c), sc(b.h), b));
+};
 const mkAc = s => ({
   side: s,
-  prm: s == 'P' ? P.mig : P.f16,
+  prm: s == 'P' ? P[playerAc] : P.f16,
   pos: V(),
   q: new T.Quaternion(),
   speed: 200,
@@ -11,26 +22,22 @@ const mkAc = s => ({
   hp: 1,
   fuel: 100,
   fuelWarn: 0,
-  am: { SARH: s == 'P' ? 4 : 2, IR: s == 'P' ? 4 : 2 },
-  gun: (s == 'P' ? P.mig : P.f16).gun,
+  am: s == 'P' ? { ...ACFT[playerAc].load } : { SARH: 2, IR: 2 },
+  gun: (s == 'P' ? P[playerAc] : P.f16).gun,
   gc: 0,
   vd: V(0, 0, -1),
   g: 1,
   aoa: 0,
   hb:
     s == 'P'
-      ? [
-          { c: V(0, 0, 0), h: V(4, 3.3, 27.5) },
-          { c: V(0, -0.4, 1.5), h: V(14, 1.5, 10) },
-          { c: V(0, 3, 18), h: V(8.3, 4, 5.5) },
-        ]
+      ? hbFor(playerAc)
       : [
           { c: V(0, 0, -7.5), h: V(3.8, 3.8, 24) },
           { c: V(0, 0, -3), h: V(15, 1.8, 8) },
           { c: V(0, 6, 8.4), h: V(1, 5, 5.7) },
         ],
-  fl: s == 'P' ? 30 : 20,
-  ch: s == 'P' ? 30 : 20,
+  fl: s == 'P' ? ACFT[playerAc].cm : 20,
+  ch: s == 'P' ? ACFT[playerAc].cm : 20,
   cd: 0,
   chT: 0,
   cm: { IR: { n: 0, last: -99 }, SARH: { n: 0, last: -99 } },
@@ -106,6 +113,8 @@ function init() {
   showHB = 0;
   over = '';
   CVO.th = Math.PI / 2;
+  // 출격 기체: 설정에서 고른 것 (캠페인은 이야기 설정상 MiG-29 고정)
+  playerAc = curM().campaign ? 'mig' : pickedAc();
   p = mkAc('P');
   p.pos.set(0, 3000, 0);
   p.speed = 210;
@@ -113,7 +122,7 @@ function init() {
   p.chTk = 0;
   cameraMode = 'cockpit';
   p.gearDown = true;
-  p.mesh = createMiG29({ gearDown: true });
+  p.mesh = playerAc === 'su33' ? createSu33({ gearDown: true }) : createMiG29({ gearDown: true });
   p.mesh.scale.setScalar(3);
   scene.add(p.mesh);
   if (curM().loadout) {
