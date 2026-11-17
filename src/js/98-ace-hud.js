@@ -239,7 +239,7 @@ function ahRadar(cx, cy, r) {
     const s = toMap(e.pos),
       ef = e.fwd(),
       a = Math.atan2(ef.x * -hz + ef.z * hx, ef.x * hx + ef.z * hz),
-      locked = rd && rd.lock && rd.lock.tg === e;
+      locked = rd && rdLockedTg(e);
     g.save();
     g.translate(s.x, s.y);
     g.rotate(a);
@@ -519,9 +519,10 @@ function aceHud(mode) {
 
   // ---------- 표적: 레이더 접촉 / 락온
   for (const c of rd.ct) {
-    const L = rd.lock && rd.lock.c === c,
+    const L = rdLockedC(c),
+      main = rd.lock && rd.lock.c === c,
       col = L ? AH.red : AH.c,
-      lab = `${L ? 'LOCK ' : ''}${(c.dr / 1000).toFixed(1)}`;
+      lab = `${L ? (main || !rdMulti.length ? 'LOCK ' : 'LOCK2 ') : ''}${(c.dr / 1000).toFixed(1)}`;
     const s = proj(c.pos);
     if (!s || s.x < 0 || s.x > W || s.y < 0 || s.y > VH) {
       if (L || rd.sel === c) ahEdge(c.pos, col, lab);

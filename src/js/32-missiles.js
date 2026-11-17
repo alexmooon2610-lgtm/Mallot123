@@ -64,7 +64,7 @@ function sarhIlluminated(m) {
   const sh = m.sh,
     tg = m.tg;
   if (!sh || sh.hp <= 0 || !tg || tg.hp <= 0) return false;
-  if (sh === p) return !!(rd.on && rd.lock && rd.lock.tg === tg);
+  if (sh === p) return !!(rd.on && rdLockedTg(tg)); // 다중 락이면 걸린 표적 모두 비춘다
   return tg === p && !!sh.rd && sh.rd.phase === 'LOCK';
 }
 // SARH: 조준점(위치 · 속도)을 돌려준다. 없으면 null (직진)

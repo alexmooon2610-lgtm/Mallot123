@@ -103,7 +103,7 @@ function aiUpdate(dt, e) {
     }
   } else if (cvSamEvading || cvEvading) {
     /* 방공 회피 기동을 유지한다. */
-  } else if (rd.lock && rd.lock.tg === e && r < 11000) {
+  } else if (rdLockedTg(e) && r < 11000) {
     des = V()
       .crossVectors(d, V(0, 1, 0))
       .normalize();

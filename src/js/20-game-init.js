@@ -153,6 +153,7 @@ function init() {
   if (isAirbase() && curM().start === 'air') missionBeginWaypoint();
 
   rd = { on: 1, mode: 0, ct: [], sel: null, lock: null, ph: 0, sweep: 0, q: { st: '', t: 0, c: null, w: 0 } };
+  rdMulti = [];
   sk = { on: 0, st: 'OFF', tg: null, t: 0, nx: 0 };
   rw = { lvl: 0, brg: 0, hold: 0, nx: 0, alt: 0 };
   inp = { p: 0, r: 0, y: 0 };

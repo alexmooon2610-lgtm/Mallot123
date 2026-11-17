@@ -894,7 +894,7 @@ function drawIPV() {
       if (Math.abs(a) > az || c.dr > rng) continue;
       const px = bx0 + ((a + az) / (2 * az)) * (bx1 - bx0),
         py = by1 - (c.dr / rng) * (by1 - by0),
-        L = rd.lock && rd.lock.c === c;
+        L = rdLockedC(c);
       x.fillStyle = CRT;
       x.fillRect(px - 7, py - 2, 14, 5);
       if (L) {

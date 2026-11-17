@@ -60,15 +60,23 @@ const P = {
   IR: { v: 700, boost: 3, life: 15, range: 5000, min: 300, g: 40, vq: 400, gimbal: 60, seek: 6000 },
 };
 // ---------- 플레이어가 고를 수 있는 기체 (V15.0.0-alpha.3). 비행 제원은 P[키], 나머지 차이는 여기에
-// load: 자유 모드 기본 무장 · cm: 플레어 · 채프 각각 · radar: 레이더 탐지 거리 배율 · burn: 연료 % 소모 배율
+// load: 자유 모드 기본 무장 · cm: 플레어 · 채프 각각 · radar: 레이더 탐지 · 락 유지 거리 배율 · burn: 연료 % 소모 배율
+// trk: 접촉이 DET → TRK(락 가능)가 되기까지 초 · acq: QUICK-ACQ 자동 락까지 초 · locks: 동시에 걸 수 있는 레이더 락 수
 // hb: 히트박스 배율 (가로 · 높이 · 길이) — 기체가 크면 맞기도 쉽다
-//   Su-33: R-27 6 + R-73 4 (12 하드포인트), APP-50 96발(48+48, MiG-29 는 60발), N001K 레이더(N019 보다 약 1.3 배),
+//   Su-33: R-27 6 + R-73 4 (12 하드포인트), APP-50 96발(48+48, MiG-29 는 60발),
+//          레이더는 사용자 결정(2026-11-17)으로 탐지 거리 0.8 배 대신 다중 락 2 · TRK 0.8초 · QUICK-ACQ 0.7초 (게임 성격 차이),
 //          내부 연료 9,400 kg (MiG 약 3,500 kg) · 추력 1.54 배 → 같은 비율로 쓰면 체공 약 1.75 배 → burn 0.57,
 //          전장 21.18 / 17.32 · 전폭 14.70 / 11.36 · 전고 5.93 / 4.73
 // 캠페인은 이야기 설정상 MiG-29 고정 (20-game-init 의 init).
 const ACFT = {
-  mig: { name: 'MiG-29 9.12', short: 'MiG-29', load: { SARH: 4, IR: 4 }, cm: 30, radar: 1, burn: 1, hb: [1, 1, 1] },
-  su33: { name: 'Su-33', short: 'Su-33', load: { SARH: 6, IR: 4 }, cm: 48, radar: 1.3, burn: 0.57, hb: [1.29, 1.25, 1.22] },
+  mig: {
+    name: 'MiG-29 9.12', short: 'MiG-29', load: { SARH: 4, IR: 4 }, cm: 30,
+    radar: 1, trk: 1.5, acq: 1.2, locks: 1, burn: 1, hb: [1, 1, 1],
+  },
+  su33: {
+    name: 'Su-33', short: 'Su-33', load: { SARH: 6, IR: 4 }, cm: 48,
+    radar: 0.8, trk: 0.8, acq: 0.7, locks: 2, burn: 0.57, hb: [1.29, 1.25, 1.22],
+  },
 };
 let playerAc = 'mig'; // 이번 출격 기체 (init 에서 정한다)
 const pickedAc = () => {
@@ -80,6 +88,11 @@ const pickedAc = () => {
 };
 // 지금 레이더 모드의 탐지 거리 (기체 배율 포함)
 const rdRange = () => RM[rd.mode].rng * ((p && ACFT[playerAc].radar) || 1);
+// 다중 락 (Su-33): rd.lock 은 '주 락'(SARH 가 날아갈 표적), 나머지 락은 rdMulti 에 둔다.
+// rd 에 필드를 더하지 않는 이유 — 하네스가 rd 를 통째로 해시하므로 MiG 판정이 바뀐 것처럼 보인다. MiG 는 rdMulti 가 늘 비어 있다.
+let rdMulti = [];
+const rdLockedTg = tg => !!((rd.lock && rd.lock.tg === tg) || rdMulti.some(l => l.tg === tg)),
+  rdLockedC = c => !!((rd.lock && rd.lock.c === c) || rdMulti.some(l => l.c === c));
 const RM = [
   { n: 'SEARCH', az: 60, rng: 16000, rate: 0.8 },
   { n: 'MULTI-TRK', az: 50, rng: 14000, rate: 1.6 },

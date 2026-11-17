@@ -70,6 +70,15 @@ p.pos.set(0, 1000, 0); p.q.setFromEuler(new T.Euler(Math.PI / 2, 0, 0)); p.vd.se
 p.speed = 250; p.thr = 1; p.ab = 0; p.gearDown = false; p.flap = 0;
 """
 
+# 항모에서 25 km 떨어진 곳, 앞 5 km 에 F-16 두 대를 나란히 (같은 방향으로 날아가게) 둔다 — 다중 락 시험용
+MULTILOCK = """
+setSt('fly'); ops.safe = 0;
+es.forEach(e => scene.remove(e.mesh)); es = []; wt = 1e9; wv = 1; spawnWave();
+p.pos.set(20000, 3000, 25000); p.q.identity(); p.vd.set(0, 0, -1);
+p.speed = 250; p.thr = 0.9; p.ab = 0; p.gearDown = false; p.flap = 0; p.mesh.userData.setGear?.(false);
+es.forEach((e, i) => { e.pos.set(20000 + (i ? 400 : -400), 3000, 20000); e.q.identity(); e.vd.set(0, 0, -1); e.speed = 230; e.ai.hint = 99; });
+"""
+
 WAVECLEAR = """
 setSt('fly'); ops.safe = 0;
 p.pos.set(0, 3000, -20000); p.q.setFromEuler(new T.Euler(0, 0, 0)); p.vd.set(0, 0, -1);
@@ -109,6 +118,10 @@ SCENARIOS = {
     'su33-vclimb': ('CARRIER', 'LEGACY', 3000, keys(hold('ShiftLeft', 0, 3000)), 1, {'stAc': 'su33'}, VCLIMB),
     'su33-trap': ('CARRIER', 'LEGACY', 900, {}, 1, {'stAc': 'su33'},
                   TRAP.format(z=120, spd=140, sink=0.04) + 'p.gun = 10; p.fl = 3; p.am.SARH = 0;'),
+    # Su-33 다중 락: 앞 7 km 에 F-16 두 대 → MULTI-TRK → 락 → Tab → 두 번째 락 → SARH 발사 → Tab(주 락 전환) → SARH 발사
+    'su33-multilock': ('CARRIER', 'LEGACY', 1500, keys(tap('KeyT', 10), tap('KeyY', 150), tap('Tab', 170), tap('KeyY', 260),
+                                                       tap('Space', 290), tap('Tab', 340), tap('Space', 380)),
+                       1, {'stAc': 'su33'}, MULTILOCK),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),

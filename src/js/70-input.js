@@ -178,6 +178,7 @@ window.addEventListener('keydown', ev => {
       if (!rd.on) {
         rd.ct = [];
         rd.lock = null;
+        rdMulti = [];
         rd.sel = null;
       }
       msg('레이더 ' + (rd.on ? 'ON' : 'OFF'));
@@ -186,7 +187,7 @@ window.addEventListener('keydown', ev => {
       if (!rd.on) rej('레이더 OFF');
       else {
         rd.mode = (rd.mode + 1) % 4;
-        if (rd.mode !== 2) rd.lock = null;
+        if (rd.mode !== 2) (rd.lock = null), (rdMulti = []);
         rd.ct.forEach(c => {
           c.tTrk = 0;
           if (rd.mode === 0) c.st = 'DET';
@@ -202,7 +203,13 @@ window.addEventListener('keydown', ev => {
       if (!rd.ct.length) rej('선택 가능한 접촉 없음');
       else {
         rd.sel = rd.ct[(rd.ct.indexOf(rd.sel) + 1) % rd.ct.length];
-        msg('표적 선택 (락 아님)');
+        const ml = rdMulti.find(l => l.c === rd.sel);
+        if (ml) {
+          // 다중 락: 락 걸린 표적으로 Tab 하면 그 표적이 주 락이 된다 (SARH 가 그쪽으로 간다)
+          rdMulti = rdMulti.filter(l => l !== ml).concat(rd.lock ? [rd.lock] : []);
+          rd.lock = ml;
+          msg('주 락 전환', '#ff4');
+        } else msg(rd.lock && rd.lock.c === rd.sel ? '주 락 표적' : '표적 선택 (락 아님)');
       }
       break;
     case 'h':
