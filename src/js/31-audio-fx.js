@@ -90,6 +90,53 @@ function launchSnd() {
   noiseSnd(1.1, 0.5, 500, 3200, 'bandpass', 0.03);
   noiseSnd(0.6, 0.35, 1200, 200, 'lowpass', 0.005);
 }
+// 기총 연사음 (V14.6.0): 방아쇠를 당기는 동안 이어지는 "드르륵". 한 발마다 삐 소리를 내던 것을 바꿨다.
+// 잡음(총성 몸통) + 저음 톱니파(쿵쿵)를 rof Hz 사각파로 음량을 흔들어 발마다 맥박을 만든다.
+// 노드는 처음 쏠 때 한 번만 만들고, 켜고 끌 때는 출력 음량만 움직인다.
+let GUN_SND = null;
+function gunSnd(on) {
+  if (!AC || !NOISE) return;
+  if (!GUN_SND) {
+    const src = AC.createBufferSource(),
+      bp = AC.createBiquadFilter(),
+      thump = AC.createOscillator(),
+      lp = AC.createBiquadFilter(),
+      thumpG = AC.createGain(),
+      gate = AC.createGain(),
+      lfo = AC.createOscillator(),
+      lfoG = AC.createGain(),
+      out = AC.createGain();
+    src.buffer = NOISE;
+    src.loop = true;
+    bp.type = 'bandpass';
+    bp.frequency.value = 750;
+    bp.Q.value = 0.7;
+    thump.type = 'sawtooth';
+    thump.frequency.value = 55;
+    lp.type = 'lowpass';
+    lp.frequency.value = 240;
+    thumpG.gain.value = 0.5;
+    lfo.type = 'square';
+    lfo.frequency.value = P.mig.rof; // 발사 속도와 같은 박자
+    lfoG.gain.value = 0.5;
+    gate.gain.value = 0.5; // 0.5 ± 0.5 → 0 ~ 1 로 박자마다 끊긴다
+    lfo.connect(lfoG).connect(gate.gain);
+    src.connect(bp).connect(gate);
+    thump.connect(lp).connect(thumpG).connect(gate);
+    out.gain.value = 0;
+    gate.connect(out).connect(ACOUT || AC.destination);
+    src.start();
+    thump.start();
+    lfo.start();
+    GUN_SND = { out, on: false };
+  }
+  if (GUN_SND.on === on) return;
+  GUN_SND.on = on;
+  const g = GUN_SND.out.gain,
+    c = AC.currentTime;
+  g.cancelScheduledValues(c);
+  g.setTargetAtTime(on ? 0.45 : 0, c, on ? 0.006 : 0.05); // 켤 때는 바로, 끌 때는 짧은 여운
+}
 // ---------- 이펙트
 const spPool = [];
 function getSprite(col, add, map = TX) {

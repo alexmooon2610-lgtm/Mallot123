@@ -36,11 +36,13 @@ const readAsset = id => document.getElementById(id).textContent.replace(/\s+/g, 
 // 게임용 조정 파라미터 — 실제 기체/무장 성능값이 아님
 const P = {
   // g: 실기 한계 9G · gun: 기총 탄수. MiG-29 GSh-30-1 은 실기도 150발이다 (V14.4.2, 모든 모드 공통).
-  // rof: 기총 발사 속도(발/초). GSh-30-1 실기 1500~1800발/분 → 30발/초면 150발이 5초에 바닥난다 (V14.5.0).
+  // rof: 기총 발사 속도(발/초). GSh-30-1 실기 1500~1800발/분 → 30발/초면 150발이 5초에 바닥난다 (V14.5.0 부터).
   // tracer: 몇 발에 한 발이 예광탄인가. 나머지는 무광탄 — 판정은 똑같이 하고 화면에만 안 그린다.
-  mig: { maxV: 270, stall: 85, thr: 16, ab: 15, pit: 1.5, rol: 3, yaw: 0.5, g: 9, vc: 135, gun: 150, rof: 30, tracer: 4 },
-  // gun: 게임값 (실기 M61 511발). 적기 발사 간격은 36-enemy-ai 의 0.09초 그대로
-  f16: { maxV: 265, stall: 90, thr: 15, ab: 14, pit: 1.35, rol: 4.2, yaw: 0.4, g: 9, vc: 140, gun: 300, tracer: 3 },
+  // gunDmg: 이 기체가 쏜 탄 한 발의 피해 (표적 hp 1 기준). MiG 30 mm 는 10발이면 격추 (V14.6.0, 사용자 결정)
+  mig: { maxV: 270, stall: 85, thr: 16, ab: 15, pit: 1.5, rol: 3, yaw: 0.5, g: 9, vc: 135, gun: 150, rof: 30, tracer: 4, gunDmg: 0.1 },
+  // gun: 게임값 (실기 M61 511발). 적기 발사 간격은 36-enemy-ai 의 0.09초 그대로. gunDmg 는 예전 값 그대로
+  f16: { maxV: 265, stall: 90, thr: 15, ab: 14, pit: 1.35, rol: 4.2, yaw: 0.4, g: 9, vc: 140, gun: 300, tracer: 3, gunDmg: 0.03 },
+  MUZZLE_V: 1000, // 탄의 포구 속도 (월드 단위/초). V14.6.0 부터 쏜 기체의 속도가 더해진다
   flapLim: [999, 210, 160],
   // range 는 미사일이 실제로 도달할 수 있는 거리에 맞춘 값 (예전 10000 / 6500 은 도달 불가 거리까지 발사 허용)
   // g: 최대 횡가속(G) · vq: 해면에서 그 G 를 다 낼 수 있는 속도(m/s) · gimbal: 시커 시야 반각(°) · seek: IR 시커 탐지 거리(m)

@@ -164,23 +164,21 @@ function samDecoy(a) {
 }
 function drawGroundThreatHud() {
   if (!p || !isAirbase() || !curM().samEnabled) return;
-  const y = VH * 0.22,
+  // 오른쪽 위(시간 · 격추 수 아래)에 둔다. 예전엔 화면 가운데 VH*0.22 에 있어 임무 안내 줄(opsHud)과 겹쳤다 (V14.6.0)
+  const x = W - 22,
+    y = 78,
     state = samRwr.state;
   const color =
     state === 'TRACK' ? '#ff6f58' : state === 'SEARCH' ? '#ffd36b' : state === 'MASKED' ? '#9cf' : '#a8d8c0';
-  const agl = Math.max(0, p.pos.y - terrainHeightAt(p.pos.x, p.pos.z));
-  tx(`GROUND ${state}${samRwr.site ? ' · ' + samRwr.site : ''}`, W / 2, y, color, 'center', 12);
-  tx(`AGL ${agl.toFixed(0)} m`, W / 2, y + 18, '#cde4e8', 'center', 10);
+  const agl = Math.max(0, p.pos.y - terrainHeightAt(p.pos.x, p.pos.z)),
+    lines = state === 'TRACK' || state === 'MASKED' ? 3 : 2;
+  g.fillStyle = 'rgba(0,12,8,.42)';
+  g.fillRect(x - 200, y - 16, 210, lines * 17 + 8);
+  tx(`GROUND ${state}${samRwr.site ? ' · ' + samRwr.site : ''}`, x, y, color, 'right', 12);
+  tx(`AGL ${agl.toFixed(0)} m`, x, y + 17, '#cde4e8', 'right', 10);
   if (state === 'TRACK')
-    tx(
-      `BEARING ${samRwr.bearing.toFixed(0)}° · ${(samRwr.range / 1000).toFixed(1)} km`,
-      W / 2,
-      y + 36,
-      '#ff9a7d',
-      'center',
-      10
-    );
-  if (state === 'MASKED') tx('TERRAIN MASKING', W / 2, y + 36, '#9cf', 'center', 10);
+    tx(`BEARING ${samRwr.bearing.toFixed(0)}° · ${(samRwr.range / 1000).toFixed(1)} km`, x, y + 34, '#ff9a7d', 'right', 10);
+  if (state === 'MASKED') tx('TERRAIN MASKING', x, y + 34, '#9cf', 'right', 10);
 }
 
 function opsHud() {

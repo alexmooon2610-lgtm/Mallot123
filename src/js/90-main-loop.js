@@ -56,6 +56,7 @@ function loop(n) {
   const dt = Math.min(0.05, Math.max(0, (n - last) / 1000));
   autoRes(n - last);
   last = n;
+  if (S !== 'play') gunSnd(false); // 일시정지 · 결과 화면에서 연사음이 남지 않게
   if (S == 'play' && dt > 0) {
     t += dt;
     if (p && p.fuel > 0) {

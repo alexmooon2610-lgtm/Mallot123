@@ -458,10 +458,9 @@ function aceHud(mode) {
     const x = 22,
       y = VH - 70,
       dmg = Math.round((1 - p.hp) * 100);
-    if (cockpit) {
-      g.fillStyle = 'rgba(0,12,8,.5)';
-      g.fillRect(x - 10, y - 24, 210, 84);
-    }
+    // 받침판: 외부 시점에서도 깐다 (밝은 바다 · 구름 위에서 글씨가 묻혔다, V14.6.0)
+    g.fillStyle = cockpit ? 'rgba(0,12,8,.5)' : 'rgba(0,12,8,.42)';
+    g.fillRect(x - 10, y - 24, 210, 84);
     aT('DMG', x, y, AH.dim, 'left', 11, 600);
     aT(dmg + '%', x + 44, y, dmg >= 60 ? AH.red : dmg >= 30 ? AH.amb : AH.c, 'left', 22, 700);
     aT('FUEL', x, y + 26, AH.dim, 'left', 11, 600);
@@ -484,10 +483,9 @@ function aceHud(mode) {
     const fr = canFire(),
       x = cockpit ? W - 22 : rcx - rr - 20,
       y0 = cockpit ? rcy - rr - 96 : VH - 104;
-    if (cockpit) {
-      g.fillStyle = 'rgba(0,12,8,.5)';
-      g.fillRect(x - 134, y0 - 22, 144, 96);
-    }
+    // 받침판: 외부 시점에서도 깐다 (밝은 바다 위에서 무장 칸 글씨가 묻혔다, V14.6.0)
+    g.fillStyle = cockpit ? 'rgba(0,12,8,.5)' : 'rgba(0,12,8,.42)';
+    g.fillRect(x - 134, y0 - 22, 144, 96);
     const row = (lab, val, on, i, col) => {
       const y = y0 + i * 22;
       if (on) {

@@ -93,25 +93,28 @@ function bullet(a, f) {
     pos = a.pos
       .clone()
       .addScaledVector(f, 28)
-      .add(V(0, -1.5, 0));
+      .add(V(0, -1.5, 0)),
+    // 탄 속도 = 포구 속도 + 쏜 기체의 속도 (V14.6.0). 예전엔 기체 속도를 무시해 고속에서 탄이 실제보다 느렸다
+    v = d.multiplyScalar(P.MUZZLE_V).add(velOf(a));
   a.tc = ((a.tc | 0) % a.prm.tracer) + 1; // 1 번째 발이 예광탄
   let m = null,
     off = null;
   if (a.tc === 1) {
     m = new T.Mesh(bGeo, bMat[a === p ? 0 : 1]);
     m.position.copy(pos);
-    m.quaternion.setFromUnitVectors(V(0, 0, -1), d);
+    m.quaternion.setFromUnitVectors(V(0, 0, -1), v.clone().normalize());
     scene.add(m);
     // 화면용: 내 예광탄은 왼쪽 날개뿌리 기총 포구에서 나와 조준선으로 모여드는 것처럼 그린다.
     // 판정 위치(b.p)는 그대로 조준선 위다. 그냥 그리면 눈 바로 앞에서 정면으로 멀어져 화면 한가운데 점이 된다.
     if (a === p) off = V(-4.5, -2.5, 0).applyQuaternion(p.q);
   }
-  bl.push({ p: pos, m, off, side: a.side, age: 0, v: d.multiplyScalar(1000) });
+  bl.push({ p: pos, m, off, side: a.side, dmg: a.prm.gunDmg, age: 0, v });
 }
 function hurt(a, d) {
   if (a === p && isAirbase()) missionStats.hits++;
   a.hp -= d;
-  if (a.hp <= 0) weaponKill(a);
+  // 1e-9: 0.1 을 열 번 빼면 부동소수점으로 1.4e-16 이 남아 열 번째 발에 안 죽는다
+  if (a.hp <= 1e-9) weaponKill(a);
   else if (a === p) {
     tone(200, 0.08, 'square', 0.1);
     if (!p.hm || t - p.hm > 1) {
@@ -138,7 +141,7 @@ function updBul(dt) {
         b.age = 9;
         puff(b.p, 0xffaa44, 25, 0.5, 2, 1);
         if (a.drone) a.lastHit = 'GUN';
-        hurt(a, a === p ? 0.03 : 0.045);
+        hurt(a, b.dmg); // 쏜 기체 기준 피해 (P.mig.gunDmg · P.f16.gunDmg)
         break;
       }
     }

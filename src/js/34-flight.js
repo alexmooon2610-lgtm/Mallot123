@@ -108,8 +108,8 @@ function updP(dt) {
     bullet(p, f);
     p.gun--;
     p.gc += 1 / p.prm.rof;
-    tone(140, 0.04, 'square', 0.04);
   }
+  gunSnd(!!K.g && p.gun > 0); // 연사음 (31-audio-fx)
   if (AC) {
     engG.gain.value = 0.03 + 0.05 * p.thr + 0.06 * p.ab;
     eng.frequency.value = 45 + p.thr * 50 + p.ab * 25;
