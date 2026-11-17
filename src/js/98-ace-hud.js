@@ -686,8 +686,11 @@ function aceHud(mode) {
     });
     ahGlow(true);
   }
-  if (!es.length && wt > 0 && !isAirbase())
-    aT('NEXT WAVE  ' + Math.ceil(wt) + 's', cx, VH * 0.24, AH.amb, 'center', 16, 700);
+  if (!es.length && wt > 0 && !isAirbase()) {
+    const held = ops.st !== 'fly'; // 갑판 위에서는 시계가 멈춘다
+    aT('NEXT WAVE  ' + Math.ceil(wt) + 's' + (held ? '  ·  HOLD' : ''), cx, VH * 0.24, AH.amb, 'center', 16, 700);
+    aT(held ? '발진하면 다시 흐른다' : '보급은 항모 착함 — 착함하면 시계가 멈춘다', cx, VH * 0.24 + 20, AH.dim, 'center', 11, 600);
+  }
   if (cmHud.until > t)
     aT(cmHud.text, cx, VH - 26, cmHud.text.includes('NO EFFECT') ? AH.amb : AH.cyan, 'center', 13, 700);
 

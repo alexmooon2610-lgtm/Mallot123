@@ -365,7 +365,7 @@ function showOv() {
     ['P / Esc', '일시정지'],
     ['Enter', '출격 / 재시작'],
   ];
-  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V14.7.0</span>';
+  const title = S == 'over' ? over : S == 'pause' ? '일시정지' : 'STEEL TEMPEST <span class="version">V14.8.0</span>';
   // 결과(디브리핑)와 버튼을 먼저 보여 주고, 모드 선택 · 조작 키 · 상태는 접어 둔다
   const debrief =
     S == 'over' && (isAirbase() || curM().campaign) && (missionComplete || missionFailed) && missionResult
@@ -385,7 +385,7 @@ function showOv() {
     modes +=
       activeMode === 'AIRBASE'
         ? `<p>${curM().label} ${curM().title} — ${curM().sub.ko}</p>`
-        : `<p>LEGACY CARRIER · 기존 쿠즈네초프 항모 운용과 웨이브 전투를 즐길 수 있습니다. 항모 발진·착함 및 전투 재보급 루프를 유지합니다.</p>`;
+        : `<p>LEGACY CARRIER · 기존 쿠즈네초프 항모 운용과 웨이브 전투를 즐길 수 있습니다. 항모 발진 → 전투 → 착함 보급 루프입니다 (공중 재보급 없음).</p>`;
   }
   const status =
     S != 'menu' && S != 'pause'

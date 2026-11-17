@@ -122,7 +122,8 @@ function loop(n) {
       }
       return true;
     });
-    if (!isAirbase() && !es.length && wt > 0 && (wt -= dt) <= 0) spawnWave();
+    // 다음 웨이브 시계는 비행 중에만 흐른다 (착함 · 보급 · 갑판 대기 중에는 멈춤, V14.8.0)
+    if (!isAirbase() && !es.length && wt > 0 && ops.st === 'fly' && (wt -= dt) <= 0) spawnWave();
   }
   // 연출 입자. 선택 항목: delay(늦게 켜짐) · vel/grav(움직임) · c0→c1(색이 식음) · fade(사라지는 곡선 지수) · tr(연기 꼬리)
   for (const f of fx) {

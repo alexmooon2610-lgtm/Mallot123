@@ -279,17 +279,15 @@ function kill(a) {
     }
     if (curM().onKill) curM().onKill(a);
     if (!es.length && curM().waves !== false) {
-      wt = 6;
-      p.am.SARH = Math.min(6, p.am.SARH + 2);
-      p.am.IR = Math.min(6, p.am.IR + 2);
-      p.gun = Math.min(P.mig.gun, p.gun + 50); // 탄창의 1/3 (예전 500발 중 +150 과 같은 비율)
-      p.fl = Math.min(30, p.fl + 8);
-      p.ch = Math.min(30, p.ch + 8);
-      p.hp = Math.min(1, p.hp + 0.3);
-      msg(`WAVE ${wv} 격파 — 재보급, 6초 후 다음 웨이브`, '#ff4');
+      // V14.8.0: 공중 재보급 삭제 (예전엔 웨이브마다 미사일 +2 · 기총 +50 · 플레어/채프 +8 · 체력 +30%, 미사일은 6발까지).
+      // 보급은 항모 착함(42-carrier-ops 의 serve)으로만 받는다. 다음 웨이브까지 WAVE_GAP 초 — 비행 중에만 흐른다(90-main-loop).
+      wt = WAVE_GAP;
+      msg(`WAVE ${wv} 격파 — 다음 웨이브까지 ${WAVE_GAP}초 · 보급은 항모 착함`, '#ff4');
     }
   }
 }
+// 웨이브 사이 시간 (초). 착함해 보급받는 동안(갑판 위)은 멈춘다 — 보급이 끝나고 다시 발진해야 흐른다
+const WAVE_GAP = 30;
 function end(s) {
   S = 'over';
   over = s;

@@ -70,6 +70,14 @@ p.pos.set(0, 1000, 0); p.q.setFromEuler(new T.Euler(Math.PI / 2, 0, 0)); p.vd.se
 p.speed = 250; p.thr = 1; p.ab = 0; p.gearDown = false; p.flap = 0;
 """
 
+WAVECLEAR = """
+setSt('fly'); ops.safe = 0;
+p.pos.set(0, 3000, -20000); p.q.setFromEuler(new T.Euler(0, 0, 0)); p.vd.set(0, 0, -1);
+p.speed = 250; p.thr = 0.8; p.ab = 0; p.gearDown = false; p.flap = 0;
+p.am.SARH = 1; p.am.IR = 0; p.gun = 20; p.fl = 2; p.ch = 2; p.hp = 0.5;
+es.slice().forEach(e => kill(e));
+"""
+
 SCENARIOS = {
     # 이름: (env, 임무 id, 프레임 수, 입력, 시드[, localStorage 초기값])
     'carrier': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1),
@@ -90,6 +98,10 @@ SCENARIOS = {
     'abland': ('AIRBASE', 'T02', 600, {}, 1, {}, ABLAND),
     # 수직 상승 (V14.7.0 물리): 고도 1000 m · 900 km/h 에서 기수 수직 · 애프터버너. 약 36초 · 8 km 에서 실속 → 기수가 떨어진다
     'vclimb': ('CARRIER', 'LEGACY', 3000, keys(hold('ShiftLeft', 0, 3000)), 1, {}, VCLIMB),
+    # 웨이브 격파 (V14.8.0): 공중 재보급 없음 · 다음 웨이브 30초 뒤 (비행 중이라 흐른다 → 약 1800 프레임에 새 적)
+    'waveclear': ('CARRIER', 'LEGACY', 2100, {}, 1, {}, WAVECLEAR),
+    # 웨이브 격파 직후 착함: 갑판 위에서는 웨이브 시계가 멈춘다 (보급 · 견인이 끝나도 발진 전까지 30초 그대로)
+    'wavedeck': ('CARRIER', 'LEGACY', 1200, {}, 1, {}, TRAP.format(z=120, spd=140, sink=0.04).replace('es = []; wt = 1e9;', '') + 'es.slice().forEach(e => kill(e));'),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),

@@ -298,6 +298,7 @@ const MISSIONS = {
           'T 레이더 모드 · Tab 표적 선택 · Y 락온 · Space 발사. SARH 는 명중까지 락 유지, IR 은 발사 후 망각.',
           'X / C 로 플레어·채프를 사용해 미사일을 회피한다.',
           '착함: 후방 갑판 접근 · 속도 590 km/h 미만 · 완만한 강하. 기어·플랩은 자동 보조, 와이어를 놓치면 볼터(재접근).',
+          '공중 재보급은 없다. 웨이브 사이 30초 — 갑판에 내려와 있는 동안은 다음 웨이브가 기다린다.',
         ],
       },
       en: {
@@ -312,6 +313,7 @@ const MISSIONS = {
           'T radar mode · Tab select · Y lock · Space fire. Hold the lock until a SARH hits; IR is fire-and-forget.',
           'Use X / C for flares and chaff to defeat missiles.',
           'Recovery: approach the stern · below 590 km/h · gentle descent. Gear/flaps are assisted; a missed wire is a bolter (go around).',
+          'No airborne resupply. 30 s between waves — the next wave waits while you are on deck.',
         ],
       },
     },
