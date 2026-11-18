@@ -9,7 +9,8 @@ function heatScore(o, from, fwd, cone) {
     r = d.length();
   if (r < 1e-3) return 0;
   const a = Math.acos(clamp(fwd.dot(d.divideScalar(r)), -1, 1)) / D;
-  return a > cone ? 0 : (heatOf(o, from) / (1 + (r / 3500) ** 2)) * (1 - (0.5 * a) / cone);
+  // 날씨: 비 · 구름 속 수분이 적외선을 먹는다 → 같은 거리에서 열원이 약하게 보인다 (WX.irK, 맑음 1)
+  return a > cone ? 0 : (heatOf(o, from) / (1 + (r / (3500 * WX.irK)) ** 2)) * (1 - (0.5 * a) / cone);
 }
 // ---------- 미사일 유도
 //  - SARH(R-27R · AIM-7): 쏜 쪽 레이더가 표적을 계속 락(조사)하고 있어야 반사파를 따라간다.
@@ -121,7 +122,7 @@ function irGuide(m, pr, dt) {
   let best = null,
     bs = MSL_IR_ACQ;
   for (const a of [p, ...es]) {
-    if (a.side === m.side || a.hp <= 0 || a.pos.distanceTo(m.pos) > pr.seek) continue;
+    if (a.side === m.side || a.hp <= 0 || a.pos.distanceTo(m.pos) > pr.seek * WX.irK) continue;
     const sc = heatScore(a, m.pos, m.dir, pr.gimbal);
     if (sc > bs) {
       bs = sc;

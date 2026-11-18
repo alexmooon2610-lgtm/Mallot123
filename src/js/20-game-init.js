@@ -145,6 +145,10 @@ function init() {
     c.visible = true;
   });
   cloudLayer.setWeather(curM().weather);
+  // 날씨 · 시간대 (02-weather): 무한모드(LEGACY)만 브리핑에서 고른 값, 나머지는 낮 · 맑음 (= 예전 그대로)
+  weatherApply(wxFor(curM()));
+  if (WX.sig !== 'day|clear')
+    msg(`기상: ${WX_TOD[WX.tod].ko} · ${WX_KIND[WX.kind].ko}${WX.wind.lengthSq() ? ` — 옆바람 ${Math.round(WX.wind.length())} m/s` : ''}`, '#9cf');
   chaseCamera.initialized = false;
   if (isAirbase()) {
     airbaseInit();

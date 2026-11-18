@@ -136,6 +136,10 @@ SCENARIOS = {
                      TRAP.format(z=120, spd=140, sink=0.04) + 'p.am.SARH = 0; p.am.IR = 1;'),
     # 코브라 (alpha.3, Su-33 카나드): 1000 m · 480 km/h 수평 → Q → 약 2.4초 뒤 실속속도 1.05배 언저리로 빠져나오는지
     'su33-cobra': ('CARRIER', 'LEGACY', 400, keys(tap('KeyQ', 10)), 1, {'stAc': 'su33'}, COBRA_SET),
+    # 날씨 (alpha.4, 무한모드): 밤 · 폭풍 — 바람 · 난기류(rnd) · 열추적 배율이 결정론적으로 도는지, 착함은 옆바람 속에서
+    'wx-storm': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1, {'stWx': '{"tod":"night","kind":"storm"}'}),
+    'wx-rain-trap': ('CARRIER', 'LEGACY', 900, {}, 1, {'stWx': '{"tod":"dusk","kind":"rain"}'},
+                     TRAP.format(z=120, spd=140, sink=0.04) + 'p.gun = 10; p.fl = 3; p.am.SARH = 0;'),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),

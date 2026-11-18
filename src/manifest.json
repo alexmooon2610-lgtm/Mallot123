@@ -12,6 +12,7 @@
     "05-net.js",
     "01-environment.js",
     "01-cloud-layer.js",
+    "02-weather.js",
     "10-model-f16.js",
     "10-model-mig29.js",
     "10-model-mig29-glb.js",
