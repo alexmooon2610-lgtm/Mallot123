@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>STEEL TEMPEST V15.0.0-alpha.3 — FIRST SORTIE</title>
+    <title>STEEL TEMPEST V15.0.0-alpha.4 — FIRST SORTIE</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <style>
       /* ============ 1. BASE · 오버레이/메뉴 ============ */
@@ -2068,6 +2068,23 @@ body.ac-hold #ov {
   background: linear-gradient(#f5d78a, #d7a64a);
   color: #1a1205;
 }
+/* ============ 기상 · 시간대 고르기 (V15.0.0-alpha.4 · 02-weather) ============ */
+.mf-wx-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.mf-wx-row .mf-btn {
+  flex: 1 1 0;
+  min-width: 64px;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+.mf-wx-row .mf-btn.selected {
+  background: linear-gradient(#9fd4ff, #5f9fd8);
+  color: #06121e;
+}
 /* ============ V13.4 · 선실 단말기 메뉴 ============ */
 #st-cabin {
   position: absolute;
@@ -3659,7 +3676,7 @@ window.__stIntroT0 = performance.now();
             <div class="ac-title-kicker">THE LAST WAR OF THE CENTURY</div>
             <h1 class="ac-title-name">STEEL<b>TEMPEST</b></h1>
             <div class="ac-title-stripe" aria-hidden="true"><i></i><i></i><i></i></div>
-            <div class="ac-title-sub">AIR COMBAT · V15.0.0-alpha.3</div>
+            <div class="ac-title-sub">AIR COMBAT · V15.0.0-alpha.4</div>
           </div>
           <div class="ac-title-start">
             <button class="ac-title-btn" id="mf-start">PRESS ENTER</button>
@@ -3786,6 +3803,12 @@ window.__stIntroT0 = performance.now();
                 <h3 id="mf-brief-h5" style="margin-top: 16px">LOADOUT</h3>
                 <div class="mf-loadout-pick" id="mf-loadout-list"></div>
                 <p class="mf-loadout-note" id="mf-loadout-info"></p>
+              </div>
+              <div class="mf-wx" id="mf-brief-wx" hidden>
+                <h3 id="mf-brief-h6" style="margin-top: 16px">WEATHER</h3>
+                <div class="mf-wx-row" id="mf-wx-tod"></div>
+                <div class="mf-wx-row" id="mf-wx-kind"></div>
+                <p class="mf-loadout-note" id="mf-wx-note"></p>
               </div>
               <h3 id="mf-brief-h4" style="margin-top: 16px">RECORD</h3>
               <div class="mf-brief-best" id="mf-brief-best"></div>
@@ -3948,7 +3971,7 @@ const pickedAc = () => {
   }
 };
 // 지금 레이더 모드의 탐지 거리 (기체 배율 포함)
-const rdRange = () => RM[rd.mode].rng * ((p && ACFT[playerAc].radar) || 1);
+const rdRange = () => RM[rd.mode].rng * ((p && ACFT[playerAc].radar) || 1) * WX.radK; // 날씨(폭우 잡음) 배율 — 02-weather
 // 다중 락 (ACFT[...].locks ≥ 2 인 기체 — 지금은 없음): rd.lock 은 '주 락'(SARH 가 날아갈 표적), 나머지 락은 rdMulti 에 둔다.
 // rd 에 필드를 더하지 않는 이유 — 하네스가 rd 를 통째로 해시하므로 MiG 판정이 바뀐 것처럼 보인다. MiG 는 rdMulti 가 늘 비어 있다.
 let rdMulti = [];
@@ -5050,7 +5073,7 @@ sea.onBeforeRender = () => {
 const CLOUD_BASE = 2600,
   CLOUD_THICK = 520,
   CLOUD_TILE = 20000,
-  CLOUD_COVER = { CLEAR: [0.5, 0.64], CLOUDY: [0.36, 0.52], RAIN: [0.22, 0.4], FOG: [0.3, 0.46] };
+  CLOUD_COVER = { CLEAR: [0.5, 0.64], CLOUDY: [0.36, 0.52], RAIN: [0.22, 0.4], FOG: [0.3, 0.46], STORM: [0.1, 0.26] };
 const cloudLayer = (() => {
   let seed = 19991218;
   const lr = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -5138,6 +5161,7 @@ const cloudLayer = (() => {
     c.scale.set(2600 + lr() * 2600, 900 + lr() * 700, 1);
   }
   return {
+    mats: [bottom.material, top.material], // 날씨 · 시간대 색 (02-weather)
     // 날씨에 따라 덮인 정도를 바꾼다 (지금 임무는 전부 CLEAR — 맑아도 산개운은 있다)
     setWeather(w) {
       const c = CLOUD_COVER[w] || CLOUD_COVER.CLEAR;
@@ -5176,6 +5200,351 @@ const cloudLayer = (() => {
     },
   };
 })();
+// ===== 날씨 · 시간대 (V15.0.0-alpha.4) — 무한모드(LEGACY) 전용, 출격 전 브리핑에서 고른다 =====
+// 사용자 결정 (2026-11-17): 전투에도 영향 · 시간대(낮/석양/밤)와 날씨(맑음/흐림/비/소나기/폭풍)는 출격 전에 골라 한 판 동안 고정.
+//
+// 보이는 것 (판정과 무관, vrnd · arnd 만 쓴다):
+//   하늘 · 안개 · 햇빛(밤에는 달빛) · 바다색 · 구름층 덮임과 색 · 별(밤) · 빗줄기 · 번개(폭풍) · 빗소리 · 천둥
+// 판정에 들어가는 것 (WX.*, 기본 '낮 · 맑음' 이면 전부 1 · 0 이라 예전과 프레임 단위로 같다):
+//   irK   열추적 감도 거리 배율 — 비 · 구름 속 수분이 적외선을 먹는다 (밤에는 배경이 차가워 조금 늘어난다)
+//   radK  레이더 탐지 거리 배율 — 폭우 잡음(클러터)
+//   wind  바람 (m/s, 서쪽에서) — 공중의 모든 기체가 같이 밀린다 → 항모 착함 때 옆바람을 잡아야 한다
+//   turb  난기류 세기 (rad/s) — 플레이어 기체가 흔들린다 (판정 난수 rnd 로, 켜졌을 때만 당긴다)
+const WX_TOD = {
+  day: { ko: '낮', en: 'DAY' },
+  dusk: { ko: '석양', en: 'DUSK' },
+  night: { ko: '밤', en: 'NIGHT' },
+};
+const WX_KIND = {
+  clear: { ko: '맑음', en: 'CLEAR', irK: 1, radK: 1, wind: 0, turb: 0, rain: 0, cover: 'CLEAR', dark: 0 },
+  overcast: { ko: '흐림', en: 'OVERCAST', irK: 0.95, radK: 1, wind: 3, turb: 0, rain: 0, cover: 'CLOUDY', dark: 0.45 },
+  rain: { ko: '비', en: 'RAIN', irK: 0.8, radK: 0.95, wind: 6, turb: 0.015, rain: 0.55, cover: 'RAIN', dark: 0.7 },
+  shower: { ko: '소나기', en: 'SHOWERS', irK: 0.85, radK: 0.95, wind: 8, turb: 0.03, rain: 0.8, cover: 'RAIN', dark: 0.6 },
+  storm: { ko: '폭풍', en: 'STORM', irK: 0.65, radK: 0.85, wind: 15, turb: 0.07, rain: 1, cover: 'STORM', dark: 0.88 },
+};
+// 지금 판의 날씨 (init 에서 weatherApply 가 채운다)
+const WX = { tod: 'day', kind: 'clear', irK: 1, radK: 1, wind: V(0, 0, 0), turb: 0, rain: 0, sig: 'day|clear' };
+const WX_WIND_DIR = V(1, 0, 0.25).normalize(); // 서남서에서 불어온다 (항모 진행 방향 −z 에 대해 옆바람)
+
+// 고른 값 (localStorage 'stWx') — 무한모드에서만 쓰고, 나머지 임무는 언제나 낮 · 맑음
+const wxPick = () => {
+  try {
+    const o = JSON.parse(localStorage.getItem('stWx') || '{}');
+    return { tod: WX_TOD[o.tod] ? o.tod : 'day', kind: WX_KIND[o.kind] ? o.kind : 'clear' };
+  } catch (e) {
+    return { tod: 'day', kind: 'clear' };
+  }
+};
+const wxSetPick = o => {
+  try {
+    localStorage.setItem('stWx', JSON.stringify(o));
+  } catch (e) {}
+};
+const wxFor = M => (M && M.id === 'LEGACY' ? wxPick() : { tod: 'day', kind: 'clear' });
+
+// ---------- 기본값 (01-environment 가 정한 '낮 · 맑음') 을 한 번 기억해 둔다
+const WX_BASE = (() => {
+  const hemi = scene.children.find(o => o.isHemisphereLight),
+    su = skyDome.material.uniforms,
+    se = sea.material.uniforms;
+  return {
+    sunDir: SUN_DIR.clone(),
+    sunCol: sun.color.clone(),
+    sunI: sun.intensity,
+    hemiSky: hemi.color.clone(),
+    hemiGround: hemi.groundColor.clone(),
+    hemiI: hemi.intensity,
+    skyTop: su.top.value.clone(),
+    skySun: su.sunCol.value.clone(),
+    seaDeep: se.deep.value.clone(),
+    seaShallow: se.shallow.value.clone(),
+    seaSky: se.skyCol.value.clone(),
+    seaSun: se.sunCol.value.clone(),
+    cloudMats: cloudLayer.mats.map(m => m.color.clone()),
+    spriteCol: clouds[0] ? clouds[0].material.color.clone() : new T.Color(1, 1, 1),
+    exposure: R.toneMappingExposure,
+    hemi,
+  };
+})();
+// 시간대별 기본 빛 (색은 코드에 쓴 16진수 = sRGB)
+const WX_TOD_LOOK = {
+  dusk: {
+    sunDir: V(0.78, 0.1, -0.62),
+    sunCol: 0xffb37a,
+    sunI: 1.55,
+    hemiSky: 0xffc8a0,
+    hemiGround: 0x3a3040,
+    hemiI: 0.36,
+    skyTop: 0x253a72,
+    skySun: 0xffa060,
+    fog: 0xe5a374,
+    seaDeep: 0x0a1c30,
+    seaShallow: 0x2b4560,
+    seaSky: 0xc98a66,
+    seaSun: 0xffb37a,
+    cloudBottom: 0x8a7584,
+    cloudTop: 0xffd2b0,
+    sprite: 0xffd8bc,
+    exposure: 0.85,
+  },
+  night: {
+    // 달빛: 높이 뜬 차가운 빛. 하늘 셰이더의 태양 번짐이 달무리 노릇을 한다
+    sunDir: V(-0.35, 0.62, -0.5),
+    sunCol: 0x9fb6ff,
+    sunI: 0.5,
+    hemiSky: 0x2b3f6a,
+    hemiGround: 0x05080f,
+    hemiI: 0.3,
+    skyTop: 0x02050d,
+    skySun: 0x8094c8,
+    fog: 0x0c1628,
+    seaDeep: 0x01050b,
+    seaShallow: 0x061424,
+    seaSky: 0x0c1a32,
+    seaSun: 0x9fb6ff,
+    cloudBottom: 0x1b2333,
+    cloudTop: 0x3c4b68,
+    sprite: 0x3c4b68,
+    exposure: 1.2,
+  },
+};
+// 회색으로 끌어당기기 (흐림 · 비): 밝기는 남기고 채도를 뺀 뒤 어둡게
+const wxGrey = (c, amt, darken) => {
+  const l = c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722;
+  return c.clone().lerp(new T.Color(l, l * 1.02, l * 1.06), amt).multiplyScalar(1 - darken);
+};
+// 장면 배치용 난수 (불러올 때 한 번 — vrnd 는 38-trails-fx 에서 정의되어 아직 못 쓴다)
+let _wxs = 20261118;
+const wxr = () => (_wxs = (_wxs * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+// 별 (밤): 하늘 돔처럼 카메라를 따라다니는 점들. 연출 난수(vrnd)
+const wxStars = (() => {
+  const n = 900,
+    pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const u = wxr() * 2 - 1,
+      th = wxr() * Math.PI * 2,
+      y = Math.abs(u) * 0.95 + 0.05,
+      r = Math.sqrt(1 - y * y);
+    pos.set([Math.cos(th) * r * 900, y * 900, Math.sin(th) * r * 900], i * 3);
+  }
+  const g = new T.BufferGeometry();
+  g.setAttribute('position', new T.BufferAttribute(pos, 3));
+  const s = new T.Points(
+    g,
+    new T.PointsMaterial({ color: 0xdfe8ff, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0.85, fog: false, depthWrite: false })
+  );
+  s.renderOrder = -999;
+  s.frustumCulled = false;
+  s.visible = false;
+  s.onBeforeRender = (r, sc, c) => {
+    s.position.copy(c.position);
+    s.updateMatrixWorld();
+  };
+  scene.add(s);
+  return s;
+})();
+// 빗줄기: 카메라 둘레 상자 안의 짧은 선분들. 떨어지는 속도 + 바람 − 카메라 속도로 흘러 속도감이 난다
+const WX_RAIN_N = MOBILE ? 900 : 2200,
+  WX_RAIN_BOX = 70;
+const wxRain = (() => {
+  const off = new Float32Array(WX_RAIN_N * 3),
+    pos = new Float32Array(WX_RAIN_N * 6);
+  for (let i = 0; i < off.length; i++) off[i] = (wxr() - 0.5) * WX_RAIN_BOX;
+  const g = new T.BufferGeometry();
+  g.setAttribute('position', new T.BufferAttribute(pos, 3));
+  const m = new T.LineSegments(
+    g,
+    new T.LineBasicMaterial({ color: 0xb8c6d6, transparent: true, opacity: 0.35, fog: false, depthWrite: false })
+  );
+  m.frustumCulled = false;
+  m.visible = false;
+  scene.add(m);
+  return { m, g, off, pos, lastCam: new T.Vector3(), vel: new T.Vector3() };
+})();
+let wxFlash = null; // 번개 화면 번쩍임 (DOM — 셰이더를 바꾸지 않는다)
+const wxRt = { t: 0, nextBolt: 6, bolt: 0, rainG: null, rainSrc: null, show: 0, turbP: 0, turbR: 0 };
+
+// ---------- 판 시작 때 (20-game-init init) — 고른 날씨를 장면에 입힌다
+function weatherApply(sel) {
+  const tod = sel.tod,
+    K = WX_KIND[sel.kind],
+    B = WX_BASE,
+    L = WX_TOD_LOOK[tod];
+  WX.tod = tod;
+  WX.kind = sel.kind;
+  // 판정 배율 (밤에는 배경이 차가워 열원이 잘 보인다 ×1.1)
+  WX.irK = K.irK * (tod === 'night' ? 1.1 : 1);
+  WX.radK = K.radK;
+  WX.wind.copy(WX_WIND_DIR).multiplyScalar(K.wind);
+  WX.turb = K.turb;
+  WX.rain = K.rain;
+  // 판정에 쓰이는 난기류 상태는 판마다 0 에서 (같은 시드 = 같은 판)
+  wxRt.turbP = wxRt.turbR = 0;
+  wxRt.t = 0;
+  wxRt.nextBolt = 6;
+  wxRt.bolt = 0;
+  // 장면 값은 매번 처음부터 다시 입힌다 (init 이 안개를 기본값으로 되돌리므로). 환경맵만 날씨가 바뀔 때 굽는다
+  const sig = tod + '|' + sel.kind,
+    rebake = sig !== WX.sig;
+  WX.sig = sig;
+  const su = skyDome.material.uniforms,
+    se = sea.material.uniforms,
+    c = h => new T.Color(h);
+  // 1) 시간대 기본 빛
+  SUN_DIR.copy(L ? L.sunDir.clone().normalize() : B.sunDir);
+  sun.color.copy(L ? c(L.sunCol) : B.sunCol);
+  sun.intensity = L ? L.sunI : B.sunI;
+  B.hemi.color.copy(L ? c(L.hemiSky) : B.hemiSky);
+  B.hemi.groundColor.copy(L ? c(L.hemiGround) : B.hemiGround);
+  B.hemi.intensity = L ? L.hemiI : B.hemiI;
+  su.top.value.copy(L ? c(L.skyTop) : B.skyTop);
+  su.sunCol.value.copy(L ? c(L.skySun) : B.skySun);
+  if (L) scene.fog.color.set(L.fog);
+  scene.background.copy(scene.fog.color);
+  se.deep.value.copy(L ? c(L.seaDeep) : B.seaDeep);
+  se.shallow.value.copy(L ? c(L.seaShallow) : B.seaShallow);
+  se.skyCol.value.copy(L ? c(L.seaSky) : B.seaSky);
+  se.sunCol.value.copy(L ? c(L.seaSun) : B.seaSun);
+  cloudLayer.mats[0].color.copy(L ? c(L.cloudBottom) : B.cloudMats[0]);
+  cloudLayer.mats[1].color.copy(L ? c(L.cloudTop) : B.cloudMats[1]);
+  const spr = L ? c(L.sprite) : B.spriteCol;
+  clouds.forEach(cl => cl.material.color.copy(spr));
+  R.toneMappingExposure = L ? L.exposure : B.exposure;
+  // 2) 날씨: 회색으로 · 어둡게 · 안개를 당기고 · 해를 가린다
+  const d = K.dark;
+  if (d > 0) {
+    scene.fog.color.copy(wxGrey(scene.fog.color, 0.75 * d, 0.55 * d));
+    scene.background.copy(scene.fog.color);
+    scene.fog.near *= 1 - 0.75 * d;
+    scene.fog.far *= 1 - 0.68 * d;
+    su.top.value.copy(wxGrey(su.top.value, 0.85 * d, 0.5 * d));
+    su.sunCol.value.multiplyScalar(1 - 0.92 * d);
+    sun.intensity *= 1 - 0.75 * d;
+    B.hemi.intensity *= 1 + 0.35 * d; // 흐린 날은 빛이 고르게 퍼진다
+    se.skyCol.value.copy(wxGrey(se.skyCol.value, 0.8 * d, 0.35 * d));
+    se.sunCol.value.multiplyScalar(1 - 0.9 * d);
+    se.shallow.value.copy(wxGrey(se.shallow.value, 0.6 * d, 0.4 * d));
+    se.deep.value.copy(wxGrey(se.deep.value, 0.5 * d, 0.3 * d));
+    cloudLayer.mats.forEach(m => m.color.copy(wxGrey(m.color, 0.7 * d, 0.45 * d)));
+    clouds.forEach(cl => cl.material.color.copy(wxGrey(cl.material.color, 0.7 * d, 0.45 * d)));
+  }
+  cloudLayer.setWeather(K.cover);
+  wxStars.visible = tod === 'night' && d < 0.5; // 구름이 두꺼우면 별이 안 보인다
+  if (typeof ckSun !== 'undefined') {
+    ckSun.color.copy(sun.color);
+    ckSun.intensity = 0.8 * (sun.intensity / B.sunI);
+    ckHemi.intensity = 0.72 * Math.max(0.45, B.hemi.intensity / B.hemiI); // 계기 조명이 있어 너무 어두워지지는 않는다
+  }
+  WX.hemiI = B.hemi.intensity; // 번개가 끝나면 되돌릴 값
+  if (rebake) bakeEnvironment(); // 기체 · 캐노피에 비치는 하늘도 바꾼다
+}
+
+// ---------- 매 프레임 (90-main-loop) — 보이는 것 · 소리만. 판정은 34-flight 의 weatherPhys
+function weatherUpdate(dt, playing) {
+  const K = WX_KIND[WX.kind];
+  wxRt.t += dt;
+  // 소나기: 45초 주기로 퍼붓다 그친다 (보이는 비만 — 판정 배율은 평균값으로 고정)
+  let amt = K.rain;
+  if (WX.kind === 'shower') amt *= clamp(0.5 + 0.9 * Math.sin((wxRt.t * Math.PI * 2) / 45), 0, 1);
+  wxRt.show += (amt - wxRt.show) * Math.min(1, dt * 0.8);
+  const r = wxRain;
+  r.m.visible = wxRt.show > 0.02;
+  if (r.m.visible) {
+    // 카메라 속도 (이번 프레임 이동량)
+    if (dt > 0) r.vel.copy(cam.position).sub(r.lastCam).divideScalar(dt);
+    if (r.vel.lengthSq() > 1e6) r.vel.set(0, 0, 0); // 순간 이동(재출격)은 무시
+    r.lastCam.copy(cam.position);
+    const fall = V(WX.wind.x, -11 - 6 * K.rain, WX.wind.z).sub(r.vel),
+      fl = fall.length(),
+      streak = fall.clone().multiplyScalar(Math.min(4, 0.6 + fl * 0.012) / Math.max(1, fl)),
+      H = WX_RAIN_BOX / 2,
+      n = Math.round(WX_RAIN_N * Math.min(1, wxRt.show));
+    for (let i = 0; i < WX_RAIN_N; i++) {
+      const o = i * 3;
+      let x = r.off[o] + fall.x * dt,
+        y = r.off[o + 1] + fall.y * dt,
+        z = r.off[o + 2] + fall.z * dt;
+      x = ((((x + H) % WX_RAIN_BOX) + WX_RAIN_BOX) % WX_RAIN_BOX) - H;
+      y = ((((y + H) % WX_RAIN_BOX) + WX_RAIN_BOX) % WX_RAIN_BOX) - H;
+      z = ((((z + H) % WX_RAIN_BOX) + WX_RAIN_BOX) % WX_RAIN_BOX) - H;
+      r.off[o] = x;
+      r.off[o + 1] = y;
+      r.off[o + 2] = z;
+      const p6 = i * 6,
+        on = i < n ? 1 : 0;
+      r.pos[p6] = cam.position.x + x;
+      r.pos[p6 + 1] = cam.position.y + y;
+      r.pos[p6 + 2] = cam.position.z + z;
+      r.pos[p6 + 3] = cam.position.x + x - streak.x * on;
+      r.pos[p6 + 4] = cam.position.y + y - streak.y * on;
+      r.pos[p6 + 5] = cam.position.z + z - streak.z * on;
+    }
+    r.g.attributes.position.needsUpdate = true;
+    r.m.material.opacity = 0.18 + 0.32 * wxRt.show * (WX.tod === 'night' ? 0.6 : 1);
+  } else r.lastCam.copy(cam.position);
+  // 폭풍: 번개 (6~18초마다) — 화면 번쩍임 + 하늘빛 + 잠시 뒤 천둥
+  if (WX.kind === 'storm' && playing) {
+    if ((wxRt.nextBolt -= dt) <= 0) {
+      wxRt.nextBolt = 6 + vrnd() * 12;
+      wxRt.bolt = 1;
+      const delay = 0.4 + vrnd() * 2.2; // 번개와 천둥 사이 (거리)
+      setTimeout(() => typeof noiseSnd === 'function' && AC && noiseSnd(2.6, 0.55, 260, 40, 'lowpass', 0.02), delay * 1000);
+    }
+  }
+  if (wxRt.bolt > 0) {
+    wxRt.bolt = Math.max(0, wxRt.bolt - dt * 3.2);
+    const k = wxRt.bolt > 0.75 || (wxRt.bolt > 0.35 && wxRt.bolt < 0.5) ? wxRt.bolt : wxRt.bolt * 0.3; // 두 번 번쩍
+    if (!wxFlash) {
+      wxFlash = document.createElement('div');
+      wxFlash.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:6;background:#dfe7ff;opacity:0;mix-blend-mode:screen';
+      document.body.appendChild(wxFlash);
+    }
+    wxFlash.style.opacity = (0.45 * k).toFixed(3);
+    WX_BASE.hemi.intensity = WX.hemiI * (1 + 5 * k); // 순간적으로 장면 전체가 밝아진다
+    if (wxRt.bolt === 0) {
+      wxFlash.style.opacity = '0';
+      WX_BASE.hemi.intensity = WX.hemiI;
+    }
+  }
+  // 빗소리: 갈색 잡음을 높은 대역으로 걸러 빗줄기 양만큼
+  if (typeof AC !== 'undefined' && AC && typeof NOISE !== 'undefined' && NOISE) {
+    if (!wxRt.rainG) {
+      try {
+        const s = AC.createBufferSource(),
+          f = AC.createBiquadFilter(),
+          g = AC.createGain();
+        s.buffer = NOISE;
+        s.loop = true;
+        f.type = 'highpass';
+        f.frequency.value = 900;
+        g.gain.value = 0;
+        s.connect(f).connect(g).connect(ACOUT);
+        s.start();
+        wxRt.rainG = g;
+      } catch (e) {
+        wxRt.rainG = { gain: { value: 0 } };
+      }
+    }
+    const want = playing ? 0.22 * wxRt.show * (cameraMode === 'cockpit' ? 0.7 : 1) : 0;
+    wxRt.rainG.gain.value += (want - wxRt.rainG.gain.value) * Math.min(1, dt * 3);
+  }
+}
+
+// ---------- 판정: 바람에 밀림 · 난기류 (34-flight phys / updP 에서 부른다). 낮 · 맑음이면 아무것도 안 한다
+function weatherDrift(a, dt) {
+  if (WX.wind.x === 0 && WX.wind.z === 0) return;
+  if (a === p && typeof ops !== 'undefined' && ops.st !== 'fly') return; // 갑판 위에서는 밀리지 않는다
+  a.pos.addScaledVector(WX.wind, dt);
+}
+function weatherTurb(dt) {
+  if (!WX.turb || (typeof ops !== 'undefined' && ops.st !== 'fly')) return;
+  // 부드러운 무작위 흔들림 (판정 난수 — 같은 시드면 같은 흔들림). 세기는 속도가 빠를수록 조금 더
+  const k = Math.min(1, dt * 1.6);
+  wxRt.turbP += ((rnd() - 0.5) * 2 * WX.turb - wxRt.turbP) * k;
+  wxRt.turbR += ((rnd() - 0.5) * 2 * WX.turb * 1.6 - wxRt.turbR) * k;
+  const s = 0.6 + Math.min(1, p.speed / 250) * 0.6;
+  p.q.multiply(new T.Quaternion().setFromEuler(new T.Euler(wxRt.turbP * s * dt * 6, 0, wxRt.turbR * s * dt * 6))).normalize();
+}
 // ---------- 3D 모델 (F-16 / 쿠즈네초프급)
 /* ===== F-16 모델 (아케이드용 로우폴리) =====
    좌표: 기수 -Z, 위 +Y, 오른쪽 날개 +X, 길이 약 16.4
@@ -7912,6 +8281,10 @@ function init() {
     c.visible = true;
   });
   cloudLayer.setWeather(curM().weather);
+  // 날씨 · 시간대 (02-weather): 무한모드(LEGACY)만 브리핑에서 고른 값, 나머지는 낮 · 맑음 (= 예전 그대로)
+  weatherApply(wxFor(curM()));
+  if (WX.sig !== 'day|clear')
+    msg(`기상: ${WX_TOD[WX.tod].ko} · ${WX_KIND[WX.kind].ko}${WX.wind.lengthSq() ? ` — 옆바람 ${Math.round(WX.wind.length())} m/s` : ''}`, '#9cf');
   chaseCamera.initialized = false;
   if (isAirbase()) {
     airbaseInit();
@@ -9871,7 +10244,8 @@ function heatScore(o, from, fwd, cone) {
     r = d.length();
   if (r < 1e-3) return 0;
   const a = Math.acos(clamp(fwd.dot(d.divideScalar(r)), -1, 1)) / D;
-  return a > cone ? 0 : (heatOf(o, from) / (1 + (r / 3500) ** 2)) * (1 - (0.5 * a) / cone);
+  // 날씨: 비 · 구름 속 수분이 적외선을 먹는다 → 같은 거리에서 열원이 약하게 보인다 (WX.irK, 맑음 1)
+  return a > cone ? 0 : (heatOf(o, from) / (1 + (r / (3500 * WX.irK)) ** 2)) * (1 - (0.5 * a) / cone);
 }
 // ---------- 미사일 유도
 //  - SARH(R-27R · AIM-7): 쏜 쪽 레이더가 표적을 계속 락(조사)하고 있어야 반사파를 따라간다.
@@ -9983,7 +10357,7 @@ function irGuide(m, pr, dt) {
   let best = null,
     bs = MSL_IR_ACQ;
   for (const a of [p, ...es]) {
-    if (a.side === m.side || a.hp <= 0 || a.pos.distanceTo(m.pos) > pr.seek) continue;
+    if (a.side === m.side || a.hp <= 0 || a.pos.distanceTo(m.pos) > pr.seek * WX.irK) continue;
     const sc = heatScore(a, m.pos, m.dir, pr.gimbal);
     if (sc > bs) {
       bs = sc;
@@ -10714,6 +11088,7 @@ function phys(a, dt) {
     a.speed = Math.max(3, sp);
   }
   a.pos.addScaledVector(a.vd, a.speed * dt);
+  weatherDrift(a, dt); // 바람에 밀린다 (02-weather, 맑음이면 아무것도 안 함)
   // 하중계수: 비행경로 곡률(법선 가속) + 중력 반작용을 기체 상방축에 투영한다.
   // 수평 비행 1G, 배면 수평 -1G, 푸시오버는 음의 G — 예전 식(1+gu)은 1G 아래로 내려가지 않아
   // 화면 효과의 음G 레드아웃이 절대 작동하지 않았다.
@@ -10785,6 +11160,7 @@ function updP(dt) {
     )
     .normalize();
   if (p.stl && !cobra) p.q.multiply(new T.Quaternion().setFromEuler(new T.Euler(-0.35 * dt, 0, 0)));
+  if (!cobra) weatherTurb(dt); // 난기류 (02-weather, 비 · 소나기 · 폭풍에서만 rnd 를 당긴다)
   phys(p, dt);
   const f = p.fwd();
   if (p.pos.y < 8 && !isAirbase()) {
@@ -10883,7 +11259,7 @@ function radarUpdate(dt) {
   // 다중 락의 나머지 락도 주 락과 같은 조건으로 끊긴다
   for (const l of rdMulti.slice()) {
     const c = l.c;
-    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold) {
+    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold * WX.radK) {
       rdMulti = rdMulti.filter(x => x !== l);
       c.st = 'DET';
       tone(600, 0.3, 'sine', 0.08, 250);
@@ -10892,7 +11268,7 @@ function radarUpdate(dt) {
   }
   if (rd.lock) {
     const c = rd.lock.c;
-    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold) {
+    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold * WX.radK) {
       rd.lock = null;
       c.st = 'DET';
       tone(600, 0.4, 'sine', 0.09, 250);
@@ -10998,7 +11374,7 @@ function seekerUpdate(dt) {
       msg('IR 재획득 (신호 강한 열원)', '#fa4');
     }
   } else {
-    const b = sc.find(a => a[0] > 0.2 && a[1].pos.distanceTo(p.pos) < P.IR.range);
+    const b = sc.find(a => a[0] > 0.2 && a[1].pos.distanceTo(p.pos) < P.IR.range * WX.irK);
     if (b) {
       if (sk.st != 'ACQUIRING' || sk.tg !== b[1]) {
         sk.st = 'ACQUIRING';
@@ -11233,7 +11609,7 @@ function aiUpdate(dt, e) {
       e.cd = 6;
     } else {
       const sc = heatScore(p, e.pos, f, 14);
-      A.irT = sc > 0.2 && r < P.IR.range && r > P.IR.min ? A.irT + dt : 0;
+      A.irT = sc > 0.2 && r < P.IR.range * WX.irK && r > P.IR.min ? A.irT + dt : 0;
       if (A.irT > 1 && e.am.IR > 0) {
         fire(e, 'IR', p);
         e.cd = 7;
@@ -15077,6 +15453,7 @@ function loop(n) {
     }
   }
   if (TCINE.on) titleCineUpdate(dt); // 표지 시네마틱: 위에서 정한 카메라를 덮어쓴다 (89-title-cine)
+  weatherUpdate(dt, S === 'play'); // 빗줄기 · 번개 · 빗소리 (02-weather, 보이는 것만)
   ckUpdate(dt);
   trailsUpdate();
   // 월드 렌더링과 콕핏 렌더링을 분리해 배경/항모 모델의 깊이 테스트를 독립시킨다.
@@ -15394,7 +15771,8 @@ function mountLoadPicker(el, o) {
     $id('mf-brief-h3').textContent = ko() ? '비행 노트' : 'FLIGHT NOTES';
     $id('mf-brief-h4').textContent = ko() ? '기록' : 'RECORD';
     $id('mf-brief-sum').textContent = B.sum;
-    const w = WEATHER[M.weather] || WEATHER.CLEAR,
+    const wsel = M.id === 'LEGACY' ? wxPick() : null,
+      w = wsel ? { [lang]: WX_TOD[wsel.tod][lang] + ' · ' + WX_KIND[wsel.kind][lang] } : WEATHER[M.weather] || WEATHER.CLEAR,
       env = M.env === 'AIRBASE' ? 'AIRBASE 29' : 'CARRIER';
     $id('mf-brief-chips').innerHTML =
       `<span class="mf-chip">${ko() ? '분류' : 'TYPE'} <b>${M.category}</b></span><span class="mf-chip">${ko() ? '환경' : 'ENV'} <b>${env}</b></span><span class="mf-chip">${ko() ? '날씨' : 'WEATHER'} <b>${w[lang]}</b></span>` +
@@ -15416,6 +15794,7 @@ function mountLoadPicker(el, o) {
           ? '기록 없음'
           : 'No record yet';
     renderLoadout(M);
+    renderWeather(M);
     $id('mf-brief-hint').textContent = ko() ? '출격 전 브리핑을 확인하십시오' : 'REVIEW THE BRIEFING BEFORE FLIGHT';
     $id('mf-brief-back').textContent = ko() ? '◂ 뒤로' : '◂ BACK';
     $id('mf-brief-launch').innerHTML = (ko() ? '출격' : 'LAUNCH') + ' <span aria-hidden="true">➜</span>';
@@ -15453,6 +15832,44 @@ function mountLoadPicker(el, o) {
   // 출격 전 무장 구성 (LEGACY · 캠페인 항모 임무). 1999년에는 함내 재고 제한이 없다 — 워프 뒤 보급 시스템이 붙는다.
   let briefLoad = null,
     briefAc = 'mig';
+  // 출격 전 날씨 · 시간대 (무한모드 LEGACY 만, 02-weather). 한 판 동안 고정
+  function renderWeather(M) {
+    const box = $id('mf-brief-wx');
+    box.hidden = !(M && M.id === 'LEGACY');
+    if (box.hidden) return;
+    const sel = wxPick(),
+      K = WX_KIND[sel.kind],
+      pct = v => (v === 1 ? '' : (v > 1 ? '+' : '−') + Math.round(Math.abs(1 - v) * 100) + '%');
+    $id('mf-brief-h6').textContent = ko() ? '기상 · 시간대' : 'WEATHER · TIME';
+    $id('mf-wx-tod').innerHTML = Object.entries(WX_TOD)
+      .map(([k, v]) => `<button class="mf-btn${k === sel.tod ? ' selected' : ''}" data-wx-tod="${k}">${v[lang]}</button>`)
+      .join('');
+    $id('mf-wx-kind').innerHTML = Object.entries(WX_KIND)
+      .map(([k, v]) => `<button class="mf-btn${k === sel.kind ? ' selected' : ''}" data-wx-kind="${k}">${v[lang]}</button>`)
+      .join('');
+    const ir = K.irK * (sel.tod === 'night' ? 1.1 : 1),
+      eff = [];
+    if (ir !== 1) eff.push((ko() ? '열추적 감지 ' : 'IR range ') + pct(ir));
+    if (K.radK !== 1) eff.push((ko() ? '레이더 ' : 'radar ') + pct(K.radK));
+    if (K.wind) eff.push((ko() ? '옆바람 ' : 'crosswind ') + K.wind + ' m/s');
+    if (K.turb) eff.push(ko() ? (K.turb > 0.05 ? '심한 난기류' : '난기류') : K.turb > 0.05 ? 'severe turbulence' : 'turbulence');
+    if (sel.kind === 'storm') eff.push(ko() ? '번개' : 'lightning');
+    if (sel.tod === 'night') eff.push(ko() ? '어두운 시야 — HUD · 레이더 위주' : 'dark — fly the HUD');
+    $id('mf-wx-note').textContent = eff.length
+      ? (ko() ? '전투 영향: ' : 'Combat effects: ') + eff.join(' · ')
+      : ko()
+        ? '전투 영향 없음 (기본)'
+        : 'No combat effects (default)';
+  }
+  $id('mf-brief-wx').addEventListener('click', e => {
+    const b = e.target.closest('[data-wx-tod],[data-wx-kind]');
+    if (!b) return;
+    const sel = wxPick();
+    if (b.dataset.wxTod) sel.tod = b.dataset.wxTod;
+    if (b.dataset.wxKind) sel.kind = b.dataset.wxKind;
+    wxSetPick(sel);
+    renderBrief();
+  });
   function renderLoadout(M) {
     const box = $id('mf-brief-load');
     box.hidden = !M.loadout;
