@@ -236,7 +236,8 @@
     $id('mf-brief-h3').textContent = ko() ? '비행 노트' : 'FLIGHT NOTES';
     $id('mf-brief-h4').textContent = ko() ? '기록' : 'RECORD';
     $id('mf-brief-sum').textContent = B.sum;
-    const w = WEATHER[M.weather] || WEATHER.CLEAR,
+    const wsel = M.id === 'LEGACY' ? wxPick() : null,
+      w = wsel ? { [lang]: WX_TOD[wsel.tod][lang] + ' · ' + WX_KIND[wsel.kind][lang] } : WEATHER[M.weather] || WEATHER.CLEAR,
       env = M.env === 'AIRBASE' ? 'AIRBASE 29' : 'CARRIER';
     $id('mf-brief-chips').innerHTML =
       `<span class="mf-chip">${ko() ? '분류' : 'TYPE'} <b>${M.category}</b></span><span class="mf-chip">${ko() ? '환경' : 'ENV'} <b>${env}</b></span><span class="mf-chip">${ko() ? '날씨' : 'WEATHER'} <b>${w[lang]}</b></span>` +
@@ -258,6 +259,7 @@
           ? '기록 없음'
           : 'No record yet';
     renderLoadout(M);
+    renderWeather(M);
     $id('mf-brief-hint').textContent = ko() ? '출격 전 브리핑을 확인하십시오' : 'REVIEW THE BRIEFING BEFORE FLIGHT';
     $id('mf-brief-back').textContent = ko() ? '◂ 뒤로' : '◂ BACK';
     $id('mf-brief-launch').innerHTML = (ko() ? '출격' : 'LAUNCH') + ' <span aria-hidden="true">➜</span>';
@@ -295,6 +297,44 @@
   // 출격 전 무장 구성 (LEGACY · 캠페인 항모 임무). 1999년에는 함내 재고 제한이 없다 — 워프 뒤 보급 시스템이 붙는다.
   let briefLoad = null,
     briefAc = 'mig';
+  // 출격 전 날씨 · 시간대 (무한모드 LEGACY 만, 02-weather). 한 판 동안 고정
+  function renderWeather(M) {
+    const box = $id('mf-brief-wx');
+    box.hidden = !(M && M.id === 'LEGACY');
+    if (box.hidden) return;
+    const sel = wxPick(),
+      K = WX_KIND[sel.kind],
+      pct = v => (v === 1 ? '' : (v > 1 ? '+' : '−') + Math.round(Math.abs(1 - v) * 100) + '%');
+    $id('mf-brief-h6').textContent = ko() ? '기상 · 시간대' : 'WEATHER · TIME';
+    $id('mf-wx-tod').innerHTML = Object.entries(WX_TOD)
+      .map(([k, v]) => `<button class="mf-btn${k === sel.tod ? ' selected' : ''}" data-wx-tod="${k}">${v[lang]}</button>`)
+      .join('');
+    $id('mf-wx-kind').innerHTML = Object.entries(WX_KIND)
+      .map(([k, v]) => `<button class="mf-btn${k === sel.kind ? ' selected' : ''}" data-wx-kind="${k}">${v[lang]}</button>`)
+      .join('');
+    const ir = K.irK * (sel.tod === 'night' ? 1.1 : 1),
+      eff = [];
+    if (ir !== 1) eff.push((ko() ? '열추적 감지 ' : 'IR range ') + pct(ir));
+    if (K.radK !== 1) eff.push((ko() ? '레이더 ' : 'radar ') + pct(K.radK));
+    if (K.wind) eff.push((ko() ? '옆바람 ' : 'crosswind ') + K.wind + ' m/s');
+    if (K.turb) eff.push(ko() ? (K.turb > 0.05 ? '심한 난기류' : '난기류') : K.turb > 0.05 ? 'severe turbulence' : 'turbulence');
+    if (sel.kind === 'storm') eff.push(ko() ? '번개' : 'lightning');
+    if (sel.tod === 'night') eff.push(ko() ? '어두운 시야 — HUD · 레이더 위주' : 'dark — fly the HUD');
+    $id('mf-wx-note').textContent = eff.length
+      ? (ko() ? '전투 영향: ' : 'Combat effects: ') + eff.join(' · ')
+      : ko()
+        ? '전투 영향 없음 (기본)'
+        : 'No combat effects (default)';
+  }
+  $id('mf-brief-wx').addEventListener('click', e => {
+    const b = e.target.closest('[data-wx-tod],[data-wx-kind]');
+    if (!b) return;
+    const sel = wxPick();
+    if (b.dataset.wxTod) sel.tod = b.dataset.wxTod;
+    if (b.dataset.wxKind) sel.kind = b.dataset.wxKind;
+    wxSetPick(sel);
+    renderBrief();
+  });
   function renderLoadout(M) {
     const box = $id('mf-brief-load');
     box.hidden = !M.loadout;

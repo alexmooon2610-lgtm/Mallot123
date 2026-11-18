@@ -95,6 +95,7 @@ function phys(a, dt) {
     a.speed = Math.max(3, sp);
   }
   a.pos.addScaledVector(a.vd, a.speed * dt);
+  weatherDrift(a, dt); // 바람에 밀린다 (02-weather, 맑음이면 아무것도 안 함)
   // 하중계수: 비행경로 곡률(법선 가속) + 중력 반작용을 기체 상방축에 투영한다.
   // 수평 비행 1G, 배면 수평 -1G, 푸시오버는 음의 G — 예전 식(1+gu)은 1G 아래로 내려가지 않아
   // 화면 효과의 음G 레드아웃이 절대 작동하지 않았다.
@@ -166,6 +167,7 @@ function updP(dt) {
     )
     .normalize();
   if (p.stl && !cobra) p.q.multiply(new T.Quaternion().setFromEuler(new T.Euler(-0.35 * dt, 0, 0)));
+  if (!cobra) weatherTurb(dt); // 난기류 (02-weather, 비 · 소나기 · 폭풍에서만 rnd 를 당긴다)
   phys(p, dt);
   const f = p.fwd();
   if (p.pos.y < 8 && !isAirbase()) {

@@ -67,7 +67,7 @@ function radarUpdate(dt) {
   // 다중 락의 나머지 락도 주 락과 같은 조건으로 끊긴다
   for (const l of rdMulti.slice()) {
     const c = l.c;
-    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold) {
+    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold * WX.radK) {
       rdMulti = rdMulti.filter(x => x !== l);
       c.st = 'DET';
       tone(600, 0.3, 'sine', 0.08, 250);
@@ -76,7 +76,7 @@ function radarUpdate(dt) {
   }
   if (rd.lock) {
     const c = rd.lock.c;
-    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold) {
+    if (t - c.t > 0.6 || Math.abs(c.az) > 50 || c.rng > 14500 * AF.hold * WX.radK) {
       rd.lock = null;
       c.st = 'DET';
       tone(600, 0.4, 'sine', 0.09, 250);
@@ -182,7 +182,7 @@ function seekerUpdate(dt) {
       msg('IR 재획득 (신호 강한 열원)', '#fa4');
     }
   } else {
-    const b = sc.find(a => a[0] > 0.2 && a[1].pos.distanceTo(p.pos) < P.IR.range);
+    const b = sc.find(a => a[0] > 0.2 && a[1].pos.distanceTo(p.pos) < P.IR.range * WX.irK);
     if (b) {
       if (sk.st != 'ACQUIRING' || sk.tg !== b[1]) {
         sk.st = 'ACQUIRING';

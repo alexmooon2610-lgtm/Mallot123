@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-17 · 버전 **V15.0.0-alpha.3** (멀티플레이 기틀 + **Su-33 선택** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.4** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -33,7 +33,7 @@
 ### 되는 것
 | 모드 | 내용 |
 |---|---|
-| **LEGACY CARRIER** | 항모에서 발진 → 웨이브 공중전 → 착함 보급. 자유 모드. 공중 재보급 없음 (V14.8.0) |
+| **LEGACY CARRIER** | 항모에서 발진 → 웨이브 공중전 → 착함 보급. 자유 모드. 공중 재보급 없음 (V14.8.0). **브리핑에서 날씨 · 시간대 고르기** (alpha.4, 8절) |
 | **AIRBASE 29** | 지상 비행장. 이륙 · 지형 · 지상 위협(SAM) · 착륙. |
 | **캠페인 TR-1** | 표적 드론 요격 (La-17M 5기). 레이더 · 락온 · 미사일 기본 훈련. |
 | **캠페인 TR-2** | 모의 도그파이트. 동료기 「템페스트 투」와 3판 2선승. 맞아도 안 터지고 판정만. |
@@ -99,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_3.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_4.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -189,7 +189,8 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 |---|---|
 | `00-core.js` | 렌더러 · 씬 · 카메라 · 색 파이프라인 · 공용 헬퍼 · 기체/미사일 메시 팩토리 · 상수 `P`(무장 제원) |
 | `01-environment.js` | 하늘 돔 · **바다 셰이더** · 태양 · 안개 · **그림자** · 환경맵 |
-| `01-cloud-layer.js` | 고정 고도 구름층 (2600 m, 두께 520). `density()` · `opaqueAround()` |
+| `01-cloud-layer.js` | 고정 고도 구름층 (2600 m, 두께 520). `density()` · `opaqueAround()` · `mats`(날씨 색) |
+| `02-weather.js` | **날씨 · 시간대** `WX` — `weatherApply`(init) · `weatherUpdate`(매 프레임, 연출) · `weatherDrift`/`weatherTurb`(판정) (alpha.4) |
 | `10-model-*.js` | MiG-29 · F-16 · La-17M · R-27R/R-73 · Su-33 GLB 로더, 절차 모델 대체본 |
 | `10-model-mig29-glb.js` | GLB 파서 `parseSimpleGLB()` 도 여기 있다 (텍스처 디코드 포함) |
 | `11-terrain-airbase.js` | 비행장 지형 높이장 |
@@ -410,6 +411,26 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
   착함 · 보급 · 갑판 대기 중에는 멈추고(HUD `HOLD`), 다시 발진하면 이어서 흐른다 (`90-main-loop.js`).
 - 연료 공중 보충은 나중에 **공중급유기**로 만들 수도 있다 (사용자 언급, 미정).
 
+### 날씨 · 시간대 — V15.0.0-alpha.4 (`02-weather.js`, 사용자 결정 2026-11-18)
+- **무한모드(LEGACY)만.** 브리핑 '기상 · 시간대' 칸에서 **출격 전에 고르고 한 판 동안 고정** (`localStorage.stWx` = `{tod, kind}`).
+  다른 임무(캠페인 · 비행장 · 멀티)는 언제나 낮 · 맑음 — 예전 화면 · 판정 그대로 (`wxFor(M)`).
+- 시간대 `WX_TOD`: 낮 · 석양 · 밤. 날씨 `WX_KIND`: 맑음 · 흐림 · 비 · 소나기 · 폭풍(뇌우).
+- **전투 영향** (사용자: "전투에도 영향"). 낮 · 맑음이면 전부 1 · 0 이라 판정이 예전과 프레임 단위로 같다.
+
+| | 맑음 | 흐림 | 비 | 소나기 | 폭풍 |
+|---|---|---|---|---|---|
+| 열추적 거리 `irK` (`heatScore` · 시커 `seek` · IR 톤 · 적 AI IR) | 1 | 0.95 | 0.8 | 0.85 | 0.65 |
+| 레이더 거리 `radK` (`rdRange` · 락 유지 14.5 km) | 1 | 1 | 0.95 | 0.95 | 0.85 |
+| 옆바람 m/s (`weatherDrift`, 공중의 모든 기체 · 미사일 아님) | 0 | 3 | 6 | 8 | 15 |
+| 난기류 rad/s (`weatherTurb`, 플레이어만 · 코브라 중 없음) | 0 | 0 | 0.015 | 0.03 | 0.07 |
+  밤은 `irK` ×1.1 (배경이 차가워 열원이 잘 보인다). 바람은 서남서에서 → 항모 착함 때 옆바람을 잡아야 한다. 갑판 위에서는 안 밀린다.
+- 난기류는 판정 난수 `rnd` 를 당긴다 — **켜졌을 때만**(비 · 소나기 · 폭풍, 비행 중). 그래서 맑음 판의 난수열은 그대로다.
+- 연출(판정 무관): 하늘 · 안개 · 해/달빛 · 바다색 · 구름층 덮임(`CLEAR/CLOUDY/RAIN/STORM`)과 색 · 별(밤, 구름 두꺼우면 숨김) ·
+  빗줄기(카메라 둘레 선분, 바람 − 카메라 속도로 흐름) · 소나기 45초 주기 · 번개(DOM 번쩍임 + 반구광, 6~18초) · 천둥 · 빗소리.
+  배치는 자체 LCG(`wxr`, 불러올 때) · 번개는 `vrnd` · 소리는 Web Audio. 환경맵은 날씨가 바뀔 때만 다시 굽는다.
+- 기본값은 불러올 때 `WX_BASE` 로 기억해 두고 낮 · 맑음이면 그대로 되돌린다. init 이 안개를 기본값으로 되돌리므로 `weatherApply` 는 매 판 다시 입힌다.
+- 검사: `wx-storm`(밤 · 폭풍 3000프레임 교전), `wx-rain-trap`(석양 · 비, 옆바람 속 착함) — `baseline/V15_0_0_a4_wx.json`.
+
 ### 비행장 AIRBASE 29
 - 지형 높이장 + 활주로. 이륙 활주 → 상승, 최종 접근 → 착륙 포착 연출
 - 지상 SAM 위협 (`50-ground-threats.js`)
@@ -599,7 +620,7 @@ sRGB 출력 + **ACES 필름 톤매핑**(노출 0.85). 이게 없어서 모든 �
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_3.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_4.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -615,6 +636,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `run.py` | 시나리오 실행 · 비교. 3D 렌더(`R.render`)는 끄고 돌린다 — 판정과 무관하고, SwiftShader 에서 한 프레임 0.4초 걸려서다 |
 | `baseline/V14_8_0.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
 | `baseline/V15_0_0_a3_su33.json` | alpha.3 에 더한 시나리오 6개의 기준. `run ... su33-carrier su33-vclimb su33-trap su33-cobra multilock loadout-trap` 결과와 `diff` |
+| `baseline/V15_0_0_a4_wx.json` | alpha.4 날씨 시나리오 2개(`wx-storm` · `wx-rain-trap`)의 기준 |
 | `baseline/V14_7_0.json` | 공중 재보급 삭제 이전 기준 |
 | `baseline/V14_6_0.json` | 비행 물리 개편 이전 기준 |
 | `baseline/V14_5_0.json` | 기총 10발 · 탄 속도 이전 기준 (시나리오 14개) |
@@ -660,7 +682,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_3.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_4.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -720,6 +742,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V15.0.0-alpha.1 | **멀티플레이 기틀** — 전송 계층 · 방 코드 로비 · 1대1 공역 · 비행 동기화/보간 · 끊김 처리 · 두 페이지 시험. 싱글 판정 변화 없음 |
 | V15.0.0-alpha.2 | 멀티 연결 시간 제한(중개 20초 · 직접 연결 15초) · claude.ai 링크 감지 · 원인별 오류 문구 · 기다린 시간 표시 |
 | V15.0.0-alpha.3 | **Su-33 선택 기체** — 실기 제원 기반 차이(추력 · 속도 · 무장 6+4 · 대응수단 48 · 체공 1.75배 · 큰 히트박스) · **N001 레이더 탐지 1.4배 · 락 유지 1.3배** (락 속도 · 1개 교전은 MiG 와 같음) · **연료 무게 모델 · 항모 발진 연료 70%** · **무장 구성 고르기**(레이더/열추적 비율, 브리핑 · 멀티 로비) · **카나드(받음각 · 저속 조종력) · 코브라(Q)** · 다중 락 코드(쓰는 기체 없음) · 설정 05/기체 · 멀티 기체 전달 · **렌더링 정리**(10-6절: 그리기 호출 최대 −67% · 교전 중 셰이더 컴파일 제거 · 텍스처 우선순위) · **인트로 · 표지 개편**(로고 즉시 · 실제 로딩 진행 · 표지 실시간 시네마틱) · **버그 수정**(주기 Su-33 함교 매몰 · 비행장 코브라 불가 · 멀티 Su-33 연료 70% · 콕핏 연료계 눈금). MiG 싱글 판정 변화 없음 |
+| V15.0.0-alpha.4 | **무한모드 날씨 · 시간대** — 브리핑에서 낮/석양/밤 × 맑음/흐림/비/소나기/폭풍 고르기. 열추적 · 레이더 거리 · 옆바람 · 난기류로 전투에 영향, 빗줄기 · 번개 · 천둥 · 빗소리 · 별. 낮 · 맑음과 다른 모드는 판정 변화 없음 (23개 시나리오 동일) |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

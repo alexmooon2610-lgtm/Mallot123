@@ -9,7 +9,7 @@
 const CLOUD_BASE = 2600,
   CLOUD_THICK = 520,
   CLOUD_TILE = 20000,
-  CLOUD_COVER = { CLEAR: [0.5, 0.64], CLOUDY: [0.36, 0.52], RAIN: [0.22, 0.4], FOG: [0.3, 0.46] };
+  CLOUD_COVER = { CLEAR: [0.5, 0.64], CLOUDY: [0.36, 0.52], RAIN: [0.22, 0.4], FOG: [0.3, 0.46], STORM: [0.1, 0.26] };
 const cloudLayer = (() => {
   let seed = 19991218;
   const lr = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -97,6 +97,7 @@ const cloudLayer = (() => {
     c.scale.set(2600 + lr() * 2600, 900 + lr() * 700, 1);
   }
   return {
+    mats: [bottom.material, top.material], // 날씨 · 시간대 색 (02-weather)
     // 날씨에 따라 덮인 정도를 바꾼다 (지금 임무는 전부 CLEAR — 맑아도 산개운은 있다)
     setWeather(w) {
       const c = CLOUD_COVER[w] || CLOUD_COVER.CLEAR;

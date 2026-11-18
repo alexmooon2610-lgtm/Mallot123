@@ -144,7 +144,7 @@ const pickedAc = () => {
   }
 };
 // 지금 레이더 모드의 탐지 거리 (기체 배율 포함)
-const rdRange = () => RM[rd.mode].rng * ((p && ACFT[playerAc].radar) || 1);
+const rdRange = () => RM[rd.mode].rng * ((p && ACFT[playerAc].radar) || 1) * WX.radK; // 날씨(폭우 잡음) 배율 — 02-weather
 // 다중 락 (ACFT[...].locks ≥ 2 인 기체 — 지금은 없음): rd.lock 은 '주 락'(SARH 가 날아갈 표적), 나머지 락은 rdMulti 에 둔다.
 // rd 에 필드를 더하지 않는 이유 — 하네스가 rd 를 통째로 해시하므로 MiG 판정이 바뀐 것처럼 보인다. MiG 는 rdMulti 가 늘 비어 있다.
 let rdMulti = [];

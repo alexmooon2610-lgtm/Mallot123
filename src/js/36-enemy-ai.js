@@ -165,7 +165,7 @@ function aiUpdate(dt, e) {
       e.cd = 6;
     } else {
       const sc = heatScore(p, e.pos, f, 14);
-      A.irT = sc > 0.2 && r < P.IR.range && r > P.IR.min ? A.irT + dt : 0;
+      A.irT = sc > 0.2 && r < P.IR.range * WX.irK && r > P.IR.min ? A.irT + dt : 0;
       if (A.irT > 1 && e.am.IR > 0) {
         fire(e, 'IR', p);
         e.cd = 7;
