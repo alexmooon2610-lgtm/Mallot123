@@ -5,6 +5,11 @@
 
 현재 버전: **V15.0.0-alpha.3**
 
+**바로 플레이: https://alexmooon2610-lgtm.github.io/mallot123/** (GitHub Pages — 멀티플레이 가능)
+
+`index.html` 은 GitHub Pages 용 빌드 결과다 (`dist/` 는 gitignore). 새 버전을 낼 때는
+`python3 build.py` 뒤 `cp dist/STEEL_TEMPEST_*.html index.html` 로 덮어쓰고 커밋한다.
+
 ## 빌드
 
 ```bash
