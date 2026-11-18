@@ -641,16 +641,22 @@
   // Initial boot begins with the MALLOT mark; no automatic start into the simulation.
   setStage('intro');
   // 인트로 → 표지 (V15.0.0-alpha.3): 예전엔 3.9초 고정 타이머라 로딩이 길면 로고를 못 보고 넘어갔다.
-  // 이제 (1) 모델을 다 읽고 (2) 로고를 끝까지 보여 주고(인트로가 뜬 뒤 2.8초) (3) 먼저 보일 텍스처(항모 · 도색)가 펼쳐질 때까지
-  // (최대 8초) 기다린다. 그동안 진행 막대가 실제 단계를 보여 준다.
+  // 이제 (1) 모델을 다 읽고 (2) 로고를 끝까지 보여 주고(인트로가 뜬 뒤 2.8초) (3) 텍스처를 전부 펼쳐 GPU 에 올리고
+  // 렌더 점검(04-render-guard: 검게 나오는 텍스처 · 조명을 찾아 고침)이 끝날 때까지 기다린다 (alpha.5, 최대 30초).
+  // 예전엔 먼저 보일 텍스처만 최대 8초 기다려서, 폰에서는 나머지가 게임 중에 올라왔다.
   (function introGate() {
     if (stage !== 'intro') return;
     const now = performance.now(),
       booted = window.__stBoot === 'done';
     if (booted && !introGate.t) introGate.t = now;
-    const texReady = typeof TEXQ === 'undefined' || TEXQ.hiLeft <= 0 || now - introGate.t > 8000;
+    const decoded = typeof TEXQ === 'undefined' || (TEXQ.run === 0 && !TEXQ.hi.length && !TEXQ.lo.length);
+    if (booted && decoded) RG.bootReq = true;
+    const texReady = (decoded && renderGuardReady()) || now - introGate.t > 30000;
     if (booted && typeof TEXQ !== 'undefined')
-      window.stBootProgress?.(null, 0.88 + 0.12 * (TEXQ.total ? TEXQ.ok / TEXQ.total : 1));
+      window.stBootProgress?.(
+        decoded ? (ko() ? '그래픽 점검 중' : 'CHECKING GRAPHICS') : null,
+        0.86 + 0.1 * (TEXQ.total ? (TEXQ.ok + TEXQ.fail) / TEXQ.total : 1) + (decoded ? 0.02 : 0)
+      );
     if (booted && texReady && now - (window.__stIntroT0 || 0) > 2800) {
       window.stBootProgress?.(ko() ? '출격 준비 완료' : 'SORTIE READY', 1);
       $id('mf-intro').classList.add('ready');
