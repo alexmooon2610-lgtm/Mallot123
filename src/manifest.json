@@ -47,6 +47,7 @@
     "41-mission-flow.js",
     "42-carrier-ops.js",
     "43-airbase-ops.js",
+    "44-night-lights.js",
     "50-ground-threats.js",
     "60-cockpit.js",
     "70-input.js",

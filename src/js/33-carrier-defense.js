@@ -85,21 +85,20 @@ function carrierDefenseUpdate(dt) {
     return true;
   });
 }
-// ---------- 항모 착함 유도: 활공각·중심선 오차 (HUD 표시용)
+// ---------- 항모 착함 유도: 활공각·중심선 오차 (HUD 표시용 — 판정과 무관)
+// alpha.6: 실측 착함 구역(좌현 7.5° 꺾인 착함축, 와이어 4줄)과 광학 착함 장치(44-night-lights)에 맞췄다.
+// 예전엔 배 중심선 · 함미에서 92 m(z 60) · 3° 였다 — 착함 구역 오른쪽 가장자리로 안내하고 있었다.
 function carrierGuide() {
-  const l = CV.worldToLocal(p.pos.clone()),
-    z = l.z,
+  const a = nlApproach(p.pos),
     fw = p.fwd(),
-    sf = V(0, 0, -1).applyQuaternion(CV.quaternion);
+    ax = NL_D.clone().transformDirection(CV.matrixWorld);
   const fh = V(fw.x, 0, fw.z).normalize(),
-    sh = V(sf.x, 0, sf.z).normalize();
-  if (z < 152 || z > 1500 || Math.abs(l.x) > 250 || fh.dot(sh) < 0.6) return null;
-  const e = CV.userData.deckEdges(152),
-    cx = (e[0] + e[1]) / 2;
+    ah = V(ax.x, 0, ax.z).normalize();
+  if (a.along < NL_TD || a.along > 1500 || Math.abs(a.lat) > 250 || fh.dot(ah) < 0.6) return null;
   return {
-    x: (l.x - cx) * 3,
-    gs: (l.y - (DECK_Y + EYE) - (z - 60) * 0.0524) * 3,
+    x: a.lat * 3,
+    gs: (a.h - a.along * Math.tan(NL_GS)) * 3,
     sink: Math.max(0, -p.vd.y * p.speed),
-    d: (z - 60) * 3,
+    d: a.along * 3,
   };
 }

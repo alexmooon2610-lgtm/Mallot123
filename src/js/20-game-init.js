@@ -149,6 +149,8 @@ function init() {
   renderGuardSortie(); // 1초 뒤 렌더 점검 (04-render-guard — 검은 물체 자동 복구)
   if (WX.sig !== 'day|clear')
     msg(`기상: ${WX_TOD[WX.tod].ko} · ${WX_KIND[WX.kind].ko}${WX.wind.lengthSq() ? ` — 옆바람 ${Math.round(WX.wind.length())} m/s` : ''}`, '#9cf');
+  if (WX.tod === 'night')
+    msg('야간 착함: 좌현 광학 착함 장치 — 주황 공이 초록 기준등과 같은 높이면 정상 강하각, 빨강이면 너무 낮다', '#9cf');
   chaseCamera.initialized = false;
   if (isAirbase()) {
     airbaseInit();

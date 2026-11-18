@@ -200,6 +200,7 @@ function loop(n) {
   }
   if (TCINE.on) titleCineUpdate(dt); // 표지 시네마틱: 위에서 정한 카메라를 덮어쓴다 (89-title-cine)
   weatherUpdate(dt, S === 'play'); // 빗줄기 · 번개 · 빗소리 (02-weather, 보이는 것만)
+  nightLightsUpdate(dt); // 밤: 갑판 조명 · 광학 착함 장치 · 전투기 항법등 (44-night-lights)
   ckUpdate(dt);
   trailsUpdate();
   // 월드 렌더링과 콕핏 렌더링을 분리해 배경/항모 모델의 깊이 테스트를 독립시킨다.
