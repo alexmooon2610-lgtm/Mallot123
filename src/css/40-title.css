@@ -1,9 +1,16 @@
-/* ===== 타이틀 화면 (에이스 컴뱃 풍) =====
-   전면 사진 위에 큰 제목, 빨강·파랑·초록 띠(말롯 3색), 깜박이는 PRESS ENTER.
-   글꼴은 설치된 것만 쓴다: Bahnschrift(윈도) → Segoe UI → Arial Narrow. */
+/* ===== 타이틀 화면 (V15.0.0-alpha.3 개편) =====
+   배경은 게임 엔진의 실시간 시네마틱(89-title-cine.js) — 예전엔 588×312 사진을 늘려 흐렸다.
+   구성: 위아래 화면비 띠(2.39:1 느낌) · 왼쪽에서 오는 그늘 위에 왼쪽 정렬 제목 · 기체는 오른쪽 2/3 에 보인다.
+   빨강·파랑·초록 띠(말롯 3색). 글꼴은 설치된 것만: Bahnschrift(윈도) → Segoe UI → Arial Narrow. */
+#mallot-front.mf-cine {
+  background: transparent;
+}
+#mallot-front.mf-cine:before {
+  opacity: 0;
+}
 #mallot-front #mf-cover {
   padding: 0;
-  background: #020406;
+  background: transparent;
 }
 #mf-cover .ac-title {
   position: absolute;
@@ -12,110 +19,117 @@
   font-family: Bahnschrift, 'DIN Alternate', 'Segoe UI', 'Arial Narrow', Arial, sans-serif;
   color: #eef3f6;
 }
-#mf-cover .ac-title-bg {
-  position: absolute;
-  inset: -3%;
-  width: 106%;
-  height: 106%;
-  max-width: none;
-  object-fit: cover;
-  object-position: 50% 42%;
-  filter: saturate(0.7) contrast(1.12) brightness(0.72);
-  animation: ac-drift 38s ease-in-out infinite alternate;
-  border: 0;
-  box-shadow: none;
-}
-@keyframes ac-drift {
-  from {
-    transform: scale(1) translate(0, 0);
-  }
-  to {
-    transform: scale(1.07) translate(-1.5%, 1%);
-  }
-}
+/* 글자 쪽 그늘: 왼쪽 → 투명, 가장자리 어둡게 */
 #mf-cover .ac-title-shade {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.62) 100%),
-    linear-gradient(
-      180deg,
-      rgba(1, 4, 8, 0.72) 0%,
-      rgba(1, 4, 8, 0) 26%,
-      rgba(1, 4, 8, 0) 55%,
-      rgba(1, 4, 8, 0.92) 100%
-    );
+    linear-gradient(90deg, rgba(2, 6, 12, 0.86) 0%, rgba(2, 6, 12, 0.62) 26%, rgba(2, 6, 12, 0.14) 52%, rgba(2, 6, 12, 0) 68%),
+    radial-gradient(ellipse 120% 90% at 62% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%);
 }
-#mf-cover .ac-title-flare {
+/* 화면비 띠: 위아래 검은 띠 (글자 한 줄이 들어갈 만큼) */
+#mf-cover .ac-title-bars i {
   position: absolute;
-  left: 72%;
-  top: 16%;
-  width: 46vmax;
-  height: 46vmax;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    circle,
-    rgba(255, 236, 200, 0.32) 0%,
-    rgba(255, 200, 140, 0.1) 22%,
-    rgba(255, 190, 120, 0) 55%
-  );
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: ac-flare 7s ease-in-out infinite alternate;
+  left: 0;
+  right: 0;
+  height: 8.5vh;
+  background: #000;
+  animation: ac-bars 1.6s 0.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-@keyframes ac-flare {
-  to {
-    opacity: 0.65;
+#mf-cover .ac-title-bars i:first-child {
+  top: 0;
+}
+#mf-cover .ac-title-bars i:last-child {
+  bottom: 0;
+}
+@keyframes ac-bars {
+  from {
+    height: 0;
+  }
+}
+/* 필름 결: 아주 옅은 잡음이 조금씩 흔들린다 */
+#mf-cover .ac-title-grain {
+  position: absolute;
+  inset: -50%;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: ac-grain 0.9s steps(4) infinite;
+}
+@keyframes ac-grain {
+  25% {
+    transform: translate(-3%, 2%);
+  }
+  50% {
+    transform: translate(2%, -3%);
+  }
+  75% {
+    transform: translate(-1%, 3%);
+  }
+}
+/* 표지가 뜰 때 검은 화면에서 서서히 밝아진다 */
+#mf-cover .ac-title-fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  pointer-events: none;
+  opacity: 0;
+}
+#mf-cover.active .ac-title-fade {
+  animation: ac-fadein 2.2s both ease-out;
+}
+@keyframes ac-fadein {
+  from {
+    opacity: 1;
   }
 }
 #mf-cover .ac-title-top {
   position: absolute;
-  left: 4vw;
-  right: 4vw;
-  top: 3.2vh;
+  left: 5vw;
+  right: 5vw;
+  top: 0;
+  height: 8.5vh;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(238, 243, 246, 0.22);
   font-size: 11px;
   letter-spacing: 0.32em;
-  color: rgba(238, 243, 246, 0.7);
+  color: rgba(238, 243, 246, 0.55);
+  z-index: 2;
 }
 #mf-cover .ac-title-brand {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 34%;
+  left: 7vw;
+  top: 44%;
   transform: translateY(-50%);
-  text-align: center;
+  text-align: left;
+  max-width: 46vw;
 }
 #mf-cover .ac-title-kicker {
-  font-size: clamp(10px, 1.1vw, 14px);
-  letter-spacing: 0.6em;
-  color: rgba(238, 243, 246, 0.72);
-  margin-bottom: 1.2vh;
-  animation: ac-rise 1.4s 0.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: clamp(10px, 1.05vw, 13px);
+  letter-spacing: 0.55em;
+  color: rgba(238, 243, 246, 0.7);
+  margin-bottom: 1.6vh;
+  animation: ac-rise 1.4s 0.9s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-name {
   margin: 0;
   font-weight: 300;
-  font-size: clamp(42px, 8.4vw, 132px);
-  line-height: 1;
-  letter-spacing: 0.22em;
-  text-indent: 0.22em;
+  font-size: clamp(40px, 7.2vw, 118px);
+  line-height: 0.95;
+  letter-spacing: 0.18em;
   color: #f4f7f9;
   text-shadow:
-    0 0 24px rgba(160, 200, 255, 0.35),
-    0 2px 0 rgba(0, 0, 0, 0.4);
-  animation: ac-rise 1.6s both cubic-bezier(0.2, 0.8, 0.2, 1);
+    0 0 28px rgba(150, 190, 255, 0.28),
+    0 2px 0 rgba(0, 0, 0, 0.45);
+  animation: ac-rise 1.6s 0.7s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-name b {
   display: block;
   font-weight: 700;
-  font-size: 0.52em;
-  letter-spacing: 0.62em;
-  text-indent: 0.62em;
-  margin-top: 0.12em;
+  font-size: 0.5em;
+  letter-spacing: 0.6em;
+  margin-top: 0.16em;
   color: #ffffff;
 }
 @keyframes ac-rise {
@@ -127,11 +141,11 @@
 }
 #mf-cover .ac-title-stripe {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
-  margin: 2.4vh auto 1.4vh;
-  width: min(520px, 60vw);
-  animation: ac-wipe 1.2s 0.6s both cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin: 2.6vh 0 1.6vh;
+  width: min(440px, 34vw);
+  animation: ac-wipe 1.2s 1.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-stripe i {
   flex: 1;
@@ -156,17 +170,17 @@
   }
 }
 #mf-cover .ac-title-sub {
-  font-size: clamp(10px, 1vw, 13px);
-  letter-spacing: 0.5em;
-  text-indent: 0.5em;
-  color: rgba(238, 243, 246, 0.6);
+  font-size: clamp(10px, 0.95vw, 12px);
+  letter-spacing: 0.45em;
+  color: rgba(238, 243, 246, 0.55);
+  animation: ac-rise 1.4s 1.3s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-start {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 15vh;
-  text-align: center;
+  left: 7vw;
+  top: 68%;
+  text-align: left;
+  animation: ac-rise 1.2s 1.8s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-btn {
   font: inherit;
@@ -200,8 +214,11 @@
 }
 #mf-cover .ac-title-ro {
   position: absolute;
-  left: 4vw;
-  bottom: 3.4vh;
+  left: 5vw;
+  bottom: 0;
+  height: 8.5vh;
+  display: flex;
+  align-items: center;
   right: auto;
   top: auto;
   margin: 0;
@@ -214,29 +231,60 @@
     Consolas,
     monospace;
   letter-spacing: 0.12em;
-  color: rgba(140, 255, 180, 0.75);
+  color: rgba(140, 255, 180, 0.7);
+  z-index: 2;
 }
 #mf-cover .ac-title-credit {
   position: absolute;
-  right: 4vw;
-  bottom: 3.4vh;
+  right: 5vw;
+  bottom: 0;
+  height: 8.5vh;
+  display: flex;
+  align-items: center;
   font-size: 10px;
-  letter-spacing: 0.14em;
-  color: rgba(238, 243, 246, 0.4);
+  letter-spacing: 0.18em;
+  color: rgba(238, 243, 246, 0.38);
+  z-index: 2;
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+  /* 세로 · 좁은 화면: 제목을 가운데 아래쪽으로, 그늘은 아래에서 위로 */
   #mf-cover .ac-title-top span:last-child,
   #mf-cover .ac-title-ro {
     display: none;
   }
-  #mf-cover .ac-title-credit {
-    left: 4vw;
+  #mf-cover .ac-title-shade {
+    background: linear-gradient(0deg, rgba(2, 6, 12, 0.88) 0%, rgba(2, 6, 12, 0.5) 45%, rgba(2, 6, 12, 0) 70%);
+  }
+  #mf-cover .ac-title-brand {
+    left: 6vw;
+    right: 6vw;
+    top: auto;
+    bottom: 30vh;
+    transform: none;
+    max-width: none;
     text-align: center;
+  }
+  #mf-cover .ac-title-stripe {
+    margin: 2vh auto 1.4vh;
+    width: 70vw;
+  }
+  #mf-cover .ac-title-start {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 13vh;
+    text-align: center;
+  }
+  #mf-cover .ac-title-btn2 {
+    margin: 12px auto 0;
+  }
+  #mf-cover .ac-title-credit {
+    left: 5vw;
+    justify-content: center;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  #mf-cover .ac-title-bg,
-  #mf-cover .ac-title-flare,
+  #mf-cover .ac-title-grain,
   #mf-cover .ac-title-btn {
     animation: none;
   }
@@ -245,7 +293,7 @@
 /* ============ 타이틀의 티저 버튼 · 티저 재생 화면 ============ */
 #mf-cover .ac-title-btn2 {
   display: block;
-  margin: 14px auto 0;
+  margin: 14px 0 0;
   padding: 7px 26px;
   font-size: clamp(10px, 0.95vw, 13px);
   border-color: rgba(238, 243, 246, 0.2);
@@ -276,4 +324,28 @@
     monospace;
   letter-spacing: 0.3em;
   color: rgba(255, 255, 255, 0.45);
+}
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+  #mf-cover .ac-title-btn2 {
+    margin: 12px auto 0;
+  }
+}
+/* 낮은 가로 화면(폰 가로): 제목 · 버튼을 위로 당기고 간격을 줄인다 — 아래 띠에 버튼이 걸리지 않게 */
+@media (max-height: 480px) and (min-aspect-ratio: 1/1) {
+  #mf-cover .ac-title-brand {
+    top: 40%;
+  }
+  #mf-cover .ac-title-stripe {
+    margin: 1.6vh 0 1vh;
+  }
+  #mf-cover .ac-title-start {
+    top: 61%;
+  }
+  #mf-cover .ac-title-btn {
+    padding: 8px 32px;
+  }
+  #mf-cover .ac-title-btn2 {
+    margin-top: 8px;
+    padding: 5px 22px;
+  }
 }

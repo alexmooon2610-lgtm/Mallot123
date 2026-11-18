@@ -198,6 +198,7 @@ function loop(n) {
       if (Math.abs(d.z) > 40000) c.position.z -= Math.sign(d.z) * 80000;
     }
   }
+  if (TCINE.on) titleCineUpdate(dt); // 표지 시네마틱: 위에서 정한 카메라를 덮어쓴다 (89-title-cine)
   ckUpdate(dt);
   trailsUpdate();
   // 월드 렌더링과 콕핏 렌더링을 분리해 배경/항모 모델의 깊이 테스트를 독립시킨다.
@@ -206,16 +207,16 @@ function loop(n) {
   updateRearMirror(n);
   // 비행 화면 효과(카메라 흔들림·FOV·G 시야)는 월드 렌더 직전에 적용한다
   if (S === 'play') flightFx();
-  sunShadowUpdate(dt, p ? p.pos : cam.position);
+  sunShadowUpdate(dt, TCINE.on && TCINE.jet ? TCINE.jet.position : p ? p.pos : cam.position);
   fxNearFade();
   R.clear();
   R.shadowMap.needsUpdate = shadowLive; // 그림자 지도는 여기서만 갱신 (01-environment). 꺼져 있으면 다시 그리지 않는다
   R.render(scene, cam);
-  if (cameraMode === 'cockpit') {
+  if (cameraMode === 'cockpit' && !TCINE.on) {
     R.clearDepth();
     R.render(cockpitScene, ckCam);
   }
-  if (p) {
+  if (p && !TCINE.on) {
     if (cameraMode === 'cockpit') drawHud();
     else drawExternalHud();
     drawGroundThreatHud();

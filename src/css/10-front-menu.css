@@ -374,21 +374,6 @@
 #mallot-logo-canvas {
   image-rendering: pixelated;
 }
-.mf-cover-photo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 50%;
-  display: block;
-  filter: contrast(1.08) saturate(0.88);
-  z-index: 0;
-}
-.mf-cover-photo:not([src]),
-.mf-cover-photo[src=''] {
-  display: none;
-}
 .mf-settings-layout {
   grid-template-columns: minmax(270px, 0.82fr) minmax(350px, 1.18fr);
 }
@@ -520,15 +505,6 @@
 }
 .mf-intro-inner {
   z-index: 1;
-}
-.mf-cover-photo {
-  animation: st-kb 18s ease-in-out infinite alternate;
-  transform-origin: 62% 50%;
-}
-@keyframes st-kb {
-  to {
-    transform: scale(1.12) translateX(-1.5%);
-  }
 }
 @keyframes st-sweep {
   0% {
@@ -705,12 +681,11 @@
   height: 100%;
   width: 0;
   background: #cdd8e6;
-  animation: st4-bar 3.1s 0.8s cubic-bezier(0.45, 0, 0.25, 1) forwards;
+  transition: width 0.35s ease-out; /* 실제 로딩 진행 (95-intro-logo stBootProgress) — 예전엔 3.1초짜리 가짜 막대였다 */
 }
-@keyframes st4-bar {
-  to {
-    width: 100%;
-  }
+/* 로딩이 끝나기 전에는 인트로의 PRESS ENTER 를 숨긴다 (끝나면 표지로 저절로 넘어간다) */
+#mf-intro:not(.ready) #mf-enter-intro {
+  visibility: hidden;
 }
 #mf-enter-intro {
   position: absolute;

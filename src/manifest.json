@@ -50,6 +50,7 @@
     "70-input.js",
     "80-hud.js",
     "81-rear-mirror.js",
+    "89-title-cine.js",
     "90-main-loop.js",
     "91-loadout-picker.js",
     "91-front-menu.js",
@@ -58,7 +59,6 @@
     "92-flight-fx.js",
     "93-menu-fx.js",
     "94-teaser.js",
-    "95-intro-logo.js",
     "96-opening.js",
     "97-cabin-terminal.js",
     "98-ace-hud.js",
@@ -105,11 +105,6 @@
     {
       "id": "asset-su33-glb",
       "file": "su33.glb",
-      "mime": null
-    },
-    {
-      "id": "asset-cover-jpeg",
-      "file": "cover.jpg",
       "mime": null
     },
     {
@@ -162,5 +157,8 @@
       "file": "opening/r4.jpg",
       "mime": "image/jpeg"
     }
+  ],
+  "early": [
+    "95-intro-logo.js"
   ]
 }

@@ -310,6 +310,8 @@
   }
   function setStage(next) {
     stage = next;
+    front.classList.toggle('mf-cine', next === 'cover'); // 표지는 배경을 비워 엔진 화면이 보이게 (40-title.css)
+    titleCine(next === 'cover' && front.style.display === 'block');
     document.querySelectorAll('#mallot-front .mf-screen').forEach(el => el.classList.remove('active'));
     const target = $id('mf-' + next);
     if (target) target.classList.add('active');
@@ -455,9 +457,10 @@
   }
   function hideFront() {
     front.style.display = 'none';
+    titleCine(false);
     $id('mf-guide-modal').classList.remove('open');
   }
-  $id('mf-enter-intro').addEventListener('click', () => setStage('cover'));
+  $id('mf-enter-intro').addEventListener('click', () => window.__stBoot === 'done' && setStage('cover'));
   $id('mf-start').addEventListener('click', () => {
     setStage('settings');
     render();
@@ -584,7 +587,7 @@
         return;
       }
       if (ev.key === 'Enter') {
-        if (stage === 'intro') setStage('cover');
+        if (stage === 'intro') window.__stBoot === 'done' && setStage('cover');
         else if (stage === 'cover') $id('mf-start').click();
         else if (stage === 'settings' && !$id('mf-guide-modal').classList.contains('open')) $id('mf-go').click();
         else if (stage === 'brief') $id('mf-brief-launch').click();
@@ -597,7 +600,23 @@
   render();
   // Initial boot begins with the MALLOT mark; no automatic start into the simulation.
   setStage('intro');
-  window.setTimeout(() => {
-    if (stage === 'intro') setStage('cover');
-  }, 3900);
+  // 인트로 → 표지 (V15.0.0-alpha.3): 예전엔 3.9초 고정 타이머라 로딩이 길면 로고를 못 보고 넘어갔다.
+  // 이제 (1) 모델을 다 읽고 (2) 로고를 끝까지 보여 주고(인트로가 뜬 뒤 2.8초) (3) 먼저 보일 텍스처(항모 · 도색)가 펼쳐질 때까지
+  // (최대 8초) 기다린다. 그동안 진행 막대가 실제 단계를 보여 준다.
+  (function introGate() {
+    if (stage !== 'intro') return;
+    const now = performance.now(),
+      booted = window.__stBoot === 'done';
+    if (booted && !introGate.t) introGate.t = now;
+    const texReady = typeof TEXQ === 'undefined' || TEXQ.hiLeft <= 0 || now - introGate.t > 8000;
+    if (booted && typeof TEXQ !== 'undefined')
+      window.stBootProgress?.(null, 0.88 + 0.12 * (TEXQ.total ? TEXQ.ok / TEXQ.total : 1));
+    if (booted && texReady && now - (window.__stIntroT0 || 0) > 2800) {
+      window.stBootProgress?.(ko() ? '출격 준비 완료' : 'SORTIE READY', 1);
+      $id('mf-intro').classList.add('ready');
+      setTimeout(() => stage === 'intro' && setStage('cover'), 450);
+      return;
+    }
+    setTimeout(introGate, 120);
+  })();
 })();

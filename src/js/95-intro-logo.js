@@ -1,9 +1,19 @@
-// ===== 인트로 로고 · 로딩 문구 · 표지 사진 =====
+// ===== 인트로 로고 · 로딩 진행 (V15.0.0-alpha.3 개편) =====
+// 이 파일은 'early' 스크립트다 (manifest.json): 인트로 화면 바로 뒤, three.js · 본 코드 · 에셋보다 먼저 실행된다.
+// 그래서 파일을 열자마자 로고가 그려진다. 예전엔 본 코드 끝에서 실행돼서 폰에서는 몇 초 동안 검은 화면이었고,
+// 3.9초 고정 타이머가 로딩 중에 다 흘러 로고를 거의 못 보고 표지로 넘어갔다.
+// 여기서는 THREE · 게임 코드에 기대지 않는다. 아직 없는 DOM(설정 화면 등)은 나중에 찾는다.
+window.__stBoot = 'loading'; // 99-boot 가 모델을 다 읽으면 'done' (하네스도 이걸 기다린다)
+window.__stIntroT0 = performance.now();
 (() => {
   const $id = i => document.getElementById(i),
     intro = $id('mf-intro'),
     logo = $id('mallot-logo-canvas'),
-    ko = () => $id('mf-lang-ko').classList.contains('selected');
+    ko = () => {
+      const b = $id('mf-lang-ko');
+      return b ? b.classList.contains('selected') : true; // 게임 기본 언어는 한국어 (설정 화면이 아직 없을 때)
+    };
+  $id('mallot-front').style.display = 'block'; // 본 코드가 뜨기 전부터 인트로를 보인다
   // 로고: 스텐실 MALLOT + 빨·파·초 비행운 세 줄이 전투기 한 대로 모인다 (THREE LINES. ONE FLIGHT.)
   const LOGO = { W: 540, H: 190, cols: ['#e8444b', '#4a8be0', '#5bc58a'] };
   function logoGlyphs() {
@@ -263,22 +273,14 @@
     };
     requestAnimationFrame(step);
   })();
-  // 인트로 로딩 문구 (0.85초마다 다음 단계)
-  const M = {
-    ko: ['지휘 통신망 연결', '레이더·RWR 점검', '기체 데이터 로딩', '출격 준비 완료'],
-    en: ['ESTABLISHING SECURE LINK', 'RADAR / RWR CHECK', 'LOADING AIRFRAME DATA', 'SORTIE READY'],
+  // 실제 로딩 진행: 99-boot 가 단계마다 stBootProgress(문구, 0~1) 를 부른다. 예전엔 0.85초마다 가짜 문구를 넘겼다.
+  const lt = $id('mf-load-t'),
+    lb = $id('mf-lbar-i');
+  let shown = 0;
+  window.stBootProgress = (label, frac) => {
+    if (label) lt.textContent = label;
+    shown = Math.max(shown, Math.min(1, frac || 0));
+    if (lb) lb.style.width = (shown * 100).toFixed(1) + '%';
   };
-  let mi = 0;
-  setInterval(() => {
-    if (!intro.classList.contains('active')) {
-      mi = 0;
-      return;
-    }
-    $id('mf-load-t').textContent = M[ko() ? 'ko' : 'en'][Math.min(3, mi++)];
-  }, 850);
-  // 표지 사진: 파일 안의 asset-cover-jpeg (문서를 다 읽은 뒤에 읽을 수 있다)
-  const ph = $id('mf-cover').querySelector('.mf-cover-photo');
-  document.addEventListener('DOMContentLoaded', () => {
-    ph.src = 'data:image/jpeg;base64,' + readAsset('asset-cover-jpeg');
-  });
+  window.stBootProgress(ko() ? '그래픽 엔진 불러오는 중' : 'LOADING GRAPHICS ENGINE', 0.04);
 })();

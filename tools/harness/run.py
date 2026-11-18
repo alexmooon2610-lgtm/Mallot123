@@ -177,7 +177,8 @@ async def open_game(browser, html, seed, storage=None, errs=None):
 
 
 READY = """() => [typeof mig29GLBTemplate !== 'undefined' && !!mig29GLBTemplate, !!f16GLBTemplate, !!la17GLBTemplate,
-                !!su33GLBTemplate, !!(mslGLBTemplate.SARH && mslGLBTemplate.IR)]"""
+                !!su33GLBTemplate, !!(mslGLBTemplate.SARH && mslGLBTemplate.IR),
+                window.__stBoot !== 'loading']"""  # alpha.3+: 모델 읽기가 단계별로 쉬어 가므로 항모까지 다 읽혔는지(__stBoot) 본다
 
 
 async def weapons(html, gun_hits=None):
