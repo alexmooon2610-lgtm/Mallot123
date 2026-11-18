@@ -187,9 +187,28 @@ R.toneMappingExposure = 0.85;
 const MOBILE =
   /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) ||
   (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 900);
+// 저사양 GPU 로 볼 기기 (V15.0.0-alpha.5 안정화): 폰 · 터치 화면(태블릿 · 아이패드 프로 — 아이패드는 맥으로 자신을 알린다) ·
+// 메모리 4 GB 이하. 텍스처를 폰 크기로 줄이고, 렌더 경로를 예전(검증된) 쪽으로 돌린다 (01-environment RENDER_SAFE).
+const LOWGPU =
+  MOBILE || navigator.maxTouchPoints > 1 || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
+// 웹킷(사파리 · iOS 의 모든 브라우저): ImageBitmap 을 WebGL 로 올릴 때 검게 나오는 버그가 알려져 있다
+// (three.js 도 사파리 17 미만에서는 ImageBitmap 경로를 쓰지 않는다). 그래서 펼친 그림을 캔버스로 옮겨 올린다.
+const WEBKIT =
+  /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (/AppleWebKit/i.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR|SamsungBrowser|Android/i.test(navigator.userAgent));
+// 그래픽 안전 단계 (04-render-guard 가 '검은 물체'를 찾으면 한 단씩 올리고 기기에 기억해 둔다)
+//   1: 그림자 끔 · 2: + 환경맵 대신 고른 주변광 · 3: + 모든 표준 재질을 램버트(가장 단순한 조명)로
+const GFX = (() => {
+  let level = 0;
+  try {
+    if (/[?&]gfxreset\b/.test(location.search)) localStorage.removeItem('stGfxSafe'); // 주소 끝에 ?gfxreset 으로 되돌린다
+    level = Math.max(0, Math.min(3, +localStorage.getItem('stGfxSafe') || 0));
+  } catch (e) {}
+  return { level, texFix: 0, checks: 0, lastFail: '' };
+})();
 function texCap(scale = 1) {
   // 폰은 갑판처럼 크게 쓰는 텍스처도 1536 을 넘기지 않는다 (GPU 메모리 여유가 적다)
-  return Math.min(R.capabilities.maxTextureSize || 4096, MOBILE ? Math.min(1024 * scale, 1536) : 2048 * scale);
+  return Math.min(R.capabilities.maxTextureSize || 4096, LOWGPU ? Math.min(1024 * scale, 1536) : 2048 * scale);
 }
 // PNG · JPEG 머리말에서 크기만 읽는다 (그림을 펼치지 않는다)
 function imageSize(b) {
@@ -225,9 +244,56 @@ function decodeTexImage(bytes, mime, max) {
             resizeQuality: 'high',
           }
         : undefined;
-    return createImageBitmap(blob, opt).catch(() => decodeTexImageViaImg(bytes, mime, max));
+    return createImageBitmap(blob, opt)
+      .then(b => texSourceOut(b, max))
+      .catch(() => decodeTexImageViaImg(bytes, mime, max));
   }
   return decodeTexImageViaImg(bytes, mime, max);
+}
+// 펼친 그림 검사 · 정리 (alpha.5): 크기 0 · 새까만 그림은 실패로 보고 예비 경로(<img>)로 다시 펼친다.
+// 저사양 · 웹킷 기기는 캔버스로 옮겨 올린다(가장 오래 검증된 업로드 경로). 크기 줄이기 옵션을 무시하는
+// 브라우저면 여기서 줄인다.
+function texSourceOut(b, max) {
+  if (!b || !(b.width > 0) || !(b.height > 0)) throw new Error('empty bitmap');
+  const k = Math.min(1, max / Math.max(b.width, b.height));
+  let out = b;
+  if (LOWGPU || WEBKIT || k < 1) {
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(b.width * k));
+    c.height = Math.max(1, Math.round(b.height * k));
+    const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(b, 0, 0, c.width, c.height);
+    try {
+      b.close && b.close();
+    } catch (e) {}
+    out = c;
+  }
+  if (texSourceMax(out) < 4) throw new Error('black bitmap');
+  return out;
+}
+// 그림의 가장 밝은 채널 (4×4 로 줄여 본 값, 0~255). 새까만지 · 투명뿐인지 확인용
+function texSourceMax(src) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 4;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(src, 0, 0, 4, 4);
+    const d = x.getImageData(0, 0, 4, 4).data;
+    let m = 0;
+    for (let i = 0; i < 64; i += 4) if (d[i + 3] > 8) m = Math.max(m, d[i], d[i + 1], d[i + 2]);
+    return m;
+  } catch (e) {
+    return 255; // 읽을 수 없으면(보안 등) 검사를 건너뛴다
+  }
+}
+// 모델 텍스처 등록부: 04-render-guard 가 GPU 에 제대로 올라갔는지 확인하고, 아니면 다시 올린다
+const GTEX = [];
+function guardTex(tex, mat) {
+  let e = GTEX.find(x => x.tex === tex);
+  if (!e) GTEX.push((e = { tex, mats: [], tries: 0, ok: false, cpu: -1 }));
+  if (mat && !e.mats.includes(mat)) e.mats.push(mat);
+  return tex;
 }
 // 예비 경로: createImageBitmap 이 없거나 실패하면 <img> 로 펼친 뒤 캔버스에서 줄인다
 function decodeTexImageViaImg(bytes, mime, max) {
@@ -244,7 +310,7 @@ function decodeTexImageViaImg(bytes, mime, max) {
 //  - 폰은 한 번에 한 장 (동시에 펼치면 메모리가 몰린다 — 10-1절), 그 밖은 두 장씩.
 //  - hi(먼저): 처음 화면에 크게 보이는 것 — 항모 갑판 · 내 기체 도색. 예전엔 항모가 맨 마지막에 읽혀
 //    출격 화면에서 갑판이 한동안 회색으로 보였다.
-const TEXQ = { hi: [], lo: [], run: 0, max: MOBILE ? 1 : 2, ok: 0, fail: 0, total: 0, hiLeft: 0 };
+const TEXQ = { hi: [], lo: [], run: 0, max: LOWGPU ? 1 : 2, ok: 0, fail: 0, total: 0, hiLeft: 0 };
 // 렌더 진단 (일시정지 창 '상태' 줄에 보인다 — 폰에서 화면이 이상할 때 스크린샷으로 원인을 좁힌다)
 const RDIAG = { lost: 0, glErr: 0 };
 R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
@@ -258,7 +324,7 @@ R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
 function renderDiag() {
   const gl = R.getContext(),
     c = R.capabilities;
-  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : 'PC'}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실!' : ''}`;
+  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : LOWGPU ? '저사양' : 'PC'}${WEBKIT ? '·웹킷' : ''}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'} · 안전 L${GFX.level}${GFX.texFix ? ' · 텍스처 복구 ' + GFX.texFix : ''} · 점검 ${GFX.checks}${GFX.lastFail ? ' (' + GFX.lastFail + ')' : ''}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실 ' + RDIAG.lost : ''}`;
 }
 function decodeTexQueued(bytes, mime, max, hi = false) {
   return new Promise((res, rej) => {
@@ -288,8 +354,8 @@ function texPump() {
 function fitImage(img, max) {
   const w = img.naturalWidth || img.width,
     h = img.naturalHeight || img.height,
-    k = max / Math.max(w, h);
-  if (!(k < 1)) return img;
+    k = Math.min(1, max / Math.max(w, h));
+  if (!(k < 1) && !(LOWGPU || WEBKIT)) return img;
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(w * k));
   c.height = Math.max(1, Math.round(h * k));

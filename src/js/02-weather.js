@@ -142,7 +142,7 @@ const wxStars = (() => {
   return s;
 })();
 // 빗줄기: 카메라 둘레 상자 안의 짧은 선분들. 떨어지는 속도 + 바람 − 카메라 속도로 흘러 속도감이 난다
-const WX_RAIN_N = MOBILE ? 900 : 2200,
+const WX_RAIN_N = LOWGPU ? 900 : 2200,
   WX_RAIN_BOX = 70;
 const wxRain = (() => {
   const off = new Float32Array(WX_RAIN_N * 3),
@@ -234,7 +234,15 @@ function weatherApply(sel) {
     ckHemi.intensity = 0.72 * Math.max(0.45, B.hemi.intensity / B.hemiI); // 계기 조명이 있어 너무 어두워지지는 않는다
   }
   WX.hemiI = B.hemi.intensity; // 번개가 끝나면 되돌릴 값
+  wxAmbUpdate();
   if (rebake) bakeEnvironment(); // 기체 · 캐노피에 비치는 하늘도 바꾼다
+}
+
+// 안전 단계 2(04-render-guard)의 주변광: 날씨 · 시간대만큼 어둡게 (낮 · 맑음 0.35)
+function wxAmbUpdate() {
+  if (!gfxAmb) return;
+  const B = WX_BASE;
+  gfxAmb.intensity = 0.35 * (WX.hemiI / B.hemiI) * ((sun.intensity / B.sunI + 0.3) / 1.3);
 }
 
 // ---------- 매 프레임 (90-main-loop) — 보이는 것 · 소리만. 판정은 34-flight 의 weatherPhys

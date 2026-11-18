@@ -69,10 +69,9 @@ function disposePlayerModel(root) {
     if (node.geometry) node.geometry.dispose();
     if (node.material) {
       const materials = Array.isArray(node.material) ? node.material : [node.material];
-      materials.forEach(material => {
-        if (material.map) material.map.dispose();
-        material.dispose();
-      });
+      // 도색 텍스처(map)는 템플릿 · 갑판 주기 기체와 같이 쓰는 것이라 지우지 않는다 (alpha.5).
+      // 예전엔 출격할 때마다 지워서 GPU 에 다시 올렸다 — 폰에서 메모리가 출렁이고, 다시 올리다 실패하면 검게 나온다.
+      materials.forEach(material => material.dispose());
     }
   });
 }
@@ -147,6 +146,7 @@ function init() {
   cloudLayer.setWeather(curM().weather);
   // 날씨 · 시간대 (02-weather): 무한모드(LEGACY)만 브리핑에서 고른 값, 나머지는 낮 · 맑음 (= 예전 그대로)
   weatherApply(wxFor(curM()));
+  renderGuardSortie(); // 1초 뒤 렌더 점검 (04-render-guard — 검은 물체 자동 복구)
   if (WX.sig !== 'day|clear')
     msg(`기상: ${WX_TOD[WX.tod].ko} · ${WX_KIND[WX.kind].ko}${WX.wind.lengthSq() ? ` — 옆바람 ${Math.round(WX.wind.length())} m/s` : ''}`, '#9cf');
   chaseCamera.initialized = false;

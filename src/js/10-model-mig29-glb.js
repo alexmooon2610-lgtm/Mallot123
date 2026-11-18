@@ -72,6 +72,7 @@ function paintMiG29(root) {
     for (const m of Array.isArray(n.material) ? n.material : [n.material]) {
       if (!m || m.name !== 'body') continue;
       if (mig29PaintTex) {
+        guardTex(mig29PaintTex, m);
         m.map = mig29PaintTex;
         m.color.set(0xffffff);
       } else if (!m.map) m.color.set(MIG29_BASE_GREY);
@@ -97,7 +98,7 @@ function loadMiG29Paint() {
           tex.anisotropy = Math.min(8, R.capabilities.getMaxAnisotropy());
         } catch (e) {}
         tex.needsUpdate = true;
-        mig29PaintTex = tex;
+        mig29PaintTex = guardTex(tex);
         paintMiG29(mig29GLBTemplate);
         if (p && p.mesh) paintMiG29(p.mesh);
         mig29Extras.forEach(paintMiG29);
@@ -163,7 +164,7 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
           tex.anisotropy = Math.min(8, R.capabilities.getMaxAnisotropy());
         } catch (e) {}
         tex.needsUpdate = true;
-        return tex;
+        return guardTex(tex);
       })
       .catch(e => {
         console.warn('[STEEL TEMPEST] GLB texture failed to decode', e);
@@ -188,6 +189,8 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
       mat.userData.baseColor = mat.color.clone(); // 텍스처에 곱할 색 (불러온 쪽에서 밝기 조절 가능)
       mat.color.set(0x8f989c);
       texOf(ti).then(tex => {
+        if (!tex) return; // 펼치기 실패: 회색(텍스처 없음 색) 그대로
+        guardTex(tex, mat);
         mat.map = tex;
         mat.color.copy(mat.userData.baseColor);
         mat.needsUpdate = true;

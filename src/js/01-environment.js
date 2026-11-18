@@ -18,7 +18,7 @@ scene.fog.far = 62000;
 // 갑판 위 기체 · 아일랜드 · 공중의 기체 자체 그림자. 바다 · 구름 · 하늘(셰이더 재질)은 받지 않는다.
 // 비용: 그림자 깊이 패스 한 번 + 조명 픽셀마다 PCF 샘플. 폰에서는 1024 맵, 해상도가 두 단 넘게 떨어지면 끈다.
 const SHADOW_HALF = 520, // 그림자 상자 반경 (월드 단위 = m × 3 → 약 350 m)
-  SHADOW_MAP = MOBILE ? 1024 : 2048;
+  SHADOW_MAP = LOWGPU ? 1024 : 2048;
 R.shadowMap.enabled = true;
 R.shadowMap.type = T.PCFSoftShadowMap;
 // 그림자 지도는 프레임마다 월드 렌더 직전에 한 번만 다시 그린다 (90-main-loop 에서 needsUpdate).
@@ -52,10 +52,12 @@ let shadowLive = true,
   shadowParked = false;
 // 폰 예외 (alpha.3 핫픽스): 사용자 폰에서 이 업데이트 뒤 항모 · 기체가 처음부터 검게 나왔다(PC · 에뮬레이션은 정상, 원인 미확정).
 // 폰에서만 바뀐 렌더 경로 셋(이 그림자 방식 · 셰이더 미리 굽기 · 거울 sRGB)을 예전대로 돌린다 — RENDER_SAFE.
-const RENDER_SAFE = MOBILE;
+// alpha.5: 폰만이 아니라 저사양 · 웹킷 기기 전부, 그리고 렌더 점검(04-render-guard)이 안전 단계를 올린 기기도.
+const RENDER_SAFE = LOWGPU || WEBKIT || GFX.level >= 1;
 function sunShadowUpdate(dt, focus) {
-  const want = typeof FXS !== 'undefined' && FXS.q > 0 && (typeof resStep === 'undefined' || resStep < 3);
-  if (RENDER_SAFE) {
+  const want =
+    GFX.level < 1 && typeof FXS !== 'undefined' && FXS.q > 0 && (typeof resStep === 'undefined' || resStep < 3);
+  if (RENDER_SAFE || GFX.level >= 1) {
     // 예전 방식: 끄면 castShadow 를 내린다 (셰이더가 다시 컴파일되지만 V15.0.0-alpha.2 까지 폰에서 문제없던 길)
     shadowLive = true;
     if (sun.castShadow !== want) sun.castShadow = want;
@@ -121,7 +123,18 @@ const skyDome = new T.Mesh(
 skyDome.renderOrder = -1000;
 // 환경맵: 하늘 돔을 한 번 구워 두고 모든 표준 재질의 반사로 쓴다 (캐노피 · 금속 · 도색의 광택).
 // 이게 없으면 GLB 재질이 비추는 하늘이 없어 흐릿한 점토처럼 보인다.
+// alpha.5: 다시 구울 때 예전 렌더 타깃을 지운다 (날씨를 바꿀 때마다 GPU 메모리가 새던 것).
+// 안전 단계 2 이상이면 환경맵 대신 고른 주변광(gfxAmb)을 쓴다 — 환경맵 굽기가 기기에서 실패하면 재질이 검게 나와서.
+let envRT = null,
+  gfxAmb = null;
 function bakeEnvironment() {
+  if (GFX.level >= 2) {
+    if (envRT) envRT.dispose();
+    envRT = null;
+    scene.environment = null;
+    if (!gfxAmb) scene.add((gfxAmb = new T.AmbientLight(0xffffff, 0.35)));
+    return;
+  }
   try {
     const pm = new T.PMREMGenerator(R);
     const sc = new T.Scene();
@@ -130,7 +143,10 @@ function bakeEnvironment() {
     d.material.uniforms.horizon.value.copy(scene.fog.color);
     sc.add(d);
     const rt = pm.fromScene(sc, 0.02);
+    if (envRT && envRT !== rt) envRT.dispose();
+    envRT = rt;
     scene.environment = rt.texture;
+    d.material.dispose();
     pm.dispose();
   } catch (e) {
     console.warn('[STEEL TEMPEST] environment map failed; materials stay matte', e);

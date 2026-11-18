@@ -222,4 +222,5 @@ function loop(n) {
     else drawExternalHud();
     drawGroundThreatHud();
   }
+  renderGuardTick(dt); // 렌더 점검 · 자동 복구 (04-render-guard)
 }
