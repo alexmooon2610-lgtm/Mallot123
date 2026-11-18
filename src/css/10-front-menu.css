@@ -1,0 +1,1320 @@
+/* ============ 2. MALLOT RETRO · 인트로/커버/설정 화면 ============ */
+:root {
+  --m-ink: #050812;
+  --m-navy: #08152d;
+  --m-blue: #174d9c;
+  --m-cyan: #80caff;
+  --m-red: #e74248;
+  --m-green: #62d18a;
+  --m-paper: #f0f0e6;
+  --m-gold: #f2c56b;
+}
+#mallot-front {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  color: var(--m-paper);
+  background: #030711;
+  overflow: hidden;
+  isolation: isolate;
+}
+#mallot-front * {
+  box-sizing: border-box;
+}
+#mallot-front:before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: radial-gradient(ellipse at 50% 38%, #173566 0, #09172f 46%, #030711 100%);
+}
+#mallot-front:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.mf-screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  padding: clamp(14px, 3vw, 36px);
+}
+.mf-screen.active {
+  display: flex;
+}
+@keyframes mf-in {
+  from {
+    opacity: 0.25;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mf-frame {
+  width: min(1160px, 100%);
+  height: min(720px, 100%);
+  margin: auto;
+  border: 3px solid #d9e4ed;
+  box-shadow:
+    0 0 0 4px #101d37,
+    0 0 0 7px #48658d,
+    0 18px 70px #000b;
+  position: relative;
+  background: linear-gradient(145deg, rgba(13, 32, 66, 0.96), rgba(4, 9, 21, 0.98));
+  padding: clamp(14px, 2.4vw, 30px);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.mf-frame:before,
+.mf-frame:after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--m-gold);
+  box-shadow: 0 0 0 3px #0b1730;
+  top: 8px;
+  left: 8px;
+}
+.mf-frame:after {
+  left: auto;
+  top: auto;
+  right: 8px;
+  bottom: 8px;
+}
+.mf-eyebrow {
+  color: #9dc8ff;
+  font-size: clamp(9px, 1.25vw, 12px);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+.mf-rule {
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    var(--m-red) 0 32%,
+    #f8f4e7 32% 36%,
+    #2671d1 36% 68%,
+    #fff 68% 72%,
+    var(--m-green) 72%
+  );
+  box-shadow: 0 3px 0 #030711;
+  margin: 16px 0;
+}
+.mf-btn {
+  appearance: none;
+  border: 2px solid #dfe8ef;
+  background: linear-gradient(180deg, #204f96, #0c2856);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  padding: 12px 16px;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 2px #0b1b36,
+    4px 4px 0 #02050d;
+  text-transform: uppercase;
+  transition:
+    transform 0.08s,
+    filter 0.08s;
+}
+.mf-btn:hover,
+.mf-btn:focus-visible {
+  outline: 2px solid var(--m-gold);
+  outline-offset: 3px;
+  filter: brightness(1.25);
+  transform: translate(-1px, -1px);
+}
+.mf-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow:
+    inset 0 0 0 2px #0b1b36,
+    1px 1px 0 #02050d;
+}
+.mf-btn.red {
+  background: linear-gradient(#c33d45, #761d2e);
+}
+.mf-btn.green {
+  background: linear-gradient(#237f68, #10503f);
+}
+.mf-intro {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.mf-intro-inner {
+  flex-direction: column;
+  align-items: center;
+}
+@keyframes mf-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+.mf-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+  border-top: 2px solid #48658d;
+  padding-top: 10px;
+  color: #8da8ca;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.mf-settings-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+.mf-settings-head h2 {
+  font-size: clamp(24px, 4vw, 38px);
+  margin: 6px 0;
+  color: #f4f0df;
+  letter-spacing: -0.04em;
+  text-shadow: 3px 3px 0 #101e3b;
+}
+.mf-settings-layout {
+  display: grid;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+  margin-top: 16px;
+}
+.mf-panel {
+  border: 2px solid #738cae;
+  background: linear-gradient(180deg, #0c1a34, #071020);
+  box-shadow:
+    inset 0 0 0 2px #152b4b,
+    5px 5px 0 #02050c;
+  min-width: 0;
+}
+.mf-panel h3 {
+  letter-spacing: 0.15em;
+  color: #9ac8ff;
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #496487;
+}
+.mf-field {
+  margin: 14px 0;
+}
+.mf-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #f0d28a;
+  margin-bottom: 8px;
+}
+.mf-option-row {
+  display: flex;
+  gap: 8px;
+}
+.mf-option-row .mf-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 11px;
+}
+.mf-option-row .selected {
+  border-color: #f7d276;
+  background: linear-gradient(#c28e3d, #84541f);
+  color: #130f0a;
+  box-shadow:
+    inset 0 0 0 2px #f5d78a,
+    4px 4px 0 #02050d;
+}
+.mf-mode-note {
+  font-size: 11px;
+  line-height: 1.55;
+  color: #9eb2cc;
+  margin-top: 9px;
+  min-height: 48px;
+}
+.mf-go-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 13px;
+  border-top: 2px solid #48658d;
+}
+/* 조작 안내 버튼은 설정 칸 밖(아래 줄)에 둬서 칸이 넘쳐도 늘 보이게 한다 */
+#mf-open-guide {
+  white-space: nowrap;
+}
+.mf-go-row .mf-hint {
+  margin-right: auto;
+  color: #8da8ca;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.mf-go {
+  font-size: 17px;
+  min-width: 190px;
+  padding: 15px 22px;
+  background: linear-gradient(#d9b663, #94662b);
+  color: #10101a;
+  border: 3px solid #fff0bc;
+  box-shadow:
+    inset 0 0 0 3px #754d22,
+    5px 5px 0 #02050d;
+}
+.mf-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #020711ef;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.mf-modal.open {
+  display: flex;
+}
+.mf-modal-card {
+  width: min(760px, 100%);
+  max-height: 92%;
+  overflow: auto;
+  border: 3px solid #e5e9e7;
+  box-shadow:
+    0 0 0 5px #264a7b,
+    0 20px 60px #000;
+  background: #09152b;
+  padding: 18px;
+}
+.mf-modal-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mf-modal-title h3 {
+  margin: 0;
+  color: #f4d27e;
+  font-size: 19px;
+  letter-spacing: 0.08em;
+}
+.mf-guide-grid {
+  display: grid;
+}
+.mf-keycap {
+  display: inline-block;
+  text-align: center;
+  border: 2px solid #dbe6ef;
+  background: linear-gradient(#243d60, #101d36);
+  box-shadow: 2px 2px 0 #02050d;
+  color: #fff;
+  font-weight: 900;
+}
+.mf-guide-item {
+  border: 1px solid #496487;
+  background: #0d1d39;
+  display: grid;
+  gap: 11px;
+  align-items: center;
+}
+.mf-guide-drawing {
+  place-items: center;
+  color: #f4d27e;
+  font-size: 25px;
+  font-weight: 900;
+}
+.mf-guide-item b {
+  display: block;
+  color: #f5f2e8;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.mf-guide-item p {
+  margin: 0;
+  color: #a9bfdc;
+  font-size: 10px;
+  line-height: 1.5;
+}
+@media (max-width: 760px) {
+  .mf-settings-head {
+    align-items: start;
+    flex-direction: column;
+  }
+  .mf-frame {
+    height: 100%;
+  }
+  .mf-footer {
+    font-size: 8px;
+  }
+}
+@media (max-width: 420px) {
+  .mf-option-row .mf-btn {
+    font-size: 10px;
+  }
+  .mf-go {
+    min-width: 150px;
+  }
+  .mf-go-row .mf-hint {
+    font-size: 8px;
+  }
+}
+
+/* ============ 3. 설정 화면 · 키 가이드 선화 ============ */
+#mallot-logo-canvas {
+  image-rendering: pixelated;
+}
+.mf-cover-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  display: block;
+  filter: contrast(1.08) saturate(0.88);
+  z-index: 0;
+}
+.mf-cover-photo:not([src]),
+.mf-cover-photo[src=''] {
+  display: none;
+}
+.mf-settings-layout {
+  grid-template-columns: minmax(270px, 0.82fr) minmax(350px, 1.18fr);
+}
+.mf-guide-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.mf-guide-item {
+  grid-template-columns: 112px 1fr;
+  min-height: 82px;
+  padding: 7px 9px;
+}
+.mf-guide-drawing {
+  height: 74px;
+  border: 0;
+  background: transparent;
+  display: block;
+  text-shadow: none;
+  color: #dfe9ef;
+  --g-acc: #f1c96f;
+}
+.mf-guide-drawing svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* 키 가이드 선화: ln 윤곽 · fl 옅은 면 · ac 강조(움직임 화살표) · gd 보조선 · tx 작은 글씨 */
+.mf-guide-drawing .ln {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.mf-guide-drawing .fl {
+  fill: currentColor;
+  fill-opacity: 0.12;
+}
+.mf-guide-drawing .ac {
+  fill: none;
+  stroke: var(--g-acc);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.mf-guide-drawing .acf {
+  fill: var(--g-acc);
+}
+.mf-guide-drawing .gd {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.28;
+  stroke-width: 0.8;
+}
+.mf-guide-drawing .tx {
+  fill: currentColor;
+  fill-opacity: 0.7;
+  font:
+    700 6.5px Consolas,
+    'Courier New',
+    monospace;
+  letter-spacing: 0.08em;
+}
+.mf-guide-item p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.mf-keycap {
+  font-size: 12px;
+  min-width: 42px;
+  padding: 5px 8px;
+}
+.mf-panel {
+  padding: 14px;
+}
+.mf-panel h3 {
+  font-size: 12px;
+}
+.mf-btn:focus-visible {
+  outline: 3px solid #f2c56b;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .mf-settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .mf-guide-item {
+    grid-template-columns: 82px 1fr;
+  }
+  .mf-guide-drawing {
+    height: 60px;
+  }
+}
+@media (max-width: 420px) {
+  .mf-guide-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-screen.active,
+  .mf-intro-caption {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============ 4. 화면 전환 · 배너 · 비행 효과 오버레이 ============ */
+.mf-screen.active {
+  animation: st-wipe 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes st-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+    filter: brightness(2.2);
+  }
+  to {
+    clip-path: inset(0);
+    filter: none;
+  }
+}
+#mallot-front:after {
+  animation: st-scan 8s linear infinite;
+}
+@keyframes st-scan {
+  to {
+    background-position: 0 40px;
+  }
+}
+.mf-intro-inner {
+  z-index: 1;
+}
+.mf-cover-photo {
+  animation: st-kb 18s ease-in-out infinite alternate;
+  transform-origin: 62% 50%;
+}
+@keyframes st-kb {
+  to {
+    transform: scale(1.12) translateX(-1.5%);
+  }
+}
+@keyframes st-sweep {
+  0% {
+    left: -30%;
+  }
+  60%,
+  100% {
+    left: 120%;
+  }
+}
+.mf-readout {
+  position: absolute;
+  z-index: 3;
+  left: 18px;
+  bottom: 14px;
+  letter-spacing: 0.2em;
+  color: #9dffc0;
+  text-shadow: 0 0 6px #2f8;
+  background: #03120acc;
+  padding: 5px 9px;
+  border: 1px solid #2c7a4e;
+}
+@keyframes st-title {
+  from {
+    letter-spacing: 0.25em;
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+@keyframes st-wing {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes st-pulse {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px #0b1b36,
+      4px 4px 0 #02050d,
+      0 0 26px #e74248aa;
+  }
+}
+.mf-btn {
+  position: relative;
+  overflow: hidden;
+}
+.mf-btn.selected {
+  box-shadow:
+    inset 0 0 0 2px #f5d78a,
+    4px 4px 0 #02050d,
+    0 0 16px #f2c56b88;
+}
+.mf-panel {
+  animation: st-panel 0.5s both;
+}
+.mf-panel + .mf-panel {
+  animation-delay: 0.12s;
+}
+@keyframes st-panel {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.mf-fxrow .mf-btn {
+  padding: 8px 4px;
+  font-size: 10px;
+}
+/* 비행 효과 오버레이 (G 블랙아웃 · 피격 · 섬광) */
+#st-fxc {
+  pointer-events: none;
+}
+#st-fxov {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* 효과 층: 한 번 그려 둔 작은 캔버스(또는 단색)를 화면 크기로 늘려 붙이고 불투명도만 바꾼다 */
+#st-fxov .fx-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  will-change: opacity;
+  transform-origin: 50% 50%;
+}
+#st-fxov .fx-gv {
+  will-change: opacity, transform;
+}
+#st-fxov .fx-wh {
+  background: rgb(232, 240, 250);
+}
+#st-fxov .fx-gr {
+  background: #8a8f94;
+}
+#st-fxov .fx-bo {
+  background: #000;
+}
+
+/* ============ 5. 인트로 로고 · 로딩 바 · PRESS ENTER ============ */
+.mf-intro {
+  background: radial-gradient(ellipse at 50% 44%, #0d1b35 0, #060b18 52%, #02040a 100%);
+}
+.mf-intro-inner {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  display: block;
+  gap: 0;
+}
+.mf-logo-group {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.6vh, 16px);
+}
+#mallot-logo-canvas {
+  width: min(540px, 76vw);
+  height: auto;
+  aspect-ratio: 540/190;
+  filter: none;
+  animation: st4-logo 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes st4-logo {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mf-intro-caption {
+  animation: st4-fade 1.4s 0.7s both !important;
+  font-size: clamp(8px, 0.95vw, 10px);
+  letter-spacing: 0.55em;
+  color: #7587a3;
+  padding-left: 0.55em;
+}
+@keyframes st4-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.mf-load {
+  position: absolute;
+  left: 50%;
+  bottom: 12vh;
+  transform: translateX(-50%);
+  width: min(240px, 60vw);
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  color: #6a7f9f;
+  animation: st4-fade 1s 1s both;
+}
+.mf-lbar {
+  height: 2px;
+  margin-top: 10px;
+  background: #15233b;
+  overflow: hidden;
+}
+.mf-lbar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #cdd8e6;
+  animation: st4-bar 3.1s 0.8s cubic-bezier(0.45, 0, 0.25, 1) forwards;
+}
+@keyframes st4-bar {
+  to {
+    width: 100%;
+  }
+}
+#mf-enter-intro {
+  position: absolute;
+  left: 50%;
+  bottom: 4.5vh;
+  transform: translateX(-50%);
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: #7f93b3;
+  font-size: 9px;
+  letter-spacing: 0.42em;
+  padding: 8px 14px;
+  animation: st4-fade 1s 1.6s both;
+}
+#mf-enter-intro:hover,
+#mf-enter-intro:focus-visible,
+#mf-enter-intro:active {
+  transform: translateX(-50%);
+  filter: none;
+  color: #fff;
+  outline: none;
+  box-shadow: none;
+}
+.mf-readout {
+  opacity: 0.75;
+  font-size: clamp(8px, 1vw, 10px);
+}
+
+/* ============ 6. 미션 선택 · 브리핑 ============ */
+/* 임무 결과 창: 결과와 버튼이 먼저, 나머지는 접어 둔다 */
+.ov-act {
+  margin: 14px 0;
+}
+.ov-more > summary {
+  cursor: pointer;
+  margin: 10px 0;
+  padding: 7px 10px;
+  border: 1px solid #28543a;
+  background: #081810;
+  color: #9fd8b4;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  list-style: none;
+}
+.ov-more > summary::-webkit-details-marker {
+  display: none;
+}
+.ov-more > summary:before {
+  content: '▸ ';
+}
+.ov-more[open] > summary:before {
+  content: '▾ ';
+}
+.ov-more > summary:hover {
+  border-color: #52ffc0;
+  color: #d6ffe8;
+}
+/* 비행 효과 · 음악은 한 줄에 나란히 둔다 (설정 칸이 한 화면에 들어오도록) */
+.mf-field-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.mf-field-pair .mf-btn {
+  font-size: 12px;
+  padding: 8px 2px;
+}
+/* 브리핑 · 설정 칸이 넘칠 때: 아래쪽을 흐리게 해 더 있다는 걸 알린다 */
+.mf-panel.mf-more {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent);
+}
+.mf-mission-list {
+  display: grid;
+  gap: 6px;
+  max-height: 190px;
+  overflow: auto;
+  padding-right: 2px;
+}
+#mf-mission-field {
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #496487;
+}
+#mf-mission-note {
+  min-height: 0;
+  margin-top: 8px;
+}
+.mf-btn.mf-mission {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  min-width: 0;
+}
+.mf-mission .mm-id {
+  color: #f0d28a;
+  font-weight: 700;
+}
+.mf-mission .mm-t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mf-mission .mm-r {
+  font-size: 10px;
+  color: #9be3b6;
+  letter-spacing: 0.08em;
+}
+.mf-btn.mf-mission.selected {
+  border-color: #f7d276;
+  background: linear-gradient(#c28e3d, #84541f);
+  color: #130f0a;
+  box-shadow:
+    inset 0 0 0 2px #f5d78a,
+    4px 4px 0 #02050d;
+}
+.mf-mission.selected .mm-id,
+.mf-mission.selected .mm-r {
+  color: #130f0a;
+}
+.mf-btn.mf-mission.locked {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+  cursor: not-allowed;
+}
+.mf-brief-sum {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #d8e4ee;
+  margin: 0 0 12px;
+}
+.mf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mf-chip {
+  border: 1px solid #5b7aa3;
+  background: #0a1730;
+  padding: 4px 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #b9d2ee;
+}
+.mf-chip b {
+  color: #f0d28a;
+  font-weight: 700;
+}
+.mf-brief-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #d8e4ee;
+}
+.mf-brief-list li::marker {
+  color: #f0d28a;
+}
+.mf-brief-best {
+  font-size: 12px;
+  color: #9eb2cc;
+  line-height: 1.7;
+}
+.mf-brief-best .rk {
+  font-size: 26px;
+  color: #ffd36b;
+  letter-spacing: 0.1em;
+}
+#mf-brief-back {
+  margin-right: 8px;
+}
+@media (max-width: 760px) {
+  #mf-settings .mf-settings-layout,
+  #mf-brief .mf-settings-layout {
+    flex: 0 0 auto;
+  }
+  #mf-brief .mf-frame,
+  #mf-settings .mf-frame {
+    overflow-y: auto;
+  }
+}
+@keyframes acin {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+#ac-radio {
+  position: fixed;
+  left: 18px;
+  top: 160px; /* 왼쪽 위 임무 목표 · 로그 글씨(~152px) 아래 */
+  z-index: 9;
+  max-width: min(520px, 70vw);
+  padding: 8px 14px;
+  border-left: 3px solid var(--ac-cy);
+  background: rgba(2, 12, 20, 0.78);
+  color: #e8f4fa;
+  font:
+    13px ui-monospace,
+    monospace;
+  opacity: 0;
+  transform: translateX(-12px);
+  transition: 0.25s;
+  pointer-events: none;
+}
+#ac-radio.on {
+  opacity: 1;
+  transform: none;
+}
+#ac-radio b {
+  display: block;
+  color: var(--ac-cy);
+  font-size: 10px;
+  letter-spacing: 0.35em;
+}
+#ac-radio[data-who='ZARYA'] {
+  border-left-color: #f1c96f;
+}
+#ac-radio[data-who='ZARYA'] b {
+  color: #f1c96f;
+}
+#ac-radio[data-who='TEMPEST 2'] {
+  border-left-color: #ff8a70;
+}
+#ac-radio[data-who='TEMPEST 2'] b {
+  color: #ff8a70;
+}
+#ac-radio[data-who='LSO'] {
+  border-left-color: #7dff9a;
+}
+#ac-radio[data-who='LSO'] b {
+  color: #7dff9a;
+}
+/* 임무 시작 · 완료 · 실패 배너 */
+body.ac-hold #ov {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+#ov {
+  transition: opacity 0.5s;
+}
+#ac-banner {
+  position: fixed;
+  left: 50%;
+  top: 34%;
+  z-index: 60;
+  transform: translate(-50%, -50%) scale(1.04);
+  text-align: center;
+  color: #eef6fa;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.45s,
+    transform 0.6s;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.85);
+}
+#ac-banner.on {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+#ac-banner small {
+  display: block;
+  font:
+    700 13px/1 ui-monospace,
+    Consolas,
+    monospace;
+  letter-spacing: 0.6em;
+  color: var(--ac-cy);
+}
+#ac-banner b {
+  display: block;
+  margin-top: 10px;
+  font:
+    900 clamp(26px, 4vw, 46px)/1.05 ui-monospace,
+    Consolas,
+    monospace;
+  letter-spacing: 0.18em;
+}
+#ac-banner i {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 12px auto 8px;
+}
+#ac-banner s {
+  display: block;
+  width: 64px;
+  height: 4px;
+  background: #e64545;
+  transform: skewX(-30deg);
+}
+#ac-banner s + s {
+  background: #4f8fe8;
+}
+#ac-banner s + s + s {
+  background: #43c46e;
+}
+#ac-banner em {
+  display: block;
+  font:
+    600 12px/1 ui-monospace,
+    Consolas,
+    monospace;
+  letter-spacing: 0.4em;
+  font-style: normal;
+  color: #b9cbd4;
+}
+#ac-banner.bad small,
+#ac-banner.bad b {
+  color: #ff5a4a;
+}
+#ac-radio i {
+  display: block;
+  color: #8fb4c4;
+  font-size: 11px;
+  font-style: normal;
+}
+#ac-alert {
+  position: fixed;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  z-index: 9;
+  display: none;
+  text-align: center;
+  color: #ff4a3a;
+  font:
+    900 34px ui-monospace,
+    monospace;
+  letter-spacing: 0.3em;
+  text-shadow: 0 0 18px #f00;
+  animation: acbl 0.35s steps(2, end) infinite;
+  pointer-events: none;
+}
+#ac-alert small {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: #ffb36b;
+  text-shadow: none;
+}
+@keyframes acbl {
+  50% {
+    opacity: 0.25;
+  }
+}
+.mf-logo-group #mallot-logo-canvas {
+  position: static !important;
+  display: block;
+  margin: 0 auto;
+  transform: none;
+}
+.mf-logo-group {
+  width: max-content;
+  max-width: 94vw;
+}
+
+/* WebGL 컨텍스트 손실 안내 (90-main-loop) */
+#st-glost {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.82);
+  color: #cfe;
+  font:
+    14px ui-monospace,
+    monospace;
+  text-align: center;
+}
+#st-glost b {
+  color: #ffd36b;
+  font-size: 18px;
+}
+#st-glost span {
+  color: #9aafa2;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+#st-glost button {
+  margin-top: 8px;
+  padding: 8px 18px;
+  border: 0;
+  background: #4dff88;
+  color: #000;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ============ 7. 군용 단말기 외형: 테두리 · 괘선 · 스캔선 ============ */
+#mallot-front {
+  font-family: 'Bahnschrift', 'DIN Alternate', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+}
+#mallot-front:after {
+  opacity: 1 !important;
+  background:
+    linear-gradient(rgba(128, 202, 255, 0.05) 1px, transparent 1px) 0 0/100% 64px,
+    linear-gradient(90deg, rgba(128, 202, 255, 0.05) 1px, transparent 1px) 0 0/64px 100% !important;
+  box-shadow: inset 0 0 160px #000;
+}
+#mallot-front .mf-screen.active {
+  animation: milin 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+@keyframes milin {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+    filter: brightness(1.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+#mallot-front .mf-frame {
+  border: 1px solid rgba(240, 240, 230, 0.28) !important;
+  box-shadow:
+    0 0 0 1px #000,
+    0 24px 80px #000b !important;
+}
+#mallot-front .mf-frame:before,
+#mallot-front .mf-frame:after {
+  width: 30px !important;
+  height: 30px !important;
+  background: none !important;
+  box-shadow: none !important;
+  border: 0 solid var(--m-gold);
+  top: -1px !important;
+  left: -1px !important;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+#mallot-front .mf-frame:after {
+  top: auto !important;
+  left: auto !important;
+  right: -1px !important;
+  bottom: -1px !important;
+  border-width: 0 2px 2px 0;
+}
+#mallot-front .mf-rule {
+  height: 1px !important;
+  box-shadow: none !important;
+  background: linear-gradient(90deg, var(--m-gold), rgba(240, 240, 230, 0.25) 45%, transparent) !important;
+}
+#mallot-front .mf-eyebrow,
+#mallot-front .mf-label,
+#mallot-front .mf-panel h3 {
+  letter-spacing: 0.34em !important;
+  font-weight: 600;
+}
+#mallot-front .mf-panel h3:before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  background: var(--m-gold);
+}
+#mallot-front h2 {
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+#mallot-front .mf-panel {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+}
+#mallot-front .mf-btn {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  letter-spacing: 0.22em !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  transform: none !important;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+#mf-enter-intro {
+  clip-path: none !important;
+}
+@keyframes milrev {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0.2;
+  }
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+}
+#mallot-front .mf-footer {
+  letter-spacing: 0.38em !important;
+  animation: none !important;
+}
+@keyframes milfade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes milscan {
+  to {
+    transform: translateY(clamp(200px, 38vh, 420px));
+  }
+}
+#mil-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  font:
+    9px ui-monospace,
+    Menlo,
+    monospace;
+  letter-spacing: 0.3em;
+  color: var(--m-cyan);
+  opacity: 0.7;
+}
+#mil-hud i {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 0 solid var(--m-gold);
+}
+#mil-hud .tl {
+  left: 22px;
+  top: 22px;
+  border-width: 2px 0 0 2px;
+}
+#mil-hud .tr {
+  right: 22px;
+  top: 22px;
+  border-width: 2px 2px 0 0;
+}
+#mil-hud .bl {
+  left: 22px;
+  bottom: 22px;
+  border-width: 0 0 2px 2px;
+}
+#mil-hud .br {
+  right: 22px;
+  bottom: 22px;
+  border-width: 0 2px 2px 0;
+}
+#mil-hud span {
+  position: absolute;
+}
+#mil-hud .a {
+  left: 60px;
+  top: 26px;
+}
+#mil-hud .b {
+  right: 60px;
+  top: 26px;
+}
+#mil-hud .c {
+  left: 60px;
+  bottom: 26px;
+}
+#mil-hud .d {
+  right: 60px;
+  bottom: 26px;
+}
+#mil-hud .ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76vmin;
+  height: 76vmin;
+  margin: -38vmin 0 0 -38vmin;
+  border-radius: 50%;
+  border: 1px solid rgba(128, 202, 255, 0.2);
+  background:
+    conic-gradient(from 0deg, rgba(128, 202, 255, 0.13), transparent 22%),
+    repeating-radial-gradient(circle, transparent 0 12.4%, rgba(128, 202, 255, 0.1) 12.4% 12.8%);
+  animation: milsw 7s linear infinite;
+}
+@keyframes milsw {
+  to {
+    transform: rotate(360deg);
+  }
+}
+#mallot-front #mf-enter-intro {
+  transform: translateX(-50%) !important;
+}
+#mallot-front .mf-btn {
+  border-width: 1px !important;
+}

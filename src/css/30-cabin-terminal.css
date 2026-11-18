@@ -1,0 +1,831 @@
+/* ============ V13.4 · 선실 단말기 메뉴 ============ */
+#st-cabin {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: none;
+  overflow: hidden;
+  background: #141916;
+  --desk-y: 80vh;
+  --rig-s: 1;
+  --ph: #ffb84d;
+  --ph-hi: #ffd894;
+  --ph-dim: #c48632;
+  --ph-faint: #6b4718;
+  --ph-bg: #0d0702;
+  --mono: 'D2Coding', 'NanumGothicCoding', 'Consolas', 'Courier New', 'Malgun Gothic', 'Apple SD Gothic Neo', monospace;
+}
+#st-cabin.on {
+  display: block;
+  animation: stc-in 0.7s ease both;
+}
+#mallot-front.st-cabin-on:before,
+#mallot-front.st-cabin-on:after {
+  display: none;
+}
+@keyframes stc-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* 벽 · 배관 · 책상 · 조명 */
+#st-cabin .stc-wall {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 34% 46% at 86% 64%, rgba(255, 196, 120, 0.13), transparent 72%),
+    radial-gradient(circle at 7px 7px, #46504a 2.2px, #1a1f1c 2.8px, transparent 3.2px) -3px 18px/240px 64px,
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 236px,
+      rgba(0, 0, 0, 0.5) 236px 238px,
+      rgba(255, 255, 255, 0.05) 238px 240px
+    ),
+    linear-gradient(#232b26, #1a201c 60%, #121613);
+}
+#st-cabin .stc-pipes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(96px * var(--rig-s));
+  background: linear-gradient(
+    transparent 0 18%,
+    #3b443e 18%,
+    #69736b 26%,
+    #3a423c 34%,
+    #1b201d 40%,
+    transparent 40%,
+    transparent 56%,
+    #2f3732 56%,
+    #5a645c 64%,
+    #2c332e 72%,
+    #141815 78%,
+    transparent 78%
+  );
+}
+#st-cabin .stc-desk {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--desk-y);
+  bottom: 0;
+  border-top: 2px solid #59625a;
+  background: linear-gradient(#3b423b, #2b312b 3%, #1d221e 40%, #101310);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.45);
+}
+#st-cabin .stc-pool {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--desk-y);
+  bottom: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 26% 70% at 84% 20%, rgba(255, 206, 130, 0.2), transparent 70%);
+}
+#st-cabin .stc-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 75% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
+}
+/* 1920×1080 기준 무대 */
+#st-cabin .stc-rig {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: 50% 50%;
+}
+#st-cabin .stc-rig > * {
+  position: absolute;
+}
+#st-cabin .stc-porthole {
+  left: 96px;
+  top: 150px;
+  width: 260px;
+  height: 260px;
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.6));
+}
+#st-cabin .stc-porthole svg,
+#st-cabin .stc-chart svg,
+#st-cabin .stc-mug svg,
+#st-cabin .stc-phone svg,
+#st-cabin .stc-lamp svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#st-cabin .stc-sea {
+  transform-origin: 120px 130px;
+  animation: stc-roll 9s ease-in-out infinite;
+}
+#st-cabin .stc-rain {
+  animation: stc-rain 0.5s linear infinite;
+}
+#st-cabin .stc-flash {
+  opacity: 0;
+  animation: stc-flash 11s linear 3s infinite;
+}
+@keyframes stc-roll {
+  0%,
+  100% {
+    transform: rotate(-4deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-3px);
+  }
+}
+@keyframes stc-rain {
+  from {
+    transform: translate(0, -40px);
+  }
+  to {
+    transform: translate(-6px, 40px);
+  }
+}
+@keyframes stc-flash {
+  0%,
+  90%,
+  100% {
+    opacity: 0;
+  }
+  91% {
+    opacity: 0.75;
+  }
+  92% {
+    opacity: 0.1;
+  }
+  93.5% {
+    opacity: 0.55;
+  }
+  96% {
+    opacity: 0;
+  }
+}
+#st-cabin .stc-chart {
+  left: 1604px;
+  top: 118px;
+  width: 276px;
+  height: 212px;
+  transform: rotate(2.2deg);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.5);
+}
+#st-cabin .stc-chart:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 40%, rgba(0, 0, 0, 0.18));
+}
+#st-cabin .stc-tape {
+  position: absolute;
+  width: 62px;
+  height: 20px;
+  background: rgba(214, 203, 160, 0.75);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+#st-cabin .stc-tape.a {
+  left: -16px;
+  top: -6px;
+  transform: rotate(-24deg);
+}
+#st-cabin .stc-tape.b {
+  right: -16px;
+  top: -6px;
+  transform: rotate(22deg);
+}
+#st-cabin .stc-plate {
+  left: 1680px;
+  top: 372px;
+  width: 150px;
+  padding: 7px 0;
+  text-align: center;
+  border: 1px solid #a58e55;
+  border-radius: 3px;
+  background: linear-gradient(#b89a5a, #8c713c);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  font:
+    700 15px/1.2 Georgia,
+    serif;
+  letter-spacing: 0.18em;
+  color: #2b2010;
+}
+#st-cabin .stc-plate span {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  font-weight: 400;
+}
+/* 단말기 */
+#st-cabin .stc-monitor {
+  left: 348px;
+  top: 20px;
+  width: 1224px;
+  height: 880px;
+}
+#st-cabin .stc-bezel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1224px;
+  height: 836px;
+  border-radius: 30px;
+  background: linear-gradient(160deg, #d6cfba, #bdb59d 38%, #a39b83 80%, #8f876f);
+  box-shadow:
+    0 34px 60px rgba(0, 0, 0, 0.72),
+    inset 0 3px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -8px 16px rgba(0, 0, 0, 0.25),
+    inset 6px 0 10px rgba(255, 255, 255, 0.12);
+}
+#st-cabin .stc-screen {
+  position: absolute;
+  left: 46px;
+  top: 40px;
+  width: 1132px;
+  height: 664px;
+  border-radius: 30px/26px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 46%, #1b1006 0%, var(--ph-bg) 70%, #050301 100%);
+  box-shadow:
+    0 0 0 14px #2c2a24,
+    0 0 0 16px #6f6957,
+    inset 0 0 70px rgba(0, 0, 0, 0.95),
+    inset 0 0 14px rgba(255, 170, 60, 0.12);
+}
+#st-cabin .stc-screen:before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 24% 12%, rgba(255, 255, 255, 0.07), transparent 70%),
+    radial-gradient(ellipse at 50% 50%, transparent 62%, rgba(0, 0, 0, 0.55) 100%);
+}
+#st-cabin .stc-screen:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.26) 2px 3px);
+  animation: stc-flicker 6s steps(1) infinite;
+}
+@keyframes stc-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  47% {
+    opacity: 0.85;
+  }
+  48% {
+    opacity: 1;
+  }
+}
+#st-cabin .stc-chin {
+  position: absolute;
+  left: 46px;
+  right: 46px;
+  top: 724px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+#st-cabin .stc-brand {
+  font:
+    700 22px/1 Georgia,
+    serif;
+  letter-spacing: 0.2em;
+  color: #4b4535;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+#st-cabin .stc-brand small {
+  display: block;
+  margin-top: 5px;
+  font: 600 10px/1 var(--mono);
+  letter-spacing: 0.34em;
+  color: #5d5643;
+}
+#st-cabin .stc-knobs {
+  margin-left: auto;
+  display: flex;
+  gap: 18px;
+}
+#st-cabin .stc-knobs i {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #6b665a, #2c2a24);
+  box-shadow:
+    0 3px 5px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+#st-cabin .stc-led {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #48ff7a;
+  box-shadow:
+    0 0 10px #48ff7a,
+    0 0 2px #fff;
+}
+#st-cabin .stc-neck {
+  position: absolute;
+  left: 402px;
+  width: 420px;
+  top: 832px;
+  height: 46px;
+  background: linear-gradient(#8e866e, #6e6754);
+  clip-path: polygon(12% 0, 88% 0, 100% 100%, 0 100%);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+}
+/* 책상 위 소품 */
+#st-cabin .stc-keyboard {
+  left: 560px;
+  top: 930px;
+  width: 800px;
+  height: 200px;
+  transform: perspective(900px) rotateX(38deg);
+  transform-origin: 50% 0;
+  border-radius: 14px;
+  background: linear-gradient(#c3bba4, #a59d85);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.6);
+}
+#st-cabin .stc-keyboard i {
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  top: 20px;
+  bottom: 24px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(90deg, #d8d1bd 0 40px, #7d765f 40px 46px), #d8d1bd;
+  -webkit-mask: repeating-linear-gradient(#000 0 30px, transparent 30px 36px);
+  mask: repeating-linear-gradient(#000 0 30px, transparent 30px 36px);
+}
+#st-cabin .stc-folder {
+  left: 1350px;
+  top: 908px;
+  width: 310px;
+  height: 210px;
+  transform: rotate(-8deg);
+  border-radius: 3px;
+  background: linear-gradient(135deg, #8c7a50, #6f5f3b);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.55);
+  padding: 28px 26px;
+  font-family: Georgia, serif;
+}
+#st-cabin .stc-folder b {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 3px solid #a3271f;
+  color: #a3271f;
+  font-size: 24px;
+  letter-spacing: 0.2em;
+  transform: rotate(-6deg);
+  opacity: 0.85;
+}
+#st-cabin .stc-folder span {
+  display: block;
+  margin-top: 16px;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: #2e2614;
+}
+#st-cabin .stc-phone {
+  left: 52px;
+  top: 878px;
+  width: 236px;
+  height: 154px;
+}
+#st-cabin .stc-mug {
+  left: 318px;
+  top: 874px;
+  width: 120px;
+  height: 130px;
+}
+#st-cabin .stc-steam {
+  position: absolute;
+  left: 44px;
+  top: -50px;
+  width: 16px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(transparent, rgba(230, 230, 220, 0.16));
+  filter: blur(4px);
+  animation: stc-steam 3.2s ease-in-out infinite;
+}
+#st-cabin .stc-steam.b {
+  left: 62px;
+  animation-delay: 1.5s;
+}
+@keyframes stc-steam {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scaleX(0.6);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-26px) translateX(8px) scaleX(1.4);
+  }
+}
+#st-cabin .stc-lamp {
+  left: 1640px;
+  top: 562px;
+  width: 260px;
+  height: 330px;
+}
+/* 단말기 화면: 상태줄 · 부팅 */
+#st-cabin .stc-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 34px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px;
+  font: 600 13px/1 var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--ph-bg);
+  background: var(--ph);
+  text-shadow: none;
+}
+#st-cabin .stc-bar-r.warn {
+  animation: stc-blink 1s steps(2) infinite;
+}
+@keyframes stc-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+#st-cabin .stc-boot {
+  position: absolute;
+  inset: 34px 0 0;
+  z-index: 8;
+  display: none;
+  padding: 28px 34px;
+  white-space: pre;
+  font: 16px/1.7 var(--mono);
+  color: var(--ph);
+  text-shadow: 0 0 6px rgba(255, 170, 60, 0.6);
+  background: var(--ph-bg);
+}
+#st-cabin .stc-screen.booting .stc-boot {
+  display: block;
+}
+#st-cabin .stc-screen.booting {
+  animation: stc-power 0.5s ease-out both;
+}
+@keyframes stc-power {
+  0% {
+    filter: brightness(4);
+    clip-path: inset(49.5% 0 49.5% 0);
+  }
+  55% {
+    filter: brightness(2);
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    filter: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* ---------- 메뉴를 형광 단말기 글자로 ---------- */
+#st-cabin .mf-screen {
+  inset: 34px 0 0 0 !important;
+  padding: 0 !important;
+  animation: none !important;
+}
+#st-cabin .mf-screen.active {
+  animation: stc-scr 0.35s steps(4) both !important;
+}
+@keyframes stc-scr {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+#st-cabin .mf-screen * {
+  font-family: var(--mono) !important;
+  text-shadow: 0 0 5px rgba(255, 170, 60, 0.45) !important;
+  letter-spacing: 0.04em !important;
+}
+#st-cabin .mf-frame {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 20px 30px 14px !important;
+  color: var(--ph) !important;
+  clip-path: none !important;
+}
+#st-cabin .mf-frame:before,
+#st-cabin .mf-frame:after {
+  display: none !important;
+}
+#st-cabin .mf-settings-head h2 {
+  font-weight: 700 !important;
+  color: var(--ph-hi) !important;
+  margin: 2px 0 !important;
+  text-transform: uppercase;
+}
+#st-cabin .mf-settings-head h2:before {
+  content: '> ';
+}
+#st-cabin .mf-settings-head h2:after {
+  content: '_';
+  animation: stc-blink 1s steps(2) infinite;
+}
+#st-cabin .mf-eyebrow,
+#st-cabin .mf-footer,
+#st-cabin .mf-hint {
+  color: var(--ph-dim) !important;
+}
+#st-cabin .mf-rule {
+  height: 0 !important;
+  border: 0 !important;
+  border-top: 1px dashed var(--ph-faint) !important;
+  background: none !important;
+  margin-top: 8px !important;
+}
+#st-cabin .mf-settings-layout {
+  margin-top: 12px !important;
+  gap: 16px !important;
+  min-height: 0 !important;
+}
+#st-cabin .mf-frame {
+  overflow: hidden !important;
+}
+#st-cabin .mf-settings-layout > .mf-panel {
+  min-height: 0;
+  overflow: auto;
+}
+/* 단말기 화면 안의 버튼 간격 */
+#st-cabin #mf-open-guide {
+  margin-top: 12px !important;
+}
+#st-cabin .mf-field {
+  margin-top: 8px !important;
+}
+#st-cabin .mf-option-row .mf-btn {
+  padding: 8px 6px !important;
+}
+#st-cabin .mf-field-pair .mf-btn {
+  font-size: 12px !important;
+  padding: 8px 2px !important;
+}
+#st-cabin .mf-field-pair .mf-field {
+  margin-top: 8px !important;
+}
+#st-cabin .mf-mission-list {
+  max-height: none !important;
+}
+/* 캠페인 목록은 따로 스크롤하지 않고 칸 전체가 스크롤된다 (스크롤 막대가 둘이 되지 않게) */
+#st-cabin #mf-mission-field.mf-camp .mf-mission-list {
+  max-height: none !important;
+  overflow: visible !important;
+}
+#st-cabin .mf-panel {
+  background: transparent !important;
+  border: 1px solid var(--ph-faint) !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+  padding: 12px 14px !important;
+  color: var(--ph) !important;
+}
+#st-cabin .mf-panel h3,
+#st-cabin .mf-label {
+  color: var(--ph-hi) !important;
+  font-weight: 700 !important;
+  border: 0 !important;
+  background: none !important;
+}
+#st-cabin .mf-panel h3:before,
+#st-cabin .mf-label:before {
+  content: '■ ' !important;
+  color: var(--ph) !important;
+  background: none !important;
+  width: auto !important;
+  height: auto !important;
+  display: inline !important;
+  position: static !important;
+}
+#st-cabin .mf-mode-note,
+#st-cabin .mf-brief-sum,
+#st-cabin .mf-brief-list,
+#st-cabin .mf-brief-best {
+  color: var(--ph) !important;
+  line-height: 1.45 !important;
+}
+#st-cabin .mf-btn {
+  background: transparent !important;
+  border: 1px solid var(--ph-faint) !important;
+  color: var(--ph) !important;
+  clip-path: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  transition: none !important;
+}
+#st-cabin .mf-btn:hover,
+#st-cabin .mf-btn:focus-visible {
+  border-color: var(--ph) !important;
+  outline: none !important;
+  background: rgba(255, 184, 77, 0.08) !important;
+}
+#st-cabin .mf-btn.selected {
+  background: var(--ph) !important;
+  border-color: var(--ph) !important;
+  color: var(--ph-bg) !important;
+}
+#st-cabin .mf-btn.selected *,
+#st-cabin .mf-btn.selected {
+  text-shadow: none !important;
+}
+#st-cabin .mf-btn.locked,
+#st-cabin .mf-btn[aria-disabled='true'] {
+  color: var(--ph-faint) !important;
+  border-color: rgba(107, 71, 24, 0.45) !important;
+}
+#st-cabin .mf-btn.mf-mission .mm-id {
+  color: var(--ph-hi) !important;
+}
+#st-cabin .mf-btn.mf-mission .mm-r {
+  color: var(--ph-dim) !important;
+}
+#st-cabin .mf-btn.selected .mm-id,
+#st-cabin .mf-btn.selected .mm-t,
+#st-cabin .mf-btn.selected .mm-r {
+  color: var(--ph-bg) !important;
+}
+#st-cabin .mf-btn.mf-go {
+  border-color: var(--ph) !important;
+  color: var(--ph-hi) !important;
+  font-size: 16px !important;
+  padding: 10px 22px !important;
+}
+#st-cabin .mf-btn.mf-go:hover,
+#st-cabin .mf-btn.mf-go:focus-visible {
+  background: var(--ph) !important;
+  color: var(--ph-bg) !important;
+}
+#st-cabin .mf-go-row {
+  border-top: 1px dashed var(--ph-faint) !important;
+  margin-top: 12px !important;
+  padding-top: 10px !important;
+}
+#st-cabin .mf-camp-status {
+  border: 1px solid var(--ph-faint) !important;
+  background: transparent !important;
+  color: var(--ph-dim) !important;
+}
+#st-cabin .mf-camp-status b,
+#st-cabin .mf-camp-status .mf-camp-clock b {
+  color: var(--ph-hi) !important;
+}
+#st-cabin .mf-camp-ch {
+  color: var(--ph-dim) !important;
+  border-bottom: 1px dashed var(--ph-faint) !important;
+}
+#st-cabin .mf-chip {
+  background: transparent !important;
+  border: 1px solid var(--ph-faint) !important;
+  color: var(--ph-dim) !important;
+  clip-path: none !important;
+}
+#st-cabin .mf-chip b {
+  color: var(--ph-hi) !important;
+}
+#st-cabin .mf-modal {
+  background: rgba(13, 7, 2, 0.96) !important;
+}
+#st-cabin .mf-modal-card {
+  background: var(--ph-bg) !important;
+  border: 1px solid var(--ph) !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+  color: var(--ph) !important;
+}
+#st-cabin .mf-modal-card svg {
+  filter: sepia(1) saturate(3) hue-rotate(-12deg) brightness(0.95);
+}
+#st-cabin .mf-mission-list::-webkit-scrollbar,
+#st-cabin .mf-frame::-webkit-scrollbar {
+  width: 8px;
+}
+#st-cabin .mf-mission-list::-webkit-scrollbar-thumb,
+#st-cabin .mf-frame::-webkit-scrollbar-thumb {
+  background: var(--ph-faint);
+}
+@media (prefers-reduced-motion: reduce) {
+  #st-cabin *,
+  #st-cabin *:before,
+  #st-cabin *:after {
+    animation: none !important;
+  }
+}
+#st-cabin .mf-btn.selected:hover,
+#st-cabin .mf-btn.selected:focus-visible {
+  background: var(--ph-hi) !important;
+  border-color: var(--ph-hi) !important;
+}
+#st-cabin .mf-btn.locked,
+#st-cabin .mf-btn.locked * {
+  color: #a2702c !important;
+}
+#st-cabin .mf-modal-card {
+  width: min(1040px, 100%) !important;
+  max-height: 100% !important;
+  overflow: auto !important;
+}
+#st-cabin .mf-modal-title h3 {
+  color: var(--ph-hi) !important;
+}
+#st-cabin .mf-guide-item {
+  background: transparent !important;
+  border: 1px solid var(--ph-faint) !important;
+  clip-path: none !important;
+  box-shadow: none !important;
+}
+#st-cabin .mf-guide-item b {
+  color: var(--ph-hi) !important;
+}
+#st-cabin .mf-guide-item p {
+  color: var(--ph) !important;
+}
+#st-cabin .mf-guide-drawing {
+  background: transparent !important;
+  border: 1px solid var(--ph-dim) !important;
+  box-shadow: none !important;
+}
+#st-cabin .mf-guide-drawing {
+  color: var(--ph-hi);
+  --g-acc: #fff0cc;
+}
+#st-cabin .mf-guide-drawing svg {
+  filter: drop-shadow(0 0 1.5px rgba(255, 184, 77, 0.55)); /* 인광 번짐 */
+}
+#st-cabin .mf-keycap {
+  background: transparent !important;
+  border: 1px solid var(--ph) !important;
+  color: var(--ph-hi) !important;
+  box-shadow: none !important;
+}
+/* 작은 창에서도 읽히도록 단말기 글자를 키운다 (선실 전체가 창 크기에 맞춰 축소되므로) */
+#st-cabin .mf-btn {
+  font-size: 14px !important;
+}
+#st-cabin .mf-btn.mf-mission {
+  font-size: 14px !important;
+  padding: 9px 12px !important;
+  grid-template-columns: 64px 1fr auto !important;
+}
+#st-cabin .mf-mode-note,
+#st-cabin .mf-brief-sum,
+#st-cabin .mf-brief-list,
+#st-cabin .mf-brief-best {
+  font-size: 14px !important;
+}
+#st-cabin .mf-panel h3,
+#st-cabin .mf-label {
+  font-size: 14px !important;
+}
+#st-cabin .mf-camp-status,
+#st-cabin .mf-camp-ch,
+#st-cabin .mf-chip {
+  font-size: 12px !important;
+}
+#st-cabin .mf-eyebrow,
+#st-cabin .mf-footer,
+#st-cabin .mf-hint {
+  font-size: 12px !important;
+}
+#st-cabin .mf-settings-head h2 {
+  font-size: 38px !important;
+}
+#st-cabin .mf-footer {
+  border-top: 1px dashed var(--ph-faint) !important;
+  border-color: var(--ph-faint) !important;
+}
+#st-cabin .mf-footer * {
+  border-color: var(--ph-faint) !important;
+}
+#st-cabin .mf-camp-actions .mf-btn {
+  font-size: 12px !important;
+}

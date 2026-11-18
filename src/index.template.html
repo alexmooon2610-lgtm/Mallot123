@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>STEEL TEMPEST V15.0.0-alpha.3 — FIRST SORTIE</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <style>
+      {{CSS}}
+    </style>
+  </head>
+  <body>
+    <canvas id="hud"></canvas>
+    <div id="ov"></div>
+    <div id="mallot-front" aria-live="polite">
+      <section class="mf-screen mf-intro active" id="mf-intro">
+        <div id="mil-hud">
+          <div class="ring"></div>
+          <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+          <span class="a">STEEL TEMPEST // AIR OPS</span><span class="b" id="mil-dtg"></span>
+          <span class="c">SYS · NOMINAL</span><span class="d">SIM · UNCLASSIFIED</span>
+        </div>
+        <div class="mf-intro-inner">
+          <div class="mf-logo-group">
+            <canvas id="mallot-logo-canvas" width="1080" height="380" aria-label="MALLOT logo"></canvas>
+            <div class="mf-intro-caption">A MALLOT ORIGINAL GAME PRESENTATION</div>
+          </div>
+          <button class="mf-btn" id="mf-enter-intro">PRESS ENTER</button>
+          <div class="mf-load">
+            <span id="mf-load-t"></span>
+            <div class="mf-lbar"><i></i></div>
+          </div>
+        </div>
+      </section>
+      <section class="mf-screen" id="mf-cover">
+        <!-- 타이틀 화면 (에이스 컴뱃 풍): 전면 사진 · 큰 제목 · PRESS ENTER. 사진은 asset-cover-jpeg (95-intro-logo.js) -->
+        <div class="ac-title">
+          <img class="mf-cover-photo ac-title-bg" alt="MiG-29 Fulcrum" />
+          <div class="ac-title-shade" aria-hidden="true"></div>
+          <div class="ac-title-flare" aria-hidden="true"></div>
+          <div class="ac-title-top"><span>ZARYA CARRIER AIR GROUP</span><span>PACIFIC · DEC 1999</span></div>
+          <div class="ac-title-brand">
+            <div class="ac-title-kicker">THE LAST WAR OF THE CENTURY</div>
+            <h1 class="ac-title-name">STEEL<b>TEMPEST</b></h1>
+            <div class="ac-title-stripe" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="ac-title-sub">AIR COMBAT · V15.0.0-alpha.3</div>
+          </div>
+          <div class="ac-title-start">
+            <button class="ac-title-btn" id="mf-start">PRESS ENTER</button>
+            <button class="ac-title-btn ac-title-btn2" id="mf-teaser">▶ TEASER</button>
+          </div>
+          <div class="mf-readout ac-title-ro" id="mf-ro"></div>
+          <div class="ac-title-credit">
+            PHOTO: JULIAN HERZOG · WIKIMEDIA COMMONS · CC BY 4.0 &nbsp;·&nbsp; © STEEL TEMPEST PROJECT
+          </div>
+        </div>
+      </section>
+      <section class="mf-screen" id="mf-settings">
+        <div class="mf-frame">
+          <div class="mf-settings-head">
+            <div>
+              <div class="mf-eyebrow">SORTIE CONFIGURATION</div>
+              <h2 id="mf-settings-title">MISSION PREPARATION</h2>
+            </div>
+            <div class="mf-eyebrow">FLIGHT OPS · 01/03</div>
+          </div>
+          <div class="mf-rule"></div>
+          <div class="mf-settings-layout">
+            <div class="mf-panel">
+              <h3 id="mf-language-heading">01 / LANGUAGE</h3>
+              <div class="mf-option-row">
+                <button class="mf-btn selected" data-lang="ko" id="mf-lang-ko">한국어</button>
+                <button class="mf-btn" data-lang="en" id="mf-lang-en">ENGLISH</button>
+              </div>
+              <div class="mf-field">
+                <span class="mf-label" id="mf-mode-heading">02 / GAME MODE</span>
+                <div class="mf-option-row">
+                  <button class="mf-btn" data-mode="CAMPAIGN" id="mf-mode-campaign">MAIN<br />CAMPAIGN</button>
+                  <button class="mf-btn selected" data-mode="CARRIER" id="mf-mode-carrier">LEGACY<br />CARRIER</button>
+                  <button class="mf-btn" data-mode="AIRBASE" id="mf-mode-airbase">AIRBASE<br />29</button>
+                  <button class="mf-btn" data-mode="MULTI" id="mf-mode-multi">MULTI<br />PLAYER</button>
+                </div>
+                <div class="mf-mode-note" id="mf-mode-note">기존 항모 환경에서 시작하는 클래식 아케이드 모드.</div>
+              </div>
+              <div class="mf-field-pair">
+                <div class="mf-field">
+                  <span class="mf-label" id="mf-fx-h"></span>
+                  <div class="mf-option-row mf-fxrow">
+                    <button class="mf-btn" data-fx="0">OFF</button><button class="mf-btn" data-fx="1">LIGHT</button
+                    ><button class="mf-btn" data-fx="2">FULL</button>
+                  </div>
+                </div>
+                <div class="mf-field">
+                  <span class="mf-label" id="mf-mus-h"></span>
+                  <div class="mf-option-row mf-fxrow">
+                    <button class="mf-btn" data-mus="0">OFF</button><button class="mf-btn" data-mus="1">LOW</button
+                    ><button class="mf-btn" data-mus="2">FULL</button>
+                  </div>
+                </div>
+              </div>
+              <div class="mf-field">
+                <span class="mf-label" id="mf-ac-h">05 / AIRCRAFT</span>
+                <div class="mf-option-row mf-fxrow">
+                  <button class="mf-btn" data-ac="mig" id="mf-ac-mig">MiG-29</button
+                  ><button class="mf-btn" data-ac="su33" id="mf-ac-su33">Su-33</button>
+                </div>
+                <div class="mf-mode-note" id="mf-ac-note"></div>
+              </div>
+            </div>
+            <div class="mf-panel">
+              <div class="mf-field" id="mf-mission-field">
+                <span class="mf-label" id="mf-mission-heading">MISSION SELECT</span>
+                <div class="mf-camp-status" id="mf-camp-status"></div>
+                <div class="mf-camp-actions">
+                  <button class="mf-btn" id="mf-camp-crawl"></button><button class="mf-btn" id="mf-camp-reset"></button>
+                </div>
+                <div class="mf-mission-list" id="mf-mission-list"></div>
+                <div class="mf-mode-note" id="mf-mission-note"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mf-go-row">
+            <span class="mf-hint" id="mf-go-hint">CHECK YOUR SETTINGS BEFORE FLIGHT</span
+            ><button class="mf-btn" id="mf-open-guide">OPEN KEY GUIDE ▸</button
+            ><button class="mf-btn mf-go" id="mf-go">GO <span aria-hidden="true">➜</span></button>
+          </div>
+          <div class="mf-footer">
+            <span>STEEL TEMPEST · MISSION SELECT</span><span>←→ MODE · ↑↓ FX · ENTER GO · ESC BACK</span>
+          </div>
+        </div>
+        <div
+          class="mf-modal"
+          id="mf-guide-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mf-guide-modal-title"
+        >
+          <div class="mf-modal-card">
+            <div class="mf-modal-title">
+              <h3 id="mf-guide-modal-title">KEY GUIDE / 조작 설명</h3>
+              <button class="mf-btn" id="mf-close-guide">CLOSE ✕</button>
+            </div>
+            <div class="mf-guide-grid" id="mf-full-guide"></div>
+            <p class="mf-mode-note" id="mf-guide-footnote">
+              이 안내는 게임 내 조작 키를 설명한다. 실제 항공기 조종 절차가 아니다.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="mf-screen" id="mf-brief">
+        <div class="mf-frame">
+          <div class="mf-settings-head">
+            <div>
+              <div class="mf-eyebrow" id="mf-brief-eyebrow">MISSION BRIEFING</div>
+              <h2 id="mf-brief-title">—</h2>
+            </div>
+            <div class="mf-eyebrow">FLIGHT OPS · 02/03</div>
+          </div>
+          <div class="mf-rule"></div>
+          <div class="mf-settings-layout">
+            <div class="mf-panel">
+              <h3 id="mf-brief-h1">MISSION</h3>
+              <p class="mf-brief-sum" id="mf-brief-sum"></p>
+              <div class="mf-chips" id="mf-brief-chips"></div>
+              <h3 id="mf-brief-h2" style="margin-top: 16px">OBJECTIVES</h3>
+              <ol class="mf-brief-list" id="mf-brief-obj"></ol>
+            </div>
+            <div class="mf-panel">
+              <h3 id="mf-brief-h3">FLIGHT NOTES</h3>
+              <ul class="mf-brief-list" id="mf-brief-tips"></ul>
+              <div class="mf-loadout" id="mf-brief-load" hidden>
+                <h3 id="mf-brief-h5" style="margin-top: 16px">LOADOUT</h3>
+                <div class="mf-loadout-pick" id="mf-loadout-list"></div>
+                <p class="mf-loadout-note" id="mf-loadout-info"></p>
+              </div>
+              <h3 id="mf-brief-h4" style="margin-top: 16px">RECORD</h3>
+              <div class="mf-brief-best" id="mf-brief-best"></div>
+            </div>
+          </div>
+          <div class="mf-go-row">
+            <button class="mf-btn" id="mf-brief-back">◂ BACK</button><span class="mf-hint" id="mf-brief-hint"></span
+            ><button class="mf-btn mf-go" id="mf-brief-launch">LAUNCH <span aria-hidden="true">➜</span></button>
+          </div>
+          <div class="mf-footer"><span>STEEL TEMPEST · MISSION BRIEFING</span><span>ENTER LAUNCH · ESC BACK</span></div>
+        </div>
+      </section>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+      {{JS}}
+    </script>
+    <!-- ===== ASSETS (코드 아님) — 아래는 base64 데이터 ===== -->
+    {{ASSETS}}
+  </body>
+</html>
