@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>STEEL TEMPEST V15.0.0-alpha.4 — FIRST SORTIE</title>
+    <title>STEEL TEMPEST V15.0.0-alpha.5 — FIRST SORTIE</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <style>
       /* ============ 1. BASE · 오버레이/메뉴 ============ */
@@ -3676,7 +3676,7 @@ window.__stIntroT0 = performance.now();
             <div class="ac-title-kicker">THE LAST WAR OF THE CENTURY</div>
             <h1 class="ac-title-name">STEEL<b>TEMPEST</b></h1>
             <div class="ac-title-stripe" aria-hidden="true"><i></i><i></i><i></i></div>
-            <div class="ac-title-sub">AIR COMBAT · V15.0.0-alpha.4</div>
+            <div class="ac-title-sub">AIR COMBAT · V15.0.0-alpha.5</div>
           </div>
           <div class="ac-title-start">
             <button class="ac-title-btn" id="mf-start">PRESS ENTER</button>
@@ -4014,9 +4014,28 @@ R.toneMappingExposure = 0.85;
 const MOBILE =
   /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) ||
   (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 900);
+// 저사양 GPU 로 볼 기기 (V15.0.0-alpha.5 안정화): 폰 · 터치 화면(태블릿 · 아이패드 프로 — 아이패드는 맥으로 자신을 알린다) ·
+// 메모리 4 GB 이하. 텍스처를 폰 크기로 줄이고, 렌더 경로를 예전(검증된) 쪽으로 돌린다 (01-environment RENDER_SAFE).
+const LOWGPU =
+  MOBILE || navigator.maxTouchPoints > 1 || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
+// 웹킷(사파리 · iOS 의 모든 브라우저): ImageBitmap 을 WebGL 로 올릴 때 검게 나오는 버그가 알려져 있다
+// (three.js 도 사파리 17 미만에서는 ImageBitmap 경로를 쓰지 않는다). 그래서 펼친 그림을 캔버스로 옮겨 올린다.
+const WEBKIT =
+  /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (/AppleWebKit/i.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR|SamsungBrowser|Android/i.test(navigator.userAgent));
+// 그래픽 안전 단계 (04-render-guard 가 '검은 물체'를 찾으면 한 단씩 올리고 기기에 기억해 둔다)
+//   1: 그림자 끔 · 2: + 환경맵 대신 고른 주변광 · 3: + 모든 표준 재질을 램버트(가장 단순한 조명)로
+const GFX = (() => {
+  let level = 0;
+  try {
+    if (/[?&]gfxreset\b/.test(location.search)) localStorage.removeItem('stGfxSafe'); // 주소 끝에 ?gfxreset 으로 되돌린다
+    level = Math.max(0, Math.min(3, +localStorage.getItem('stGfxSafe') || 0));
+  } catch (e) {}
+  return { level, texFix: 0, checks: 0, lastFail: '' };
+})();
 function texCap(scale = 1) {
   // 폰은 갑판처럼 크게 쓰는 텍스처도 1536 을 넘기지 않는다 (GPU 메모리 여유가 적다)
-  return Math.min(R.capabilities.maxTextureSize || 4096, MOBILE ? Math.min(1024 * scale, 1536) : 2048 * scale);
+  return Math.min(R.capabilities.maxTextureSize || 4096, LOWGPU ? Math.min(1024 * scale, 1536) : 2048 * scale);
 }
 // PNG · JPEG 머리말에서 크기만 읽는다 (그림을 펼치지 않는다)
 function imageSize(b) {
@@ -4052,9 +4071,56 @@ function decodeTexImage(bytes, mime, max) {
             resizeQuality: 'high',
           }
         : undefined;
-    return createImageBitmap(blob, opt).catch(() => decodeTexImageViaImg(bytes, mime, max));
+    return createImageBitmap(blob, opt)
+      .then(b => texSourceOut(b, max))
+      .catch(() => decodeTexImageViaImg(bytes, mime, max));
   }
   return decodeTexImageViaImg(bytes, mime, max);
+}
+// 펼친 그림 검사 · 정리 (alpha.5): 크기 0 · 새까만 그림은 실패로 보고 예비 경로(<img>)로 다시 펼친다.
+// 저사양 · 웹킷 기기는 캔버스로 옮겨 올린다(가장 오래 검증된 업로드 경로). 크기 줄이기 옵션을 무시하는
+// 브라우저면 여기서 줄인다.
+function texSourceOut(b, max) {
+  if (!b || !(b.width > 0) || !(b.height > 0)) throw new Error('empty bitmap');
+  const k = Math.min(1, max / Math.max(b.width, b.height));
+  let out = b;
+  if (LOWGPU || WEBKIT || k < 1) {
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(b.width * k));
+    c.height = Math.max(1, Math.round(b.height * k));
+    const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(b, 0, 0, c.width, c.height);
+    try {
+      b.close && b.close();
+    } catch (e) {}
+    out = c;
+  }
+  if (texSourceMax(out) < 4) throw new Error('black bitmap');
+  return out;
+}
+// 그림의 가장 밝은 채널 (4×4 로 줄여 본 값, 0~255). 새까만지 · 투명뿐인지 확인용
+function texSourceMax(src) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 4;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(src, 0, 0, 4, 4);
+    const d = x.getImageData(0, 0, 4, 4).data;
+    let m = 0;
+    for (let i = 0; i < 64; i += 4) if (d[i + 3] > 8) m = Math.max(m, d[i], d[i + 1], d[i + 2]);
+    return m;
+  } catch (e) {
+    return 255; // 읽을 수 없으면(보안 등) 검사를 건너뛴다
+  }
+}
+// 모델 텍스처 등록부: 04-render-guard 가 GPU 에 제대로 올라갔는지 확인하고, 아니면 다시 올린다
+const GTEX = [];
+function guardTex(tex, mat) {
+  let e = GTEX.find(x => x.tex === tex);
+  if (!e) GTEX.push((e = { tex, mats: [], tries: 0, ok: false, cpu: -1 }));
+  if (mat && !e.mats.includes(mat)) e.mats.push(mat);
+  return tex;
 }
 // 예비 경로: createImageBitmap 이 없거나 실패하면 <img> 로 펼친 뒤 캔버스에서 줄인다
 function decodeTexImageViaImg(bytes, mime, max) {
@@ -4071,7 +4137,7 @@ function decodeTexImageViaImg(bytes, mime, max) {
 //  - 폰은 한 번에 한 장 (동시에 펼치면 메모리가 몰린다 — 10-1절), 그 밖은 두 장씩.
 //  - hi(먼저): 처음 화면에 크게 보이는 것 — 항모 갑판 · 내 기체 도색. 예전엔 항모가 맨 마지막에 읽혀
 //    출격 화면에서 갑판이 한동안 회색으로 보였다.
-const TEXQ = { hi: [], lo: [], run: 0, max: MOBILE ? 1 : 2, ok: 0, fail: 0, total: 0, hiLeft: 0 };
+const TEXQ = { hi: [], lo: [], run: 0, max: LOWGPU ? 1 : 2, ok: 0, fail: 0, total: 0, hiLeft: 0 };
 // 렌더 진단 (일시정지 창 '상태' 줄에 보인다 — 폰에서 화면이 이상할 때 스크린샷으로 원인을 좁힌다)
 const RDIAG = { lost: 0, glErr: 0 };
 R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
@@ -4085,7 +4151,7 @@ R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
 function renderDiag() {
   const gl = R.getContext(),
     c = R.capabilities;
-  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : 'PC'}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실!' : ''}`;
+  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : LOWGPU ? '저사양' : 'PC'}${WEBKIT ? '·웹킷' : ''}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'} · 안전 L${GFX.level}${GFX.texFix ? ' · 텍스처 복구 ' + GFX.texFix : ''} · 점검 ${GFX.checks}${GFX.lastFail ? ' (' + GFX.lastFail + ')' : ''}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실 ' + RDIAG.lost : ''}`;
 }
 function decodeTexQueued(bytes, mime, max, hi = false) {
   return new Promise((res, rej) => {
@@ -4115,8 +4181,8 @@ function texPump() {
 function fitImage(img, max) {
   const w = img.naturalWidth || img.width,
     h = img.naturalHeight || img.height,
-    k = max / Math.max(w, h);
-  if (!(k < 1)) return img;
+    k = Math.min(1, max / Math.max(w, h));
+  if (!(k < 1) && !(LOWGPU || WEBKIT)) return img;
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(w * k));
   c.height = Math.max(1, Math.round(h * k));
@@ -4818,7 +4884,7 @@ scene.fog.far = 62000;
 // 갑판 위 기체 · 아일랜드 · 공중의 기체 자체 그림자. 바다 · 구름 · 하늘(셰이더 재질)은 받지 않는다.
 // 비용: 그림자 깊이 패스 한 번 + 조명 픽셀마다 PCF 샘플. 폰에서는 1024 맵, 해상도가 두 단 넘게 떨어지면 끈다.
 const SHADOW_HALF = 520, // 그림자 상자 반경 (월드 단위 = m × 3 → 약 350 m)
-  SHADOW_MAP = MOBILE ? 1024 : 2048;
+  SHADOW_MAP = LOWGPU ? 1024 : 2048;
 R.shadowMap.enabled = true;
 R.shadowMap.type = T.PCFSoftShadowMap;
 // 그림자 지도는 프레임마다 월드 렌더 직전에 한 번만 다시 그린다 (90-main-loop 에서 needsUpdate).
@@ -4852,10 +4918,12 @@ let shadowLive = true,
   shadowParked = false;
 // 폰 예외 (alpha.3 핫픽스): 사용자 폰에서 이 업데이트 뒤 항모 · 기체가 처음부터 검게 나왔다(PC · 에뮬레이션은 정상, 원인 미확정).
 // 폰에서만 바뀐 렌더 경로 셋(이 그림자 방식 · 셰이더 미리 굽기 · 거울 sRGB)을 예전대로 돌린다 — RENDER_SAFE.
-const RENDER_SAFE = MOBILE;
+// alpha.5: 폰만이 아니라 저사양 · 웹킷 기기 전부, 그리고 렌더 점검(04-render-guard)이 안전 단계를 올린 기기도.
+const RENDER_SAFE = LOWGPU || WEBKIT || GFX.level >= 1;
 function sunShadowUpdate(dt, focus) {
-  const want = typeof FXS !== 'undefined' && FXS.q > 0 && (typeof resStep === 'undefined' || resStep < 3);
-  if (RENDER_SAFE) {
+  const want =
+    GFX.level < 1 && typeof FXS !== 'undefined' && FXS.q > 0 && (typeof resStep === 'undefined' || resStep < 3);
+  if (RENDER_SAFE || GFX.level >= 1) {
     // 예전 방식: 끄면 castShadow 를 내린다 (셰이더가 다시 컴파일되지만 V15.0.0-alpha.2 까지 폰에서 문제없던 길)
     shadowLive = true;
     if (sun.castShadow !== want) sun.castShadow = want;
@@ -4921,7 +4989,18 @@ const skyDome = new T.Mesh(
 skyDome.renderOrder = -1000;
 // 환경맵: 하늘 돔을 한 번 구워 두고 모든 표준 재질의 반사로 쓴다 (캐노피 · 금속 · 도색의 광택).
 // 이게 없으면 GLB 재질이 비추는 하늘이 없어 흐릿한 점토처럼 보인다.
+// alpha.5: 다시 구울 때 예전 렌더 타깃을 지운다 (날씨를 바꿀 때마다 GPU 메모리가 새던 것).
+// 안전 단계 2 이상이면 환경맵 대신 고른 주변광(gfxAmb)을 쓴다 — 환경맵 굽기가 기기에서 실패하면 재질이 검게 나와서.
+let envRT = null,
+  gfxAmb = null;
 function bakeEnvironment() {
+  if (GFX.level >= 2) {
+    if (envRT) envRT.dispose();
+    envRT = null;
+    scene.environment = null;
+    if (!gfxAmb) scene.add((gfxAmb = new T.AmbientLight(0xffffff, 0.35)));
+    return;
+  }
   try {
     const pm = new T.PMREMGenerator(R);
     const sc = new T.Scene();
@@ -4930,7 +5009,10 @@ function bakeEnvironment() {
     d.material.uniforms.horizon.value.copy(scene.fog.color);
     sc.add(d);
     const rt = pm.fromScene(sc, 0.02);
+    if (envRT && envRT !== rt) envRT.dispose();
+    envRT = rt;
     scene.environment = rt.texture;
+    d.material.dispose();
     pm.dispose();
   } catch (e) {
     console.warn('[STEEL TEMPEST] environment map failed; materials stay matte', e);
@@ -5344,7 +5426,7 @@ const wxStars = (() => {
   return s;
 })();
 // 빗줄기: 카메라 둘레 상자 안의 짧은 선분들. 떨어지는 속도 + 바람 − 카메라 속도로 흘러 속도감이 난다
-const WX_RAIN_N = MOBILE ? 900 : 2200,
+const WX_RAIN_N = LOWGPU ? 900 : 2200,
   WX_RAIN_BOX = 70;
 const wxRain = (() => {
   const off = new Float32Array(WX_RAIN_N * 3),
@@ -5436,7 +5518,15 @@ function weatherApply(sel) {
     ckHemi.intensity = 0.72 * Math.max(0.45, B.hemi.intensity / B.hemiI); // 계기 조명이 있어 너무 어두워지지는 않는다
   }
   WX.hemiI = B.hemi.intensity; // 번개가 끝나면 되돌릴 값
+  wxAmbUpdate();
   if (rebake) bakeEnvironment(); // 기체 · 캐노피에 비치는 하늘도 바꾼다
+}
+
+// 안전 단계 2(04-render-guard)의 주변광: 날씨 · 시간대만큼 어둡게 (낮 · 맑음 0.35)
+function wxAmbUpdate() {
+  if (!gfxAmb) return;
+  const B = WX_BASE;
+  gfxAmb.intensity = 0.35 * (WX.hemiI / B.hemiI) * ((sun.intensity / B.sunI + 0.3) / 1.3);
 }
 
 // ---------- 매 프레임 (90-main-loop) — 보이는 것 · 소리만. 판정은 34-flight 의 weatherPhys
@@ -5545,6 +5635,358 @@ function weatherTurb(dt) {
   const s = 0.6 + Math.min(1, p.speed / 250) * 0.6;
   p.q.multiply(new T.Quaternion().setFromEuler(new T.Euler(wxRt.turbP * s * dt * 6, 0, wxRt.turbR * s * dt * 6))).normalize();
 }
+// ===== 렌더 점검 · 자동 복구 (V15.0.0-alpha.5) =====
+// 사용자 보고(2026-11-17 · 11-18): 폰에서 항모 · 기체가 검게 나온다. PC · 폰 흉내 · SwiftShader 에서는 재현되지 않아
+// 원인을 하나로 못 박을 수 없다. 그래서 게임이 스스로 확인하고 고친다:
+//
+//  1) 텍스처 확인: 모델 텍스처(GTEX, 00-core)마다 GPU 에 올린 결과를 작은 화면 밖 그림(64×16)으로 그려 읽어 본다.
+//     원본 그림은 밝은데 GPU 결과가 새까마면 → 같은 크기 캔버스로 다시 올리기 → 절반 → 1/4 → 회색 한 점(검정 대신).
+//  2) 조명 확인: 실제 재질(도색된 기체 · 항모)과 회색 표준 재질을, 실제 장면의 빛(해 · 하늘빛 · 환경맵 · 그림자)으로
+//     그려 본다. 조명 없이 그린 같은 그림(기준)은 밝은데 조명 받은 쪽이 새까마면 → 안전 단계를 한 단 올린다:
+//       1 그림자 끔 → 2 환경맵 대신 고른 주변광 → 3 모든 표준 재질을 램버트(가장 단순한 조명 셰이더)로.
+//     단계는 기기에 기억해 두고(localStorage stGfxSafe) 다음부터 처음부터 그 단계로 켠다.
+//  3) 언제: 로딩 끝(인트로 화면이 이 점검을 기다린다) · 출격할 때 · 화면 복구(컨텍스트 복원) · 앱으로 돌아왔을 때 ·
+//     비행 중 20초마다. 한 번에 64×16 화소만 읽어서 가볍다.
+//
+// 점검용 판(probe)은 해 쪽으로 400 단위 떨어진 곳(그림자 상자 안)에 있고, 점검하는 순간에만 보인다 — 화면에는 안 나온다.
+// 판정과 무관하다 (rnd 를 쓰지 않음). 결정론 하네스(window.__det)는 3D 렌더를 끄고 돌므로 점검하지 않는다.
+const RG = { boot: false, bootReq: false, due: -1, every: 20, P: null, recheck: 0, fullTex: false, suspect: '' };
+const rgOff = () => !!window.__det;
+
+function rgProbe() {
+  if (RG.P) return RG.P;
+  const g = new T.Group(),
+    geo = new T.PlaneGeometry(2, 1),
+    cells = [];
+  g.name = 'RenderGuardProbe';
+  g.visible = false;
+  for (let i = 0; i < 4; i++) {
+    const lit = new T.Mesh(geo, null),
+      ref = new T.Mesh(geo, new T.MeshBasicMaterial());
+    lit.position.set(-3 + 2 * i, 0.5, 0);
+    ref.position.set(-3 + 2 * i, -0.5, 0);
+    lit.receiveShadow = true; // 실제 기체 · 항모와 같은 셰이더 갈래
+    for (const m of [lit, ref]) {
+      m.frustumCulled = false;
+      m.castShadow = false;
+    }
+    g.add(lit, ref);
+    cells.push({ lit, ref });
+  }
+  scene.add(g);
+  const rt = new T.WebGLRenderTarget(64, 16, { depthBuffer: false, stencilBuffer: false });
+  rt.texture.encoding = R.outputEncoding; // 화면과 같은 셰이더 (거울에서 배운 것 — 다르면 셰이더를 한 벌 더 굽는다)
+  const ctrl = new T.MeshStandardMaterial({ color: 0xb4b4b4, roughness: 0.7, metalness: 0.1 });
+  cells.forEach(c => (c.lit.material = ctrl));
+  return (RG.P = { g, rt, cells, ctrl, cam: new T.OrthographicCamera(-4, 4, 1, -1, 0.05, 30), px: new Uint8Array(64 * 16 * 4) });
+}
+// 점검 판을 한 번 그려 칸별 밝기를 읽는다. 칸 (i 열, r 줄: 0 아래 = 기준(조명 없음), 1 위 = 조명)
+function rgShot() {
+  const P = rgProbe(),
+    gl = R.getContext();
+  if (!gl || gl.isContextLost()) return null;
+  const at = sun.target.position.clone().addScaledVector(SUN_DIR, 400);
+  P.g.position.copy(at);
+  P.g.quaternion.setFromUnitVectors(V(0, 0, 1), SUN_DIR); // 판이 해(밤에는 달)를 정면으로 본다
+  P.g.updateMatrixWorld(true);
+  P.cam.position.copy(at).addScaledVector(SUN_DIR, 10);
+  P.cam.quaternion.copy(P.g.quaternion);
+  P.cam.updateMatrixWorld(true);
+  const prev = R.getRenderTarget(),
+    nu = R.shadowMap.needsUpdate;
+  R.shadowMap.needsUpdate = false; // 그림자 지도는 메인 화면 것을 그대로 쓴다
+  P.g.visible = true;
+  try {
+    R.setRenderTarget(P.rt);
+    R.clear();
+    R.render(scene, P.cam);
+    R.readRenderTargetPixels(P.rt, 0, 0, 64, 16, P.px);
+  } catch (e) {
+    console.warn('[STEEL TEMPEST] render guard shot failed', e);
+    return null;
+  } finally {
+    P.g.visible = false;
+    R.setRenderTarget(prev);
+    R.shadowMap.needsUpdate = nu;
+  }
+  if (gl.isContextLost()) return null;
+  return (i, r) => {
+    let m = 0,
+      s = 0,
+      n = 0;
+    for (let y = r * 8 + 2; y < r * 8 + 6; y++)
+      for (let x = i * 16 + 4; x < i * 16 + 12; x++) {
+        const o = (y * 64 + x) * 4,
+          v = Math.max(P.px[o], P.px[o + 1], P.px[o + 2]);
+        m = Math.max(m, v);
+        s += v;
+        n++;
+      }
+    return { max: m, avg: s / n };
+  };
+}
+const rgSetRef = (c, map, color) => {
+  const m = c.ref.material;
+  if (!!m.map !== !!map) m.needsUpdate = true;
+  m.map = map || null;
+  m.color.copy(color || new T.Color(1, 1, 1));
+};
+// 텍스처 원본 밝기 (한 번만 잰다. 다시 올리면 다시 잰다)
+const rgCpu = e => (e.cpu >= 0 ? e.cpu : (e.cpu = e.tex.image ? texSourceMax(e.tex.image) : 0));
+
+// 텍스처 다시 올리기: 같은 크기 캔버스 → 절반 → 1/4 → 회색 한 점
+function rgFixTex(e) {
+  const t = e.tex,
+    src = t.image,
+    w = (src && (src.naturalWidth || src.width)) || 1,
+    h = (src && (src.naturalHeight || src.height)) || 1;
+  e.tries++;
+  const k = [1, 0.5, 0.25][e.tries - 1];
+  const c = document.createElement('canvas');
+  if (k && src) {
+    c.width = Math.max(1, Math.round(w * k));
+    c.height = Math.max(1, Math.round(h * k));
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  } else {
+    c.width = c.height = 4;
+    const x = c.getContext('2d');
+    x.fillStyle = '#8f989c'; // 텍스처가 오기 전 회색과 같은 색
+    x.fillRect(0, 0, 4, 4);
+    e.dead = true;
+  }
+  t.image = c;
+  t.needsUpdate = true;
+  e.cpu = -1;
+  e.ok = false;
+  GFX.texFix++;
+  console.warn('[STEEL TEMPEST] render guard: texture re-uploaded', e.tries, c.width + 'x' + c.height);
+}
+// 1) 텍스처 확인 — 4장씩 기준 칸에 그려 본다
+function rgCheckTextures(all) {
+  const P = rgProbe(),
+    list = GTEX.filter(e => all || !e.ok);
+  let bad = 0;
+  P.cells.forEach(c => (c.lit.visible = false));
+  for (let i = 0; i < list.length; i += 4) {
+    const batch = list.slice(i, i + 4);
+    P.cells.forEach((c, j) => {
+      c.ref.visible = j < batch.length;
+      if (j < batch.length) rgSetRef(c, batch[j].tex);
+    });
+    const cell = rgShot();
+    if (!cell) break;
+    batch.forEach((e, j) => {
+      const gpu = cell(j, 0).max;
+      if (rgCpu(e) >= 20 && gpu <= 3 && !e.dead) {
+        bad++;
+        rgFixTex(e);
+      } else e.ok = true;
+    });
+  }
+  P.cells.forEach(c => (c.lit.visible = c.ref.visible = true));
+  return bad;
+}
+// 지금 쓰이는 재질 (램버트로 바꿨으면 바꾼 쪽)
+const rgLive = m => LAMB.get(m) || m;
+// 2) 조명 확인 — 0열: 회색 표준 재질, 1~3열: 실제 도색 재질 (큰 텍스처부터)
+function rgCheckLight() {
+  const P = rgProbe(),
+    real = GTEX.filter(e => e.mats.length && !e.dead)
+      .sort((a, b) => (b.tex.image?.width || 0) * (b.tex.image?.height || 0) - (a.tex.image?.width || 0) * (a.tex.image?.height || 0))
+      .slice(0, 3);
+  const ctrl = GFX.level >= 3 ? rgLambert(P.ctrl) : P.ctrl;
+  P.cells.forEach((c, i) => {
+    const e = real[i - 1],
+      m = i === 0 ? ctrl : e && rgLive(e.mats[0]);
+    c.lit.visible = c.ref.visible = !!m;
+    if (!m) return;
+    c.lit.material = m;
+    rgSetRef(c, i === 0 ? null : m.map, m.color);
+  });
+  const cell = rgShot();
+  if (!cell) return null;
+  const out = { dark: [], tex: [] };
+  P.cells.forEach((c, i) => {
+    if (!c.lit.visible) return;
+    const lit = cell(i, 1),
+      ref = cell(i, 0),
+      e = real[i - 1];
+    if (e && ref.max <= 3 && rgCpu(e) >= 20) out.tex.push(e); // 기준부터 검다 = 텍스처 문제
+    else if (ref.max >= 20 && lit.max <= 3) out.dark.push(i === 0 ? 'ctrl' : e.tex.image?.width + 'px');
+    // 맑은 낮에 해를 정면으로 받는 회색 판이 기준의 30% 도 안 되면 그림자 판정이 깨진 것 (전부 그늘)
+    else if (i === 0 && WX.tod === 'day' && (WX.kind === 'clear' || WX.kind === 'overcast') && lit.avg < 0.3 * ref.avg)
+      out.dark.push('shadow');
+  });
+  P.cells.forEach(c => (c.lit.visible = c.ref.visible = true));
+  return out;
+}
+
+// 3) 램버트로 바꾸기 (안전 단계 3) — 같은 재질은 같은 램버트 하나로
+const LAMB = new WeakMap();
+function rgLambert(m) {
+  if (!m || !m.isMeshStandardMaterial) return m;
+  let l = LAMB.get(m);
+  if (l) return l;
+  l = new T.MeshLambertMaterial({
+    color: m.color,
+    map: m.map,
+    emissive: m.emissive,
+    emissiveMap: m.emissiveMap,
+    emissiveIntensity: m.emissiveIntensity,
+    transparent: m.transparent,
+    opacity: m.opacity,
+    side: m.side,
+    alphaTest: m.alphaTest,
+    vertexColors: m.vertexColors,
+    depthWrite: m.depthWrite,
+    depthTest: m.depthTest,
+    fog: m.fog,
+    toneMapped: m.toneMapped,
+    polygonOffset: m.polygonOffset,
+    polygonOffsetFactor: m.polygonOffsetFactor,
+    polygonOffsetUnits: m.polygonOffsetUnits,
+  });
+  l.name = m.name;
+  l.userData = m.userData;
+  l.visible = m.visible;
+  LAMB.set(m, l);
+  return l;
+}
+function rgLambertize(root) {
+  if (!root || !root.traverse) return;
+  root.traverse(o => {
+    if (!o.isMesh || !o.material) return;
+    o.material = Array.isArray(o.material) ? o.material.map(rgLambert) : rgLambert(o.material);
+  });
+}
+function rgLambertizeAll() {
+  const roots = [scene];
+  [
+    () => cockpitScene,
+    () => mig29GLBTemplate,
+    () => su33GLBTemplate,
+    () => f16GLBTemplate,
+    () => la17GLBTemplate,
+    () => f16Merged,
+    () => f16Proto,
+    () => mslGLBTemplate.SARH,
+    () => mslGLBTemplate.IR,
+  ].forEach(f => {
+    try {
+      roots.push(f());
+    } catch (e) {}
+  });
+  roots.forEach(rgLambertize);
+  // 텍스처가 나중에 붙는 재질도 따라가게: 원래 재질의 map 이 바뀌면 램버트에도 옮긴다 (점검 때마다)
+  GTEX.forEach(e =>
+    e.mats.forEach(m => {
+      const l = LAMB.get(m);
+      if (l && l.map !== m.map) {
+        l.map = m.map;
+        l.color.copy(m.color);
+        l.needsUpdate = true;
+      }
+    })
+  );
+}
+
+function rgApplyLevel() {
+  if (GFX.level >= 1) sun.castShadow = false;
+  if (GFX.level >= 2) {
+    bakeEnvironment(); // 단계 2: 환경맵을 지우고 주변광
+    wxAmbUpdate(); // 주변광 밝기를 지금 날씨에 맞춘다 (판정 상태는 건드리지 않는다)
+  }
+  if (GFX.level >= 3) rgLambertizeAll();
+}
+function rgEscalate(why) {
+  if (GFX.level >= 3) {
+    GFX.lastFail = why + ' (L3)';
+    return false;
+  }
+  GFX.level++;
+  GFX.lastFail = why;
+  try {
+    localStorage.setItem('stGfxSafe', String(GFX.level));
+  } catch (e) {}
+  rgApplyLevel();
+  const what = ['', '그림자 끔', '환경맵 대신 주변광', '단순 조명'][GFX.level];
+  console.warn('[STEEL TEMPEST] render guard: safe level', GFX.level, why);
+  if (typeof S !== 'undefined' && S === 'play')
+    msg(`그래픽 자동 복구 — 검은 물체를 찾아 안전 모드 ${GFX.level} (${what})`, '#9cf');
+  return true;
+}
+// 한 번 점검: 텍스처 → 조명. 고친 게 있으면 잠시 뒤(새 셰이더 · 업로드가 끝난 뒤) 다시 본다
+function rgCheck() {
+  if (rgOff()) return true;
+  GFX.checks++;
+  if (GFX.level >= 3) rgLambertizeAll();
+  const tb = rgCheckTextures(RG.fullTex);
+  RG.fullTex = false;
+  const L = rgCheckLight();
+  if (!L) return false; // 컨텍스트를 잃었다 — 복원 뒤 다시
+  L.tex.forEach(e => !e.dead && rgFixTex(e));
+  let again = tb > 0 || L.tex.length > 0;
+  if (L.dark.length) {
+    // 한 번 검게 읽힌 것으로는 올리지 않는다 — 0.25초 뒤 한 번 더 검으면 그때 안전 단계를 올린다 (순간적인 읽기 실패 대비)
+    if (RG.suspect === 'L' + GFX.level) {
+      RG.suspect = '';
+      again = rgEscalate(L.dark.join(',')) || again;
+    } else {
+      RG.suspect = 'L' + GFX.level;
+      again = true;
+    }
+  } else {
+    RG.suspect = '';
+    if (!tb && !L.tex.length) GFX.lastFail = '';
+  }
+  if (again) RG.recheck = 0.25;
+  return !again;
+}
+// 메인 루프에서 매 프레임 (90-main-loop). 화면을 다 그린 뒤 부른다.
+function renderGuardTick(dt) {
+  if (rgOff()) return (RG.boot = true);
+  if (document.hidden) return;
+  if (RG.recheck > 0) {
+    RG.recheck -= Math.max(dt, 0.016);
+    if (RG.recheck <= 0) {
+      RG.recheck = 0;
+      if (rgCheck() && RG.bootReq) RG.boot = true;
+    }
+    return;
+  }
+  if (RG.bootReq && !RG.boot) {
+    RG.fullTex = true;
+    if (rgCheck()) RG.boot = true;
+    return;
+  }
+  if (RG.due > 0 && (RG.due -= dt) <= 0) {
+    RG.due = S === 'play' ? RG.every : -1;
+    rgCheck();
+  } else if (RG.due <= 0 && S === 'play') RG.due = RG.every;
+}
+// 출격할 때 (20-game-init init 끝): 1초 뒤 점검 — 날씨 · 기체가 바뀐 뒤
+function renderGuardSortie() {
+  if (GFX.level >= 3) rgLambertizeAll();
+  RG.due = 1;
+}
+// 렌더 점검 끝났나 (인트로가 기다린다)
+const renderGuardReady = () => RG.boot || rgOff();
+// 처음부터 안전 단계가 기억돼 있으면: 그림자 · 환경맵은 01-environment 가 처음부터 따르고, 램버트는 모델이 다 읽힌 뒤 점검 때.
+// 화면 복구 · 앱으로 돌아옴: 환경맵은 렌더 타깃이라 컨텍스트를 잃으면 내용이 사라진다 → 다시 굽고 전부 다시 확인
+R.domElement.addEventListener('webglcontextrestored', () => {
+  setTimeout(() => {
+    bakeEnvironment();
+    GTEX.forEach(e => ((e.ok = false), (e.cpu = -1)));
+    RG.fullTex = true;
+    RG.recheck = 0.5;
+  }, 0);
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !rgOff()) {
+    RG.fullTex = true;
+    RG.recheck = 0.8;
+  }
+});
 // ---------- 3D 모델 (F-16 / 쿠즈네초프급)
 /* ===== F-16 모델 (아케이드용 로우폴리) =====
    좌표: 기수 -Z, 위 +Y, 오른쪽 날개 +X, 길이 약 16.4
@@ -6141,6 +6583,7 @@ function paintMiG29(root) {
     for (const m of Array.isArray(n.material) ? n.material : [n.material]) {
       if (!m || m.name !== 'body') continue;
       if (mig29PaintTex) {
+        guardTex(mig29PaintTex, m);
         m.map = mig29PaintTex;
         m.color.set(0xffffff);
       } else if (!m.map) m.color.set(MIG29_BASE_GREY);
@@ -6166,7 +6609,7 @@ function loadMiG29Paint() {
           tex.anisotropy = Math.min(8, R.capabilities.getMaxAnisotropy());
         } catch (e) {}
         tex.needsUpdate = true;
-        mig29PaintTex = tex;
+        mig29PaintTex = guardTex(tex);
         paintMiG29(mig29GLBTemplate);
         if (p && p.mesh) paintMiG29(p.mesh);
         mig29Extras.forEach(paintMiG29);
@@ -6232,7 +6675,7 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
           tex.anisotropy = Math.min(8, R.capabilities.getMaxAnisotropy());
         } catch (e) {}
         tex.needsUpdate = true;
-        return tex;
+        return guardTex(tex);
       })
       .catch(e => {
         console.warn('[STEEL TEMPEST] GLB texture failed to decode', e);
@@ -6257,6 +6700,8 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
       mat.userData.baseColor = mat.color.clone(); // 텍스처에 곱할 색 (불러온 쪽에서 밝기 조절 가능)
       mat.color.set(0x8f989c);
       texOf(ti).then(tex => {
+        if (!tex) return; // 펼치기 실패: 회색(텍스처 없음 색) 그대로
+        guardTex(tex, mat);
         mat.map = tex;
         mat.color.copy(mat.userData.baseColor);
         mat.needsUpdate = true;
@@ -8205,10 +8650,9 @@ function disposePlayerModel(root) {
     if (node.geometry) node.geometry.dispose();
     if (node.material) {
       const materials = Array.isArray(node.material) ? node.material : [node.material];
-      materials.forEach(material => {
-        if (material.map) material.map.dispose();
-        material.dispose();
-      });
+      // 도색 텍스처(map)는 템플릿 · 갑판 주기 기체와 같이 쓰는 것이라 지우지 않는다 (alpha.5).
+      // 예전엔 출격할 때마다 지워서 GPU 에 다시 올렸다 — 폰에서 메모리가 출렁이고, 다시 올리다 실패하면 검게 나온다.
+      materials.forEach(material => material.dispose());
     }
   });
 }
@@ -8283,6 +8727,7 @@ function init() {
   cloudLayer.setWeather(curM().weather);
   // 날씨 · 시간대 (02-weather): 무한모드(LEGACY)만 브리핑에서 고른 값, 나머지는 낮 · 맑음 (= 예전 그대로)
   weatherApply(wxFor(curM()));
+  renderGuardSortie(); // 1초 뒤 렌더 점검 (04-render-guard — 검은 물체 자동 복구)
   if (WX.sig !== 'day|clear')
     msg(`기상: ${WX_TOD[WX.tod].ko} · ${WX_KIND[WX.kind].ko}${WX.wind.lengthSq() ? ` — 옆바람 ${Math.round(WX.wind.length())} m/s` : ''}`, '#9cf');
   chaseCamera.initialized = false;
@@ -13511,7 +13956,7 @@ mirrorRT.texture.magFilter = T.LinearFilter;
 // 화면과 같은 sRGB 로 그린다 (V15.0.0-alpha.3): three r128 은 렌더 타깃의 encoding 을 셰이더 키에 넣어서,
 // 선형(기본값)이면 거울을 처음 그릴 때 장면의 셰이더를 전부 한 벌 더 컴파일했다(측정 +8개 · 교전 중 멈칫).
 // sRGB 로 저장하면 어두운 쪽 계조도 더 좋다. 콕핏의 거울 재질은 이 텍스처를 sRGB 로 읽어 색은 그대로다.
-if (!MOBILE) mirrorRT.texture.encoding = T.sRGBEncoding; // 폰은 예전대로 선형 (01-environment RENDER_SAFE)
+if (!RENDER_SAFE) mirrorRT.texture.encoding = T.sRGBEncoding; // 폰 · 저사양은 예전대로 선형 (01-environment RENDER_SAFE)
 const mirrorCam = new T.PerspectiveCamera(70, 512 / 192, 0.5, 60000);
 const mirrorYaw = new T.Quaternion().setFromAxisAngle(V(0, 1, 0), Math.PI);
 const mirrorInterval = 1000 / 15;
@@ -15476,6 +15921,7 @@ function loop(n) {
     else drawExternalHud();
     drawGroundThreatHud();
   }
+  renderGuardTick(dt); // 렌더 점검 · 자동 복구 (04-render-guard)
 }
 // ---------- 무장 고르기 (V15.0.0-alpha.3): 레이더 유도(R-27R) · 열추적(R-73) 비율을 정한다
 // 브리핑(싱글 · 캠페인)과 멀티 로비가 같은 부품을 쓴다. 값은 기체마다 localStorage 'stLoad' (00-core loadSarh / setLoadSarh).
@@ -16176,16 +16622,22 @@ function mountLoadPicker(el, o) {
   // Initial boot begins with the MALLOT mark; no automatic start into the simulation.
   setStage('intro');
   // 인트로 → 표지 (V15.0.0-alpha.3): 예전엔 3.9초 고정 타이머라 로딩이 길면 로고를 못 보고 넘어갔다.
-  // 이제 (1) 모델을 다 읽고 (2) 로고를 끝까지 보여 주고(인트로가 뜬 뒤 2.8초) (3) 먼저 보일 텍스처(항모 · 도색)가 펼쳐질 때까지
-  // (최대 8초) 기다린다. 그동안 진행 막대가 실제 단계를 보여 준다.
+  // 이제 (1) 모델을 다 읽고 (2) 로고를 끝까지 보여 주고(인트로가 뜬 뒤 2.8초) (3) 텍스처를 전부 펼쳐 GPU 에 올리고
+  // 렌더 점검(04-render-guard: 검게 나오는 텍스처 · 조명을 찾아 고침)이 끝날 때까지 기다린다 (alpha.5, 최대 30초).
+  // 예전엔 먼저 보일 텍스처만 최대 8초 기다려서, 폰에서는 나머지가 게임 중에 올라왔다.
   (function introGate() {
     if (stage !== 'intro') return;
     const now = performance.now(),
       booted = window.__stBoot === 'done';
     if (booted && !introGate.t) introGate.t = now;
-    const texReady = typeof TEXQ === 'undefined' || TEXQ.hiLeft <= 0 || now - introGate.t > 8000;
+    const decoded = typeof TEXQ === 'undefined' || (TEXQ.run === 0 && !TEXQ.hi.length && !TEXQ.lo.length);
+    if (booted && decoded) RG.bootReq = true;
+    const texReady = (decoded && renderGuardReady()) || now - introGate.t > 30000;
     if (booted && typeof TEXQ !== 'undefined')
-      window.stBootProgress?.(null, 0.88 + 0.12 * (TEXQ.total ? TEXQ.ok / TEXQ.total : 1));
+      window.stBootProgress?.(
+        decoded ? (ko() ? '그래픽 점검 중' : 'CHECKING GRAPHICS') : null,
+        0.86 + 0.1 * (TEXQ.total ? (TEXQ.ok + TEXQ.fail) / TEXQ.total : 1) + (decoded ? 0.02 : 0)
+      );
     if (booted && texReady && now - (window.__stIntroT0 || 0) > 2800) {
       window.stBootProgress?.(ko() ? '출격 준비 완료' : 'SORTIE READY', 1);
       $id('mf-intro').classList.add('ready');
