@@ -10,8 +10,9 @@
 //   광학 착함 장치 (러시아 「루나」 계열 — 색 체계 세부 자료가 부족해 미 해군 FLOLS 관례를 따른다):
 //             좌현 착함 지점 옆. 가로 초록 기준등(데이텀) + 가운데 '공(볼)'. 공이 기준등과 같은 높이면 정상 강하각(3.5°),
 //             위면 높음, 아래면 낮음, 많이 낮으면 공이 빨갛게 · 아주 낮으면 양옆 빨간 복행등(웨이브오프)이 깜빡인다.
-//             목표는 착함축 66 m (2 · 3번 와이어 사이). 게임에서 1 km 밖에서도 읽히게 실물보다 크게 만들었다
-//             (기준등 반폭 약 16 m · 공 ±10 m — 게임 판단). HUD 의 LOC / GS 안내(33-carrier-defense carrierGuide)도 같은 착함축 · 강하각을 쓴다.
+//             목표는 착함축 66 m (2 · 3번 와이어 사이). 실물 크기(alpha.7): 좌현 가장자리에 선 장치, 렌즈 상자 2.4 m · 공 ±0.9 m ·
+//             기준등 팔 각 4.6 m. 멀리서는 HUD 의 LOC / GS 안내(33-carrier-defense carrierGuide — 같은 착함축 · 강하각)를 보고,
+//             가까이 와서 공을 본다(실제 '콜 더 볼'처럼). alpha.6 에서는 1 km 밖에서도 읽히게 크게 띄웠다가 허공에 떠 보여 고쳤다.
 // 전투기 (플레이어 MiG-29 / Su-33): 왼쪽 날개 끝 빨강 · 오른쪽 초록 · 꼬리 흰색 항법등(계속 켜짐) +
 //   등 · 배의 빨간 충돌방지등(깜빡임). 자리는 모델 꼭짓점에서 찾는다(모델 파일은 건드리지 않는다).
 // 전부 화면 크기가 고정된 빛 점(Points)이라 멀리서도 점으로 보이고, 실제 광원이 아니라서 셰이더 · 성능에 영향이 없다.
@@ -115,27 +116,45 @@ function nlBuildCarrier() {
   } catch (e) {}
   NL.deck = nlPoints(L, 6);
   CV.add(NL.deck);
-  // 광학 착함 장치: 좌현 갑판 끝, 착함 목표보다 조금 뒤
+  // 광학 착함 장치 (alpha.7 — 사용자: "고증대로"): 좌현 갑판 가장자리, 착함 목표보다 조금 뒤에 선 실물 크기 장치.
+  // 몸체(렌즈 상자 높이 2.4 m) 가운데가 갑판 위 1.8 m, 양옆 기준등 팔 각 4.6 m. 면은 착함축 뒤쪽(다가오는 기체)을 본다.
+  // 공은 렌즈 상자 안에서만 움직인다(±0.9 m). 실물처럼 멀리서는 빛 덩어리로 보이고 가까이(수백 m) 와야 공의 높낮이가 읽힌다 —
+  // 그 전까지는 HUD 의 LOC / GS 안내를 본다. 뒤나 옆에서는 몸체에 가려 빛이 안 보인다.
   const tz = nlAxis(NL_TD).z + 10,
-    ex = CV.userData.deckEdges(tz)[0] + 2.5,
-    L0 = V(ex, DECK_Y + 13, tz), // 공이 기준등 아래로 10 m 내려가도 갑판 위에 있게
+    G = new T.Group(),
+    housing = new T.MeshStandardMaterial({ color: 0x2a2e33, roughness: 0.8, metalness: 0.3 }),
+    box = (w, h, d, x, y, z) => {
+      const m = new T.Mesh(new T.BoxGeometry(w, h, d), housing);
+      m.position.set(x, y, z);
+      G.add(m);
+    };
+  G.name = 'OpticalLandingSystem';
+  G.position.set(CV.userData.deckEdges(tz)[0] + 1.6, DECK_Y, tz);
+  G.rotation.y = NL_A; // 앞면(+z)이 착함축 뒤쪽을 보게
+  box(1.2, 2.4, 0.6, 0, 1.8, 0); // 렌즈 상자
+  box(0.5, 0.6, 0.5, 0, 0.3, 0); // 받침
+  for (const sg of [-1, 1]) box(4.6, 0.22, 0.3, sg * 3.0, 1.8, 0); // 기준등 팔
+  const F = 0.34, // 앞면 바로 앞
+    Y0 = 1.8,
     D = [];
-  for (let i = 0; i < 5; i++) for (const sg of [-1, 1]) D.push([L0.x + sg * (4 + i * 3.1), L0.y, L0.z, 0x2dff5a]);
-  NL.lens = nlPoints(D, 10);
-  NL.ball = nlPoints([[L0.x, L0.y, L0.z, 0xffffff]], 16);
+  for (let i = 0; i < 5; i++) for (const sg of [-1, 1]) D.push([sg * (1.3 + i * 1.0), Y0, F, 0x2dff5a]);
+  NL.lens = nlPoints(D, 7);
+  NL.ball = nlPoints([[0, Y0, F + 0.02, 0xffffff]], 9);
   NL.ball.material.vertexColors = false;
   NL.ball.material.color.set(0xffb21e);
   NL.wave = nlPoints(
     [
-      [L0.x - 3.5, L0.y + 12, L0.z, 0xff1a14],
-      [L0.x + 3.5, L0.y + 12, L0.z, 0xff1a14],
-      [L0.x - 3.5, L0.y - 12, L0.z, 0xff1a14],
-      [L0.x + 3.5, L0.y - 12, L0.z, 0xff1a14],
+      [-0.45, Y0 + 1.05, F, 0xff1a14],
+      [0.45, Y0 + 1.05, F, 0xff1a14],
+      [-0.45, Y0 - 1.05, F, 0xff1a14],
+      [0.45, Y0 - 1.05, F, 0xff1a14],
     ],
-    13
+    8
   );
-  NL.lensY = L0.y;
-  CV.add(NL.lens, NL.ball, NL.wave);
+  [NL.lens, NL.ball, NL.wave].forEach(o => (o.material.depthTest = true)); // 몸체 뒤에서는 가려진다
+  G.add(NL.lens, NL.ball, NL.wave);
+  NL.olsBody = G;
+  CV.add(G);
 }
 
 // ---------- 전투기 항법등 · 충돌방지등 (모델 꼭짓점에서 자리를 찾는다)
@@ -236,7 +255,7 @@ function nightLightsUpdate(dt) {
   const dCv = cam.position.distanceTo(CV.position),
     fade = carrier ? clamp((30000 - dCv) / 16000, 0, 1) : 0;
   NL.deck.visible = night && fade > 0;
-  NL.lens.visible = fade > 0; // 광학 착함 장치는 낮에도
+  NL.lens.visible = NL.olsBody.visible = fade > 0; // 광학 착함 장치는 낮에도
   NL.deck.material.opacity = fade;
   NL.lens.material.opacity = Math.min(1, fade * 1.3);
   // 전투기 등 (밤만): 출격마다 기체가 새로 만들어지므로 바뀌면 다시 단다
@@ -254,7 +273,7 @@ function nightLightsUpdate(dt) {
   if (!(along > 25 && along < 4500 && Math.abs(lat) < along * 0.5 + 40)) return;
   const dev = ((Math.atan2(h, along) - NL_GS) * 180) / Math.PI; // 정상 강하각과의 차이 (도)
   NL.ball.visible = true;
-  NL.ball.position.y = clamp(dev / 1.5, -1, 1) * 10;
+  NL.ball.position.y = clamp(dev / 1.5, -1, 1) * 0.9; // 렌즈 상자 안에서만
   NL.ball.material.color.set(dev < -0.75 ? 0xff2a1a : 0xffb21e);
   NL.wave.visible = dev < -1.3 && along < 1600 && NL.t % 0.4 < 0.22; // 너무 낮다 — 복행
 }

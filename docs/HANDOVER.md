@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.6** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.7** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -99,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_6.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_7.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -440,9 +440,12 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
   `nlApproach(pos)` 가 목표 뒤 거리 · 옆 거리 · 높이를 준다.
 - **HUD 착함 안내(LOC / GS, `carrierGuide`)도 이 축으로 바꿨다.** 예전엔 배 중심선 · z 60 · 3° 라 착함 구역 오른쪽 가장자리로 안내했다. HUD 전용이라 판정은 그대로
   (와이어 포착 판정 `42-carrier-ops` 은 손대지 않음 — 7.5° 꺾여 들어와도 정렬 조건 0.85 를 넉넉히 넘는다).
-- **광학 착함 장치** (러시아 「루나」 계열 자리 — 색 체계 자료가 부족해 미 해군 FLOLS 관례): 좌현 갑판 끝, 목표 10 m 뒤, 갑판 위 13 m.
-  초록 기준등 10개(가로) + 가운데 공. 공 높이 = 강하각 차이(±1.5° 에서 끝, ±10 m). 0.75° 넘게 낮으면 공이 빨강, 1.3° 넘게 낮고
-  1.6 km 안이면 위아래 빨간 복행등이 깜빡인다. **실물보다 크게**(게임에서 1 km 밖에서도 읽히게). **낮에도 켜져 있다**(실제 항모처럼).
+- **광학 착함 장치** (러시아 「루나」 계열 자리 — 색 체계 자료가 부족해 미 해군 FLOLS 관례): 좌현 갑판 가장자리(안쪽 1.6 m), 목표 10 m 뒤에
+  **실물 크기 장치**로 서 있다 (alpha.7, 사용자: "고증대로"): 렌즈 상자 1.2 × 2.4 m(가운데 갑판 위 1.8 m) · 받침 · 양옆 기준등 팔 각 4.6 m,
+  앞면이 착함축 뒤쪽을 본다(7.5° 돌려 세움). 초록 기준등 10개 + 렌즈 상자 안의 공. 공 높이 = 강하각 차이(±1.5° 에서 끝, ±0.9 m).
+  0.75° 넘게 낮으면 공이 빨강, 1.3° 넘게 낮고 1.6 km 안이면 상자 위아래 빨간 복행등이 깜빡인다. 뒤 · 옆에서는 몸체에 가려 안 보인다.
+  **낮에도 켜져 있다**(실제 항모처럼). 실물처럼 멀리서는 빛 덩어리로 보이고 가까이 와야 공이 읽힌다 — 그 전에는 HUD LOC / GS 를 본다.
+  (alpha.6 에서는 1 km 밖에서도 읽히게 갑판 위 13 m 에 크게 띄웠다가 허공에 떠 보여서 고쳤다.)
 - **갑판 조명 (밤만)**: 착함축 중심선 흰색 10 m 간격 · 착함 구역 가장자리 ±13.5 m · 갑판 가장자리 파란 유도등 18 m 간격 · 스키점프 끝 초록 7개 ·
   함미 드롭 라이트(주황 5개) · 함교 꼭대기 붉은 장애물등(모델에서 가장 높은 꼭짓점).
 - **전투기 등 (밤만, 플레이어 MiG-29 / Su-33)**: 왼쪽 날개 끝 빨강 · 오른쪽 초록 · 꼬리 흰색(계속) + 등 · 배 빨간 충돌방지등(1.1초에 두 번).
@@ -665,7 +668,7 @@ alpha.3 핫픽스(RENDER_SAFE) 뒤에도 사용자 기기에서 항모 · 기체
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_6.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_7.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -727,7 +730,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_6.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_7.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -790,6 +793,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V15.0.0-alpha.4 | **무한모드 날씨 · 시간대** — 브리핑에서 낮/석양/밤 × 맑음/흐림/비/소나기/폭풍 고르기. 열추적 · 레이더 거리 · 옆바람 · 난기류로 전투에 영향, 빗줄기 · 번개 · 천둥 · 빗소리 · 별. 낮 · 맑음과 다른 모드는 판정 변화 없음 (23개 시나리오 동일) |
 | V15.0.0-alpha.5 | **검은 물체 자동 점검 · 복구**(10-7절) — 텍스처 GPU 업로드 확인 · 다시 올리기, 조명 확인 · 안전 단계 1~3(기기에 기억), 로딩이 텍스처 전부 + 점검까지 기다림, 웹킷 · 저사양 캔버스 업로드, 도색 텍스처 지우던 것 · 환경맵 누수 수정. 판정 변화 없음 |
 | V15.0.0-alpha.6 | **야간 조명 · 광학 착함 장치** — 실측 착함축(좌현 7.5°) · 착함 유도등(초록 기준등 + 공, 낮에도) · 복행등 · 갑판 조명 · 드롭 라이트 · 장애물등, 전투기 항법등(빨강 · 초록 · 흰색) + 충돌방지등(밤만), HUD 착함 안내를 같은 축으로. 판정 변화 없음 |
+| V15.0.0-alpha.7 | 광학 착함 장치를 **실물 크기 · 실제 자리**로 (좌현 가장자리에 선 렌즈 상자 + 기준등 팔, 공 ±0.9 m, 뒤에서는 가려짐) — alpha.6 은 갑판 위 13 m 에 떠 있었다. 판정 변화 없음 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 
