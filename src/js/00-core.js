@@ -244,7 +244,7 @@ function decodeTexImageViaImg(bytes, mime, max) {
 //  - 폰은 한 번에 한 장 (동시에 펼치면 메모리가 몰린다 — 10-1절), 그 밖은 두 장씩.
 //  - hi(먼저): 처음 화면에 크게 보이는 것 — 항모 갑판 · 내 기체 도색. 예전엔 항모가 맨 마지막에 읽혀
 //    출격 화면에서 갑판이 한동안 회색으로 보였다.
-const TEXQ = { hi: [], lo: [], run: 0, max: MOBILE ? 1 : 2, ok: 0, fail: 0, total: 0 };
+const TEXQ = { hi: [], lo: [], run: 0, max: MOBILE ? 1 : 2, ok: 0, fail: 0, total: 0, hiLeft: 0 };
 // 렌더 진단 (일시정지 창 '상태' 줄에 보인다 — 폰에서 화면이 이상할 때 스크린샷으로 원인을 좁힌다)
 const RDIAG = { lost: 0, glErr: 0 };
 R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
@@ -263,7 +263,8 @@ function renderDiag() {
 function decodeTexQueued(bytes, mime, max, hi = false) {
   return new Promise((res, rej) => {
     TEXQ.total++;
-    (hi ? TEXQ.hi : TEXQ.lo).push({ bytes, mime, max, res, rej });
+    if (hi) TEXQ.hiLeft++;
+    (hi ? TEXQ.hi : TEXQ.lo).push({ bytes, mime, max, res, rej, hi });
     texPump();
   });
 }
@@ -277,6 +278,7 @@ function texPump() {
         e => (TEXQ.fail++, j.rej(e))
       )
       .finally(() => {
+        if (j.hi) TEXQ.hiLeft--;
         TEXQ.run--;
         texPump();
       });

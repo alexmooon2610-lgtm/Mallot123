@@ -33,6 +33,8 @@ def build():
 
     css = ''.join(read('css/' + n) for n in man['css'])
     js = ''.join(read('js/' + n) for n in man['js'])
+    # early: 인트로 화면 바로 뒤에 넣는 작은 스크립트 — 파일을 열자마자(three.js · 본 코드 · 에셋을 읽기 전에) 로고를 그린다
+    early = ''.join(read('js/' + n) for n in man.get('early', []))
 
     blocks = []
     for a in man['assets']:
@@ -41,12 +43,13 @@ def build():
         mime = f' data-mime="{a["mime"]}"' if a.get('mime') else ''
         blocks.append(f'<script type="text/plain" id="{a["id"]}"{mime}>\n{wrap(b64)}\n</script>\n')
 
-    for key in ('{{CSS}}', '{{JS}}', '{{ASSETS}}'):
+    for key in ('{{CSS}}', '{{JS}}', '{{ASSETS}}', '{{EARLY_JS}}'):
         if tpl.count(key) != 1:
             sys.exit(f'template: {key} 가 정확히 한 번 있어야 한다')
     # 자리표시 줄의 들여쓰기는 첫 줄에만 붙는다 (원래 빌드와 같은 모양)
     out = (tpl.replace('{{CSS}}\n', css)
               .replace('{{JS}}\n', js)
+              .replace('{{EARLY_JS}}\n', early)
               .replace('{{ASSETS}}\n', ''.join(blocks)))
     m = re.search(r'STEEL TEMPEST V(\d+\.\d+\.\d+(?:-[a-z]+\.\d+)?)', out)
     return out, (m.group(1) if m else 'dev')

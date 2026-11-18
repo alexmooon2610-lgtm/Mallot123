@@ -479,21 +479,6 @@ canvas {
 #mallot-logo-canvas {
   image-rendering: pixelated;
 }
-.mf-cover-photo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 50%;
-  display: block;
-  filter: contrast(1.08) saturate(0.88);
-  z-index: 0;
-}
-.mf-cover-photo:not([src]),
-.mf-cover-photo[src=''] {
-  display: none;
-}
 .mf-settings-layout {
   grid-template-columns: minmax(270px, 0.82fr) minmax(350px, 1.18fr);
 }
@@ -625,15 +610,6 @@ canvas {
 }
 .mf-intro-inner {
   z-index: 1;
-}
-.mf-cover-photo {
-  animation: st-kb 18s ease-in-out infinite alternate;
-  transform-origin: 62% 50%;
-}
-@keyframes st-kb {
-  to {
-    transform: scale(1.12) translateX(-1.5%);
-  }
 }
 @keyframes st-sweep {
   0% {
@@ -810,12 +786,11 @@ canvas {
   height: 100%;
   width: 0;
   background: #cdd8e6;
-  animation: st4-bar 3.1s 0.8s cubic-bezier(0.45, 0, 0.25, 1) forwards;
+  transition: width 0.35s ease-out; /* 실제 로딩 진행 (95-intro-logo stBootProgress) — 예전엔 3.1초짜리 가짜 막대였다 */
 }
-@keyframes st4-bar {
-  to {
-    width: 100%;
-  }
+/* 로딩이 끝나기 전에는 인트로의 PRESS ENTER 를 숨긴다 (끝나면 표지로 저절로 넘어간다) */
+#mf-intro:not(.ready) #mf-enter-intro {
+  visibility: hidden;
 }
 #mf-enter-intro {
   position: absolute;
@@ -2924,12 +2899,19 @@ body.ac-hold #ov {
 #st-cabin .mf-camp-actions .mf-btn {
   font-size: 12px !important;
 }
-/* ===== 타이틀 화면 (에이스 컴뱃 풍) =====
-   전면 사진 위에 큰 제목, 빨강·파랑·초록 띠(말롯 3색), 깜박이는 PRESS ENTER.
-   글꼴은 설치된 것만 쓴다: Bahnschrift(윈도) → Segoe UI → Arial Narrow. */
+/* ===== 타이틀 화면 (V15.0.0-alpha.3 개편) =====
+   배경은 게임 엔진의 실시간 시네마틱(89-title-cine.js) — 예전엔 588×312 사진을 늘려 흐렸다.
+   구성: 위아래 화면비 띠(2.39:1 느낌) · 왼쪽에서 오는 그늘 위에 왼쪽 정렬 제목 · 기체는 오른쪽 2/3 에 보인다.
+   빨강·파랑·초록 띠(말롯 3색). 글꼴은 설치된 것만: Bahnschrift(윈도) → Segoe UI → Arial Narrow. */
+#mallot-front.mf-cine {
+  background: transparent;
+}
+#mallot-front.mf-cine:before {
+  opacity: 0;
+}
 #mallot-front #mf-cover {
   padding: 0;
-  background: #020406;
+  background: transparent;
 }
 #mf-cover .ac-title {
   position: absolute;
@@ -2938,110 +2920,117 @@ body.ac-hold #ov {
   font-family: Bahnschrift, 'DIN Alternate', 'Segoe UI', 'Arial Narrow', Arial, sans-serif;
   color: #eef3f6;
 }
-#mf-cover .ac-title-bg {
-  position: absolute;
-  inset: -3%;
-  width: 106%;
-  height: 106%;
-  max-width: none;
-  object-fit: cover;
-  object-position: 50% 42%;
-  filter: saturate(0.7) contrast(1.12) brightness(0.72);
-  animation: ac-drift 38s ease-in-out infinite alternate;
-  border: 0;
-  box-shadow: none;
-}
-@keyframes ac-drift {
-  from {
-    transform: scale(1) translate(0, 0);
-  }
-  to {
-    transform: scale(1.07) translate(-1.5%, 1%);
-  }
-}
+/* 글자 쪽 그늘: 왼쪽 → 투명, 가장자리 어둡게 */
 #mf-cover .ac-title-shade {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.62) 100%),
-    linear-gradient(
-      180deg,
-      rgba(1, 4, 8, 0.72) 0%,
-      rgba(1, 4, 8, 0) 26%,
-      rgba(1, 4, 8, 0) 55%,
-      rgba(1, 4, 8, 0.92) 100%
-    );
+    linear-gradient(90deg, rgba(2, 6, 12, 0.86) 0%, rgba(2, 6, 12, 0.62) 26%, rgba(2, 6, 12, 0.14) 52%, rgba(2, 6, 12, 0) 68%),
+    radial-gradient(ellipse 120% 90% at 62% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%);
 }
-#mf-cover .ac-title-flare {
+/* 화면비 띠: 위아래 검은 띠 (글자 한 줄이 들어갈 만큼) */
+#mf-cover .ac-title-bars i {
   position: absolute;
-  left: 72%;
-  top: 16%;
-  width: 46vmax;
-  height: 46vmax;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    circle,
-    rgba(255, 236, 200, 0.32) 0%,
-    rgba(255, 200, 140, 0.1) 22%,
-    rgba(255, 190, 120, 0) 55%
-  );
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: ac-flare 7s ease-in-out infinite alternate;
+  left: 0;
+  right: 0;
+  height: 8.5vh;
+  background: #000;
+  animation: ac-bars 1.6s 0.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-@keyframes ac-flare {
-  to {
-    opacity: 0.65;
+#mf-cover .ac-title-bars i:first-child {
+  top: 0;
+}
+#mf-cover .ac-title-bars i:last-child {
+  bottom: 0;
+}
+@keyframes ac-bars {
+  from {
+    height: 0;
+  }
+}
+/* 필름 결: 아주 옅은 잡음이 조금씩 흔들린다 */
+#mf-cover .ac-title-grain {
+  position: absolute;
+  inset: -50%;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: ac-grain 0.9s steps(4) infinite;
+}
+@keyframes ac-grain {
+  25% {
+    transform: translate(-3%, 2%);
+  }
+  50% {
+    transform: translate(2%, -3%);
+  }
+  75% {
+    transform: translate(-1%, 3%);
+  }
+}
+/* 표지가 뜰 때 검은 화면에서 서서히 밝아진다 */
+#mf-cover .ac-title-fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  pointer-events: none;
+  opacity: 0;
+}
+#mf-cover.active .ac-title-fade {
+  animation: ac-fadein 2.2s both ease-out;
+}
+@keyframes ac-fadein {
+  from {
+    opacity: 1;
   }
 }
 #mf-cover .ac-title-top {
   position: absolute;
-  left: 4vw;
-  right: 4vw;
-  top: 3.2vh;
+  left: 5vw;
+  right: 5vw;
+  top: 0;
+  height: 8.5vh;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(238, 243, 246, 0.22);
   font-size: 11px;
   letter-spacing: 0.32em;
-  color: rgba(238, 243, 246, 0.7);
+  color: rgba(238, 243, 246, 0.55);
+  z-index: 2;
 }
 #mf-cover .ac-title-brand {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 34%;
+  left: 7vw;
+  top: 44%;
   transform: translateY(-50%);
-  text-align: center;
+  text-align: left;
+  max-width: 46vw;
 }
 #mf-cover .ac-title-kicker {
-  font-size: clamp(10px, 1.1vw, 14px);
-  letter-spacing: 0.6em;
-  color: rgba(238, 243, 246, 0.72);
-  margin-bottom: 1.2vh;
-  animation: ac-rise 1.4s 0.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: clamp(10px, 1.05vw, 13px);
+  letter-spacing: 0.55em;
+  color: rgba(238, 243, 246, 0.7);
+  margin-bottom: 1.6vh;
+  animation: ac-rise 1.4s 0.9s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-name {
   margin: 0;
   font-weight: 300;
-  font-size: clamp(42px, 8.4vw, 132px);
-  line-height: 1;
-  letter-spacing: 0.22em;
-  text-indent: 0.22em;
+  font-size: clamp(40px, 7.2vw, 118px);
+  line-height: 0.95;
+  letter-spacing: 0.18em;
   color: #f4f7f9;
   text-shadow:
-    0 0 24px rgba(160, 200, 255, 0.35),
-    0 2px 0 rgba(0, 0, 0, 0.4);
-  animation: ac-rise 1.6s both cubic-bezier(0.2, 0.8, 0.2, 1);
+    0 0 28px rgba(150, 190, 255, 0.28),
+    0 2px 0 rgba(0, 0, 0, 0.45);
+  animation: ac-rise 1.6s 0.7s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-name b {
   display: block;
   font-weight: 700;
-  font-size: 0.52em;
-  letter-spacing: 0.62em;
-  text-indent: 0.62em;
-  margin-top: 0.12em;
+  font-size: 0.5em;
+  letter-spacing: 0.6em;
+  margin-top: 0.16em;
   color: #ffffff;
 }
 @keyframes ac-rise {
@@ -3053,11 +3042,11 @@ body.ac-hold #ov {
 }
 #mf-cover .ac-title-stripe {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
-  margin: 2.4vh auto 1.4vh;
-  width: min(520px, 60vw);
-  animation: ac-wipe 1.2s 0.6s both cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin: 2.6vh 0 1.6vh;
+  width: min(440px, 34vw);
+  animation: ac-wipe 1.2s 1.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-stripe i {
   flex: 1;
@@ -3082,17 +3071,17 @@ body.ac-hold #ov {
   }
 }
 #mf-cover .ac-title-sub {
-  font-size: clamp(10px, 1vw, 13px);
-  letter-spacing: 0.5em;
-  text-indent: 0.5em;
-  color: rgba(238, 243, 246, 0.6);
+  font-size: clamp(10px, 0.95vw, 12px);
+  letter-spacing: 0.45em;
+  color: rgba(238, 243, 246, 0.55);
+  animation: ac-rise 1.4s 1.3s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-start {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 15vh;
-  text-align: center;
+  left: 7vw;
+  top: 68%;
+  text-align: left;
+  animation: ac-rise 1.2s 1.8s both cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #mf-cover .ac-title-btn {
   font: inherit;
@@ -3126,8 +3115,11 @@ body.ac-hold #ov {
 }
 #mf-cover .ac-title-ro {
   position: absolute;
-  left: 4vw;
-  bottom: 3.4vh;
+  left: 5vw;
+  bottom: 0;
+  height: 8.5vh;
+  display: flex;
+  align-items: center;
   right: auto;
   top: auto;
   margin: 0;
@@ -3140,29 +3132,60 @@ body.ac-hold #ov {
     Consolas,
     monospace;
   letter-spacing: 0.12em;
-  color: rgba(140, 255, 180, 0.75);
+  color: rgba(140, 255, 180, 0.7);
+  z-index: 2;
 }
 #mf-cover .ac-title-credit {
   position: absolute;
-  right: 4vw;
-  bottom: 3.4vh;
+  right: 5vw;
+  bottom: 0;
+  height: 8.5vh;
+  display: flex;
+  align-items: center;
   font-size: 10px;
-  letter-spacing: 0.14em;
-  color: rgba(238, 243, 246, 0.4);
+  letter-spacing: 0.18em;
+  color: rgba(238, 243, 246, 0.38);
+  z-index: 2;
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+  /* 세로 · 좁은 화면: 제목을 가운데 아래쪽으로, 그늘은 아래에서 위로 */
   #mf-cover .ac-title-top span:last-child,
   #mf-cover .ac-title-ro {
     display: none;
   }
-  #mf-cover .ac-title-credit {
-    left: 4vw;
+  #mf-cover .ac-title-shade {
+    background: linear-gradient(0deg, rgba(2, 6, 12, 0.88) 0%, rgba(2, 6, 12, 0.5) 45%, rgba(2, 6, 12, 0) 70%);
+  }
+  #mf-cover .ac-title-brand {
+    left: 6vw;
+    right: 6vw;
+    top: auto;
+    bottom: 30vh;
+    transform: none;
+    max-width: none;
     text-align: center;
+  }
+  #mf-cover .ac-title-stripe {
+    margin: 2vh auto 1.4vh;
+    width: 70vw;
+  }
+  #mf-cover .ac-title-start {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 13vh;
+    text-align: center;
+  }
+  #mf-cover .ac-title-btn2 {
+    margin: 12px auto 0;
+  }
+  #mf-cover .ac-title-credit {
+    left: 5vw;
+    justify-content: center;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  #mf-cover .ac-title-bg,
-  #mf-cover .ac-title-flare,
+  #mf-cover .ac-title-grain,
   #mf-cover .ac-title-btn {
     animation: none;
   }
@@ -3171,7 +3194,7 @@ body.ac-hold #ov {
 /* ============ 타이틀의 티저 버튼 · 티저 재생 화면 ============ */
 #mf-cover .ac-title-btn2 {
   display: block;
-  margin: 14px auto 0;
+  margin: 14px 0 0;
   padding: 7px 26px;
   font-size: clamp(10px, 0.95vw, 13px);
   border-color: rgba(238, 243, 246, 0.2);
@@ -3202,6 +3225,30 @@ body.ac-hold #ov {
     monospace;
   letter-spacing: 0.3em;
   color: rgba(255, 255, 255, 0.45);
+}
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+  #mf-cover .ac-title-btn2 {
+    margin: 12px auto 0;
+  }
+}
+/* 낮은 가로 화면(폰 가로): 제목 · 버튼을 위로 당기고 간격을 줄인다 — 아래 띠에 버튼이 걸리지 않게 */
+@media (max-height: 480px) and (min-aspect-ratio: 1/1) {
+  #mf-cover .ac-title-brand {
+    top: 40%;
+  }
+  #mf-cover .ac-title-stripe {
+    margin: 1.6vh 0 1vh;
+  }
+  #mf-cover .ac-title-start {
+    top: 61%;
+  }
+  #mf-cover .ac-title-btn {
+    padding: 8px 32px;
+  }
+  #mf-cover .ac-title-btn2 {
+    margin-top: 8px;
+    padding: 5px 22px;
+  }
 }
 /* ============ 멀티플레이 로비 (V15 기틀) — 91-net-lobby.js ============ */
 .mf-net h3 small {
@@ -3307,16 +3354,306 @@ body.ac-hold #ov {
           <button class="mf-btn" id="mf-enter-intro">PRESS ENTER</button>
           <div class="mf-load">
             <span id="mf-load-t"></span>
-            <div class="mf-lbar"><i></i></div>
+            <div class="mf-lbar"><i id="mf-lbar-i"></i></div>
           </div>
         </div>
       </section>
+      <script>
+        // ===== 인트로 로고 · 로딩 진행 (V15.0.0-alpha.3 개편) =====
+// 이 파일은 'early' 스크립트다 (manifest.json): 인트로 화면 바로 뒤, three.js · 본 코드 · 에셋보다 먼저 실행된다.
+// 그래서 파일을 열자마자 로고가 그려진다. 예전엔 본 코드 끝에서 실행돼서 폰에서는 몇 초 동안 검은 화면이었고,
+// 3.9초 고정 타이머가 로딩 중에 다 흘러 로고를 거의 못 보고 표지로 넘어갔다.
+// 여기서는 THREE · 게임 코드에 기대지 않는다. 아직 없는 DOM(설정 화면 등)은 나중에 찾는다.
+window.__stBoot = 'loading'; // 99-boot 가 모델을 다 읽으면 'done' (하네스도 이걸 기다린다)
+window.__stIntroT0 = performance.now();
+(() => {
+  const $id = i => document.getElementById(i),
+    intro = $id('mf-intro'),
+    logo = $id('mallot-logo-canvas'),
+    ko = () => {
+      const b = $id('mf-lang-ko');
+      return b ? b.classList.contains('selected') : true; // 게임 기본 언어는 한국어 (설정 화면이 아직 없을 때)
+    };
+  $id('mallot-front').style.display = 'block'; // 본 코드가 뜨기 전부터 인트로를 보인다
+  // 로고: 스텐실 MALLOT + 빨·파·초 비행운 세 줄이 전투기 한 대로 모인다 (THREE LINES. ONE FLIGHT.)
+  const LOGO = { W: 540, H: 190, cols: ['#e8444b', '#4a8be0', '#5bc58a'] };
+  function logoGlyphs() {
+    // cut: 스텐실 틈 [왼쪽, 위, 폭, 높이]
+    // 글자 뼈대(선 중심) · 단위: 글자 높이 10 · 폭 7 기준. 획 끝은 bevel 이음으로 각지게 깎인다.
+    return {
+      M: {
+        w: 7,
+        p: [
+          [
+            [1.1, 8.9],
+            [1.1, 1.1],
+            [3.5, 5.2],
+            [5.9, 1.1],
+            [5.9, 8.9],
+          ],
+        ],
+      },
+      A: {
+        w: 7,
+        p: [
+          [
+            [1.1, 8.9],
+            [1.1, 3],
+            [3, 1.1],
+            [4, 1.1],
+            [5.9, 3],
+            [5.9, 8.9],
+          ],
+          [
+            [1.1, 5.7],
+            [5.9, 5.7],
+          ],
+        ],
+        cut: [[3.25, 0, 0.5, 2.2]],
+      },
+      L: {
+        w: 6.4,
+        p: [
+          [
+            [1.1, 0.6],
+            [1.1, 8.9],
+            [6.1, 8.9],
+          ],
+        ],
+      },
+      O: {
+        w: 7,
+        p: [
+          [
+            [2.7, 1.1],
+            [4.3, 1.1],
+            [5.9, 2.7],
+            [5.9, 7.3],
+            [4.3, 8.9],
+            [2.7, 8.9],
+            [1.1, 7.3],
+            [1.1, 2.7],
+            [2.7, 1.1],
+          ],
+        ],
+        cut: [
+          [3.25, 0, 0.5, 2.2],
+          [3.25, 7.8, 0.5, 2.2],
+        ],
+      },
+      T: {
+        w: 7,
+        p: [
+          [
+            [0.4, 1.1],
+            [6.6, 1.1],
+          ],
+          [
+            [3.5, 1.1],
+            [3.5, 9.4],
+          ],
+        ],
+        cut: [[1.9, 2.2, 3.2, 0.5]],
+      },
+    };
+  }
+  let logoWords = null;
+  function drawLogo(k) {
+    k = k == null ? 1 : k;
+    const c = logo,
+      x = c.getContext('2d'),
+      R = 2,
+      { W, H, cols } = LOGO;
+    if (c.width !== W * R) {
+      c.width = W * R;
+      c.height = H * R;
+    }
+    x.setTransform(R, 0, 0, R, 0, 0);
+    x.clearRect(0, 0, W, H);
+    const G = logoGlyphs(),
+      word = 'MALLOT',
+      u = 8.2,
+      gap = 1.5,
+      sk = -0.2,
+      stroke = 2.3;
+    const tw = [...word].reduce((t, ch, i) => t + G[ch].w + (i ? gap : 0), 0) * u,
+      x0 = (W - tw) / 2 + 9,
+      y0 = 16;
+    // 글자 한 겹 그리기 (기울임 + 스텐실 틈). dst 에 붙인다
+    const word1 = (dst, dx, dy, fill) => {
+      const off = document.createElement('canvas');
+      off.width = W * R;
+      off.height = H * R;
+      const o = off.getContext('2d');
+      o.setTransform(R, 0, 0, R, 0, 0);
+      o.translate(x0 + dx, y0 + dy);
+      o.transform(1, 0, sk, 1, -sk * 10 * u, 0);
+      o.lineWidth = stroke * u;
+      o.lineJoin = 'bevel';
+      o.lineCap = 'butt';
+      o.strokeStyle = fill;
+      let cx = 0;
+      for (const ch of word) {
+        const g = G[ch];
+        for (const path of g.p) {
+          o.beginPath();
+          path.forEach(([px, py], i) => (i ? o.lineTo(cx + px * u, py * u) : o.moveTo(cx + px * u, py * u)));
+          o.stroke();
+        }
+        o.globalCompositeOperation = 'destination-out';
+        (g.cut || []).forEach(([cx0, cy0, cw, ch2]) => o.fillRect(cx + cx0 * u, cy0 * u, cw * u, ch2 * u));
+        o.globalCompositeOperation = 'source-over';
+        cx += (g.w + gap) * u;
+      }
+      dst.save();
+      dst.setTransform(1, 0, 0, 1, 0, 0);
+      dst.drawImage(off, 0, 0);
+      dst.restore();
+    };
+    // 글자는 애니메이션 내내 같다: 처음 한 번만 세 겹을 캔버스에 구워 두고, 프레임마다 붙여 넣기만 한다
+    // (예전엔 프레임마다 2160×760 캔버스를 세 장씩 새로 만들어 인트로 2초 동안 폰이 버벅였다)
+    if (!logoWords) {
+      logoWords = document.createElement('canvas');
+      logoWords.width = W * R;
+      logoWords.height = H * R;
+      const w = logoWords.getContext('2d');
+      word1(w, 5, 5, '#02050d');
+      word1(w, 2.5, 2.5, '#40587d');
+      const gr = w.createLinearGradient(0, y0, 0, y0 + 10 * u); // 그라데이션 좌표는 칠하는 쪽(o) 변환 기준이라 원래 값 그대로
+      gr.addColorStop(0, '#fbfaf3');
+      gr.addColorStop(0.62, '#e9e6da');
+      gr.addColorStop(1, '#b9c5d3');
+      word1(w, 0, 0, gr);
+    }
+    x.save();
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.drawImage(logoWords, 0, 0);
+    x.restore();
+    // 비행운: 왼쪽에서 흘러와 오른쪽 끝의 한 점(전투기)으로 모인다
+    const jx = W - 46,
+      jy = y0 + 10 * u + 16,
+      lx = 40,
+      base = jy + 30,
+      ang = -0.2;
+    const curve = (i, t) => {
+      const y1 = base + (i - 1) * 11,
+        ex = jx - 10,
+        ey = jy + (i - 1) * 1.6,
+        mx = lx + (ex - lx) * 0.62;
+      const P = (a, b, c2, d, t2) => {
+        const m = 1 - t2;
+        return m * m * m * a + 3 * m * m * t2 * b + 3 * m * t2 * t2 * c2 + t2 * t2 * t2 * d;
+      };
+      return [P(lx, mx - 60, mx, ex, t), P(y1, y1, y1 - 2, ey, t)];
+    };
+    const end = Math.max(0, Math.min(1, k));
+    cols.forEach((col, i) => {
+      const N = 80;
+      let prev = curve(i, 0);
+      for (let n = 1; n <= N * end; n++) {
+        const t = n / N,
+          pt = curve(i, t);
+        x.strokeStyle = col;
+        x.globalAlpha = Math.min(1, 0.08 + t * 1.25);
+        x.lineWidth = 1.6 + t * 2.4;
+        x.lineCap = 'round';
+        x.beginPath();
+        x.moveTo(prev[0], prev[1]);
+        x.lineTo(pt[0], pt[1]);
+        x.stroke();
+        prev = pt;
+      }
+    });
+    x.globalAlpha = 1;
+    // 전투기 실루엣 (비행운이 다 모인 뒤 나타난다)
+    if (end >= 0.98) {
+      const head = curve(1, 1);
+      x.save();
+      x.translate(head[0] + 12, head[1] - 2);
+      x.rotate(ang);
+      x.fillStyle = '#02050d';
+      x.globalAlpha = 0.7;
+      x.translate(1.5, 1.5);
+      const jet = () => {
+        x.beginPath();
+        x.moveTo(16, 0);
+        x.lineTo(5, -2);
+        x.lineTo(-3, -10);
+        x.lineTo(-6, -10);
+        x.lineTo(-3, -2.2);
+        x.lineTo(-9, -2);
+        x.lineTo(-12, -6);
+        x.lineTo(-13.5, -6);
+        x.lineTo(-12, 0);
+        x.lineTo(-13.5, 6);
+        x.lineTo(-12, 6);
+        x.lineTo(-9, 2);
+        x.lineTo(-3, 2.2);
+        x.lineTo(-6, 10);
+        x.lineTo(-3, 10);
+        x.lineTo(5, 2);
+        x.closePath();
+        x.fill();
+      };
+      jet();
+      x.globalAlpha = 1;
+      x.translate(-1.5, -1.5);
+      x.fillStyle = '#f4f1e6';
+      jet();
+      x.restore();
+    }
+    // 부제
+    const ty = H - 14;
+    x.fillStyle = '#8aa0bd';
+    x.font = '600 10px ui-monospace,Consolas,Menlo,monospace';
+    x.textBaseline = 'middle';
+    x.textAlign = 'left';
+    const t = 'THREE LINES. ONE FLIGHT.',
+      sp = 3.4,
+      ws = [...t].map(ch => x.measureText(ch).width),
+      tl = ws.reduce((a2, b2) => a2 + b2 + sp, 0) - sp;
+    let tx = (W - tl) / 2;
+    [...t].forEach((ch, i) => {
+      x.fillText(ch, tx, ty);
+      tx += ws[i] + sp;
+    });
+  }
+  (function animateLogo() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      drawLogo(1);
+      return;
+    }
+    const T0 = performance.now() + 650,
+      D = 1300;
+    drawLogo(0);
+    const step = now => {
+      const k = Math.max(0, (now - T0) / D),
+        e = 1 - Math.pow(1 - Math.min(1, k), 3);
+      drawLogo(e);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  })();
+  // 실제 로딩 진행: 99-boot 가 단계마다 stBootProgress(문구, 0~1) 를 부른다. 예전엔 0.85초마다 가짜 문구를 넘겼다.
+  const lt = $id('mf-load-t'),
+    lb = $id('mf-lbar-i');
+  let shown = 0;
+  window.stBootProgress = (label, frac) => {
+    if (label) lt.textContent = label;
+    shown = Math.max(shown, Math.min(1, frac || 0));
+    if (lb) lb.style.width = (shown * 100).toFixed(1) + '%';
+  };
+  window.stBootProgress(ko() ? '그래픽 엔진 불러오는 중' : 'LOADING GRAPHICS ENGINE', 0.04);
+})();
+      </script>
       <section class="mf-screen" id="mf-cover">
-        <!-- 타이틀 화면 (에이스 컴뱃 풍): 전면 사진 · 큰 제목 · PRESS ENTER. 사진은 asset-cover-jpeg (95-intro-logo.js) -->
+        <!-- 타이틀 화면 (V15.0.0-alpha.3 개편): 게임 엔진 실시간 시네마틱 위에 왼쪽 정렬 제목 · PRESS ENTER -->
         <div class="ac-title">
-          <img class="mf-cover-photo ac-title-bg" alt="MiG-29 Fulcrum" />
+          <!-- 배경은 게임 엔진이 실시간으로 그린다 (89-title-cine.js) — 이 층은 글자를 읽히게 하는 그늘 · 화면비 띠 · 필름 결 -->
           <div class="ac-title-shade" aria-hidden="true"></div>
-          <div class="ac-title-flare" aria-hidden="true"></div>
+          <div class="ac-title-bars" aria-hidden="true"><i></i><i></i></div>
+          <div class="ac-title-grain" aria-hidden="true"></div>
+          <div class="ac-title-fade" aria-hidden="true"></div>
           <div class="ac-title-top"><span>ZARYA CARRIER AIR GROUP</span><span>PACIFIC · DEC 1999</span></div>
           <div class="ac-title-brand">
             <div class="ac-title-kicker">THE LAST WAR OF THE CENTURY</div>
@@ -3329,9 +3666,7 @@ body.ac-hold #ov {
             <button class="ac-title-btn ac-title-btn2" id="mf-teaser">▶ TEASER</button>
           </div>
           <div class="mf-readout ac-title-ro" id="mf-ro"></div>
-          <div class="ac-title-credit">
-            PHOTO: JULIAN HERZOG · WIKIMEDIA COMMONS · CC BY 4.0 &nbsp;·&nbsp; © STEEL TEMPEST PROJECT
-          </div>
+          <div class="ac-title-credit" id="mf-cine-cap">© STEEL TEMPEST PROJECT · A MALLOT ORIGINAL</div>
         </div>
       </section>
       <section class="mf-screen" id="mf-settings">
@@ -3713,7 +4048,7 @@ function decodeTexImageViaImg(bytes, mime, max) {
 //  - 폰은 한 번에 한 장 (동시에 펼치면 메모리가 몰린다 — 10-1절), 그 밖은 두 장씩.
 //  - hi(먼저): 처음 화면에 크게 보이는 것 — 항모 갑판 · 내 기체 도색. 예전엔 항모가 맨 마지막에 읽혀
 //    출격 화면에서 갑판이 한동안 회색으로 보였다.
-const TEXQ = { hi: [], lo: [], run: 0, max: MOBILE ? 1 : 2, ok: 0, fail: 0, total: 0 };
+const TEXQ = { hi: [], lo: [], run: 0, max: MOBILE ? 1 : 2, ok: 0, fail: 0, total: 0, hiLeft: 0 };
 // 렌더 진단 (일시정지 창 '상태' 줄에 보인다 — 폰에서 화면이 이상할 때 스크린샷으로 원인을 좁힌다)
 const RDIAG = { lost: 0, glErr: 0 };
 R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
@@ -3732,7 +4067,8 @@ function renderDiag() {
 function decodeTexQueued(bytes, mime, max, hi = false) {
   return new Promise((res, rej) => {
     TEXQ.total++;
-    (hi ? TEXQ.hi : TEXQ.lo).push({ bytes, mime, max, res, rej });
+    if (hi) TEXQ.hiLeft++;
+    (hi ? TEXQ.hi : TEXQ.lo).push({ bytes, mime, max, res, rej, hi });
     texPump();
   });
 }
@@ -3746,6 +4082,7 @@ function texPump() {
         e => (TEXQ.fail++, j.rej(e))
       )
       .finally(() => {
+        if (j.hi) TEXQ.hiLeft--;
         TEXQ.run--;
         texPump();
       });
@@ -14450,6 +14787,95 @@ function updateRearMirror(now) {
     R.setScissorTest(previousScissorTest);
   }
 }
+// ---------- 타이틀 시네마틱 (V15.0.0-alpha.3): 표지 배경을 게임 엔진이 실시간으로 그린다
+// 예전 표지는 588×312 짜리 MiG-29 사진을 화면 전체로 늘려서 흐리고 뭉개졌다.
+// 이제 우리 기체(설정에서 고른 MiG-29 / Su-33)가 항모 자랴 둘레를 크게 돌고, 카메라는 선회 바깥쪽에 붙어
+// 기체 너머로 항모가 보이게 천천히 각도를 바꾼다. 해상도와 무관하고, 사진 저작권 표시도 필요 없다.
+//  - 메인 루프는 메뉴에서도 장면을 그리고 있었다(앞 화면이 불투명하게 덮고 있었을 뿐) → 그리는 비용은 늘지 않는다.
+//  - 판정과 무관: 카메라와 장식용 기체만 움직인다. rnd 를 쓰지 않는다. 출격(S === 'play')하면 저절로 꺼진다.
+const TCINE = { on: false, jet: null, ac: null, t: 0, fov: 70 };
+const TCINE_R = 2600, // 선회 반지름 (항모 중심에서)
+  TCINE_ALT = 420,
+  TCINE_V = 150, // m/s
+  TCINE_BANK = 0.38; // 선회 경사 (rad, 약 22°)
+function titleCine(on) {
+  if (on === TCINE.on) return;
+  TCINE.on = on;
+  if (on) {
+    const ac = typeof pickedAc === 'function' ? pickedAc() : 'mig';
+    if (!TCINE.jet || TCINE.ac !== ac) {
+      if (TCINE.jet) scene.remove(TCINE.jet);
+      const j = ac === 'su33' ? createSu33({ gearDown: false }) : createMiG29({ gearDown: false });
+      if (ac !== 'su33' && typeof paintMiG29 === 'function') paintMiG29(j);
+      j.scale.setScalar(3);
+      j.name = 'title_cine_jet';
+      j.userData.setAfterburner?.(true);
+      TCINE.jet = j;
+      TCINE.ac = ac;
+    }
+    scene.add(TCINE.jet);
+    TCINE.jet.visible = true;
+    TCINE.fov = cam.fov;
+    // 매번 같은 장면부터: 항모가 기체 너머로 보이는 각도에서 시작한다
+    TCINE.t = 0;
+    hud && hud.getContext('2d').clearRect(0, 0, hud.width, hud.height); // 남아 있던 HUD 를 지운다
+  } else if (TCINE.jet) {
+    scene.remove(TCINE.jet);
+    cam.fov = TCINE.fov;
+    cam.up.set(0, 1, 0);
+    cam.updateProjectionMatrix();
+  }
+}
+// 메인 루프가 카메라를 정한 뒤, 그리기 직전에 부른다 (90-main-loop)
+function titleCineUpdate(dt) {
+  if (S === 'play' || !TCINE.jet || typeof CV === 'undefined') return titleCine(false);
+  const T0 = (TCINE.t += dt),
+    c = CV.position,
+    a = 0.6 + (T0 * TCINE_V) / TCINE_R, // 항모 둘레 각도
+    pos = V(c.x + Math.cos(a) * TCINE_R, TCINE_ALT + Math.sin(T0 * 0.23) * 10, c.z + Math.sin(a) * TCINE_R),
+    f = V(-Math.sin(a), Math.sin(T0 * 0.23) * 0.02, Math.cos(a)).normalize(), // 진행 방향
+    inward = V(c.x - pos.x, 0, c.z - pos.z).normalize(), // 선회 안쪽 (항모 쪽)
+    bank = TCINE_BANK + Math.sin(T0 * 0.31) * 0.05,
+    up = V(0, 1, 0).multiplyScalar(Math.cos(bank)).addScaledVector(inward, Math.sin(bank));
+  up.addScaledVector(f, -up.dot(f)).normalize();
+  const right = new T.Vector3().crossVectors(f, up).normalize(), // 기체 오른쪽
+    m = new T.Matrix4().makeBasis(right, up, f.clone().negate()); // 기체 앞은 -z
+  const jet = TCINE.jet;
+  jet.position.copy(pos);
+  jet.quaternion.setFromRotationMatrix(m);
+  // 카메라: 선회 바깥쪽(항모 반대편)에서 기체를 본다 → 기체 뒤로 항모가 보인다.
+  // 앞쪽 비스듬한 각도 ↔ 옆 각도를 40초 주기로 오가며, 거리도 조금씩 숨 쉬듯 바뀐다
+  const phi = 1.05 + 0.6 * Math.sin(T0 * 0.155),
+    D = 118 + 14 * Math.sin(T0 * 0.09),
+    outward = inward.clone().negate(),
+    off = f
+      .clone()
+      .multiplyScalar(Math.cos(phi) * D)
+      .addScaledVector(outward, Math.sin(phi) * D)
+      .add(V(0, -2 + 3 * Math.sin(T0 * 0.13), 0)); // 기체보다 살짝 아래 — 하늘이 더 보이게
+  cam.position.copy(pos).add(off);
+  cam.up.copy(V(0, 1, 0).lerp(up, 0.3).normalize());
+  cam.fov = 34; // 망원 — 기체가 크게, 배경이 압축돼 보인다
+  // 구도: 왼쪽에는 제목이 있으므로 기체를 화면 오른쪽(가로 약 +30%)에 둔다. 넓은 화면만 — 세로 화면은 가운데 위쪽
+  const look = pos.clone().addScaledVector(f, 10).add(V(0, 5, 0)),
+    toJet = look.clone().sub(cam.position),
+    dist = toJet.length(),
+    camRight = toJet.clone().normalize().cross(cam.up).normalize(),
+    halfW = Math.tan((cam.fov * Math.PI) / 360) * dist * cam.aspect,
+    wide = cam.aspect > 1.1;
+  look.addScaledVector(camRight, wide ? -0.2 * halfW : 0).add(V(0, wide ? 0 : -0.25 * halfW / cam.aspect, 0));
+  cam.lookAt(look);
+  cam.updateProjectionMatrix();
+  // 표지 아래 띠의 계기 판독값 (93-menu-fx)
+  TCINE.ro = {
+    alt: Math.round(pos.y),
+    kmh: Math.round(TCINE_V * 3.6),
+    hdg: Math.round(((Math.atan2(f.x, -f.z) * 180) / Math.PI + 360) % 360),
+  };
+  // 바다 · 구름층 · 하늘은 카메라를 따라간다 (메뉴에서는 메인 루프가 플레이어 위치로 맞춰 두므로 여기서 다시)
+  sea.position.set(Math.floor(cam.position.x / 1000) * 1000, 0, Math.floor(cam.position.z / 1000) * 1000);
+  if (typeof deckParkingUpdate === 'function') deckParkingUpdate(cam.position);
+}
 // ---------- 메인 루프
 let last = performance.now();
 // ---------- WebGL 컨텍스트 손실 (GPU 메모리 부족 · 그래픽 드라이버 재시작)
@@ -14650,6 +15076,7 @@ function loop(n) {
       if (Math.abs(d.z) > 40000) c.position.z -= Math.sign(d.z) * 80000;
     }
   }
+  if (TCINE.on) titleCineUpdate(dt); // 표지 시네마틱: 위에서 정한 카메라를 덮어쓴다 (89-title-cine)
   ckUpdate(dt);
   trailsUpdate();
   // 월드 렌더링과 콕핏 렌더링을 분리해 배경/항모 모델의 깊이 테스트를 독립시킨다.
@@ -14658,16 +15085,16 @@ function loop(n) {
   updateRearMirror(n);
   // 비행 화면 효과(카메라 흔들림·FOV·G 시야)는 월드 렌더 직전에 적용한다
   if (S === 'play') flightFx();
-  sunShadowUpdate(dt, p ? p.pos : cam.position);
+  sunShadowUpdate(dt, TCINE.on && TCINE.jet ? TCINE.jet.position : p ? p.pos : cam.position);
   fxNearFade();
   R.clear();
   R.shadowMap.needsUpdate = shadowLive; // 그림자 지도는 여기서만 갱신 (01-environment). 꺼져 있으면 다시 그리지 않는다
   R.render(scene, cam);
-  if (cameraMode === 'cockpit') {
+  if (cameraMode === 'cockpit' && !TCINE.on) {
     R.clearDepth();
     R.render(cockpitScene, ckCam);
   }
-  if (p) {
+  if (p && !TCINE.on) {
     if (cameraMode === 'cockpit') drawHud();
     else drawExternalHud();
     drawGroundThreatHud();
@@ -15041,6 +15468,8 @@ function mountLoadPicker(el, o) {
   }
   function setStage(next) {
     stage = next;
+    front.classList.toggle('mf-cine', next === 'cover'); // 표지는 배경을 비워 엔진 화면이 보이게 (40-title.css)
+    titleCine(next === 'cover' && front.style.display === 'block');
     document.querySelectorAll('#mallot-front .mf-screen').forEach(el => el.classList.remove('active'));
     const target = $id('mf-' + next);
     if (target) target.classList.add('active');
@@ -15186,9 +15615,10 @@ function mountLoadPicker(el, o) {
   }
   function hideFront() {
     front.style.display = 'none';
+    titleCine(false);
     $id('mf-guide-modal').classList.remove('open');
   }
-  $id('mf-enter-intro').addEventListener('click', () => setStage('cover'));
+  $id('mf-enter-intro').addEventListener('click', () => window.__stBoot === 'done' && setStage('cover'));
   $id('mf-start').addEventListener('click', () => {
     setStage('settings');
     render();
@@ -15315,7 +15745,7 @@ function mountLoadPicker(el, o) {
         return;
       }
       if (ev.key === 'Enter') {
-        if (stage === 'intro') setStage('cover');
+        if (stage === 'intro') window.__stBoot === 'done' && setStage('cover');
         else if (stage === 'cover') $id('mf-start').click();
         else if (stage === 'settings' && !$id('mf-guide-modal').classList.contains('open')) $id('mf-go').click();
         else if (stage === 'brief') $id('mf-brief-launch').click();
@@ -15328,9 +15758,25 @@ function mountLoadPicker(el, o) {
   render();
   // Initial boot begins with the MALLOT mark; no automatic start into the simulation.
   setStage('intro');
-  window.setTimeout(() => {
-    if (stage === 'intro') setStage('cover');
-  }, 3900);
+  // 인트로 → 표지 (V15.0.0-alpha.3): 예전엔 3.9초 고정 타이머라 로딩이 길면 로고를 못 보고 넘어갔다.
+  // 이제 (1) 모델을 다 읽고 (2) 로고를 끝까지 보여 주고(인트로가 뜬 뒤 2.8초) (3) 먼저 보일 텍스처(항모 · 도색)가 펼쳐질 때까지
+  // (최대 8초) 기다린다. 그동안 진행 막대가 실제 단계를 보여 준다.
+  (function introGate() {
+    if (stage !== 'intro') return;
+    const now = performance.now(),
+      booted = window.__stBoot === 'done';
+    if (booted && !introGate.t) introGate.t = now;
+    const texReady = typeof TEXQ === 'undefined' || TEXQ.hiLeft <= 0 || now - introGate.t > 8000;
+    if (booted && typeof TEXQ !== 'undefined')
+      window.stBootProgress?.(null, 0.88 + 0.12 * (TEXQ.total ? TEXQ.ok / TEXQ.total : 1));
+    if (booted && texReady && now - (window.__stIntroT0 || 0) > 2800) {
+      window.stBootProgress?.(ko() ? '출격 준비 완료' : 'SORTIE READY', 1);
+      $id('mf-intro').classList.add('ready');
+      setTimeout(() => stage === 'intro' && setStage('cover'), 450);
+      return;
+    }
+    setTimeout(introGate, 120);
+  })();
 })();
 // ---------- 멀티플레이 로비 (V15 기틀): 설정 화면의 MULTI PLAYER 버튼 → 방 만들기 / 코드로 참가 / 출격
 // 방장이 출격을 누르면 NET 'start' 가 모두에게 가고, 받은 쪽은 저마다 VERSUS 임무를 시작한다 (20-mission-versus).
@@ -15805,8 +16251,11 @@ setInterval(() => {
   setInterval(() => {
     if (front.style.display !== 'block' || !$id('mf-cover').classList.contains('active')) return;
     ro++;
-    $id('mf-ro').textContent =
-      `ALT ${String(7300 + Math.round(Math.sin(ro / 7) * 270)).padStart(5, '0')} M · SPD ${1000 + Math.round(Math.sin(ro / 5) * 55)} KM/H · HDG ${String((ro * 3) % 360).padStart(3, '0')}`;
+    // 표지 시네마틱 기체의 실제 고도 · 속도 · 방위 (89-title-cine) — 예전엔 아무 숫자나 흔들었다
+    const R0 = typeof TCINE !== 'undefined' && TCINE.on && TCINE.ro;
+    $id('mf-ro').textContent = R0
+      ? `ALT ${String(R0.alt).padStart(5, '0')} M · SPD ${R0.kmh} KM/H · HDG ${String(R0.hdg).padStart(3, '0')}`
+      : '';
   }, 120);
   // 비행 효과(진동 · 시야 · 항적) 단계 표시
   function sync() {
@@ -15922,290 +16371,6 @@ function exFit(s, sz, w) {
     } catch (e2) {}
     addEventListener('keydown', onKey, true);
     v.play().catch(() => {});
-  });
-})();
-// ===== 인트로 로고 · 로딩 문구 · 표지 사진 =====
-(() => {
-  const $id = i => document.getElementById(i),
-    intro = $id('mf-intro'),
-    logo = $id('mallot-logo-canvas'),
-    ko = () => $id('mf-lang-ko').classList.contains('selected');
-  // 로고: 스텐실 MALLOT + 빨·파·초 비행운 세 줄이 전투기 한 대로 모인다 (THREE LINES. ONE FLIGHT.)
-  const LOGO = { W: 540, H: 190, cols: ['#e8444b', '#4a8be0', '#5bc58a'] };
-  function logoGlyphs() {
-    // cut: 스텐실 틈 [왼쪽, 위, 폭, 높이]
-    // 글자 뼈대(선 중심) · 단위: 글자 높이 10 · 폭 7 기준. 획 끝은 bevel 이음으로 각지게 깎인다.
-    return {
-      M: {
-        w: 7,
-        p: [
-          [
-            [1.1, 8.9],
-            [1.1, 1.1],
-            [3.5, 5.2],
-            [5.9, 1.1],
-            [5.9, 8.9],
-          ],
-        ],
-      },
-      A: {
-        w: 7,
-        p: [
-          [
-            [1.1, 8.9],
-            [1.1, 3],
-            [3, 1.1],
-            [4, 1.1],
-            [5.9, 3],
-            [5.9, 8.9],
-          ],
-          [
-            [1.1, 5.7],
-            [5.9, 5.7],
-          ],
-        ],
-        cut: [[3.25, 0, 0.5, 2.2]],
-      },
-      L: {
-        w: 6.4,
-        p: [
-          [
-            [1.1, 0.6],
-            [1.1, 8.9],
-            [6.1, 8.9],
-          ],
-        ],
-      },
-      O: {
-        w: 7,
-        p: [
-          [
-            [2.7, 1.1],
-            [4.3, 1.1],
-            [5.9, 2.7],
-            [5.9, 7.3],
-            [4.3, 8.9],
-            [2.7, 8.9],
-            [1.1, 7.3],
-            [1.1, 2.7],
-            [2.7, 1.1],
-          ],
-        ],
-        cut: [
-          [3.25, 0, 0.5, 2.2],
-          [3.25, 7.8, 0.5, 2.2],
-        ],
-      },
-      T: {
-        w: 7,
-        p: [
-          [
-            [0.4, 1.1],
-            [6.6, 1.1],
-          ],
-          [
-            [3.5, 1.1],
-            [3.5, 9.4],
-          ],
-        ],
-        cut: [[1.9, 2.2, 3.2, 0.5]],
-      },
-    };
-  }
-  let logoWords = null;
-  function drawLogo(k) {
-    k = k == null ? 1 : k;
-    const c = logo,
-      x = c.getContext('2d'),
-      R = 2,
-      { W, H, cols } = LOGO;
-    if (c.width !== W * R) {
-      c.width = W * R;
-      c.height = H * R;
-    }
-    x.setTransform(R, 0, 0, R, 0, 0);
-    x.clearRect(0, 0, W, H);
-    const G = logoGlyphs(),
-      word = 'MALLOT',
-      u = 8.2,
-      gap = 1.5,
-      sk = -0.2,
-      stroke = 2.3;
-    const tw = [...word].reduce((t, ch, i) => t + G[ch].w + (i ? gap : 0), 0) * u,
-      x0 = (W - tw) / 2 + 9,
-      y0 = 16;
-    // 글자 한 겹 그리기 (기울임 + 스텐실 틈). dst 에 붙인다
-    const word1 = (dst, dx, dy, fill) => {
-      const off = document.createElement('canvas');
-      off.width = W * R;
-      off.height = H * R;
-      const o = off.getContext('2d');
-      o.setTransform(R, 0, 0, R, 0, 0);
-      o.translate(x0 + dx, y0 + dy);
-      o.transform(1, 0, sk, 1, -sk * 10 * u, 0);
-      o.lineWidth = stroke * u;
-      o.lineJoin = 'bevel';
-      o.lineCap = 'butt';
-      o.strokeStyle = fill;
-      let cx = 0;
-      for (const ch of word) {
-        const g = G[ch];
-        for (const path of g.p) {
-          o.beginPath();
-          path.forEach(([px, py], i) => (i ? o.lineTo(cx + px * u, py * u) : o.moveTo(cx + px * u, py * u)));
-          o.stroke();
-        }
-        o.globalCompositeOperation = 'destination-out';
-        (g.cut || []).forEach(([cx0, cy0, cw, ch2]) => o.fillRect(cx + cx0 * u, cy0 * u, cw * u, ch2 * u));
-        o.globalCompositeOperation = 'source-over';
-        cx += (g.w + gap) * u;
-      }
-      dst.save();
-      dst.setTransform(1, 0, 0, 1, 0, 0);
-      dst.drawImage(off, 0, 0);
-      dst.restore();
-    };
-    // 글자는 애니메이션 내내 같다: 처음 한 번만 세 겹을 캔버스에 구워 두고, 프레임마다 붙여 넣기만 한다
-    // (예전엔 프레임마다 2160×760 캔버스를 세 장씩 새로 만들어 인트로 2초 동안 폰이 버벅였다)
-    if (!logoWords) {
-      logoWords = document.createElement('canvas');
-      logoWords.width = W * R;
-      logoWords.height = H * R;
-      const w = logoWords.getContext('2d');
-      word1(w, 5, 5, '#02050d');
-      word1(w, 2.5, 2.5, '#40587d');
-      const gr = w.createLinearGradient(0, y0, 0, y0 + 10 * u); // 그라데이션 좌표는 칠하는 쪽(o) 변환 기준이라 원래 값 그대로
-      gr.addColorStop(0, '#fbfaf3');
-      gr.addColorStop(0.62, '#e9e6da');
-      gr.addColorStop(1, '#b9c5d3');
-      word1(w, 0, 0, gr);
-    }
-    x.save();
-    x.setTransform(1, 0, 0, 1, 0, 0);
-    x.drawImage(logoWords, 0, 0);
-    x.restore();
-    // 비행운: 왼쪽에서 흘러와 오른쪽 끝의 한 점(전투기)으로 모인다
-    const jx = W - 46,
-      jy = y0 + 10 * u + 16,
-      lx = 40,
-      base = jy + 30,
-      ang = -0.2;
-    const curve = (i, t) => {
-      const y1 = base + (i - 1) * 11,
-        ex = jx - 10,
-        ey = jy + (i - 1) * 1.6,
-        mx = lx + (ex - lx) * 0.62;
-      const P = (a, b, c2, d, t2) => {
-        const m = 1 - t2;
-        return m * m * m * a + 3 * m * m * t2 * b + 3 * m * t2 * t2 * c2 + t2 * t2 * t2 * d;
-      };
-      return [P(lx, mx - 60, mx, ex, t), P(y1, y1, y1 - 2, ey, t)];
-    };
-    const end = Math.max(0, Math.min(1, k));
-    cols.forEach((col, i) => {
-      const N = 80;
-      let prev = curve(i, 0);
-      for (let n = 1; n <= N * end; n++) {
-        const t = n / N,
-          pt = curve(i, t);
-        x.strokeStyle = col;
-        x.globalAlpha = Math.min(1, 0.08 + t * 1.25);
-        x.lineWidth = 1.6 + t * 2.4;
-        x.lineCap = 'round';
-        x.beginPath();
-        x.moveTo(prev[0], prev[1]);
-        x.lineTo(pt[0], pt[1]);
-        x.stroke();
-        prev = pt;
-      }
-    });
-    x.globalAlpha = 1;
-    // 전투기 실루엣 (비행운이 다 모인 뒤 나타난다)
-    if (end >= 0.98) {
-      const head = curve(1, 1);
-      x.save();
-      x.translate(head[0] + 12, head[1] - 2);
-      x.rotate(ang);
-      x.fillStyle = '#02050d';
-      x.globalAlpha = 0.7;
-      x.translate(1.5, 1.5);
-      const jet = () => {
-        x.beginPath();
-        x.moveTo(16, 0);
-        x.lineTo(5, -2);
-        x.lineTo(-3, -10);
-        x.lineTo(-6, -10);
-        x.lineTo(-3, -2.2);
-        x.lineTo(-9, -2);
-        x.lineTo(-12, -6);
-        x.lineTo(-13.5, -6);
-        x.lineTo(-12, 0);
-        x.lineTo(-13.5, 6);
-        x.lineTo(-12, 6);
-        x.lineTo(-9, 2);
-        x.lineTo(-3, 2.2);
-        x.lineTo(-6, 10);
-        x.lineTo(-3, 10);
-        x.lineTo(5, 2);
-        x.closePath();
-        x.fill();
-      };
-      jet();
-      x.globalAlpha = 1;
-      x.translate(-1.5, -1.5);
-      x.fillStyle = '#f4f1e6';
-      jet();
-      x.restore();
-    }
-    // 부제
-    const ty = H - 14;
-    x.fillStyle = '#8aa0bd';
-    x.font = '600 10px ui-monospace,Consolas,Menlo,monospace';
-    x.textBaseline = 'middle';
-    x.textAlign = 'left';
-    const t = 'THREE LINES. ONE FLIGHT.',
-      sp = 3.4,
-      ws = [...t].map(ch => x.measureText(ch).width),
-      tl = ws.reduce((a2, b2) => a2 + b2 + sp, 0) - sp;
-    let tx = (W - tl) / 2;
-    [...t].forEach((ch, i) => {
-      x.fillText(ch, tx, ty);
-      tx += ws[i] + sp;
-    });
-  }
-  (function animateLogo() {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      drawLogo(1);
-      return;
-    }
-    const T0 = performance.now() + 650,
-      D = 1300;
-    drawLogo(0);
-    const step = now => {
-      const k = Math.max(0, (now - T0) / D),
-        e = 1 - Math.pow(1 - Math.min(1, k), 3);
-      drawLogo(e);
-      if (k < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  })();
-  // 인트로 로딩 문구 (0.85초마다 다음 단계)
-  const M = {
-    ko: ['지휘 통신망 연결', '레이더·RWR 점검', '기체 데이터 로딩', '출격 준비 완료'],
-    en: ['ESTABLISHING SECURE LINK', 'RADAR / RWR CHECK', 'LOADING AIRFRAME DATA', 'SORTIE READY'],
-  };
-  let mi = 0;
-  setInterval(() => {
-    if (!intro.classList.contains('active')) {
-      mi = 0;
-      return;
-    }
-    $id('mf-load-t').textContent = M[ko() ? 'ko' : 'en'][Math.min(3, mi++)];
-  }, 850);
-  // 표지 사진: 파일 안의 asset-cover-jpeg (문서를 다 읽은 뒤에 읽을 수 있다)
-  const ph = $id('mf-cover').querySelector('.mf-cover-photo');
-  document.addEventListener('DOMContentLoaded', () => {
-    ph.src = 'data:image/jpeg;base64,' + readAsset('asset-cover-jpeg');
   });
 })();
 // ---------- 오프닝 (V13.1): 다큐멘터리식
@@ -17749,14 +17914,32 @@ init();
 const nikeInstalled = applyNikeHerculesVisuals();
 if (nikeInstalled === GROUND_THREATS.length) msg('NIKE HERCULES 3D 배치 완료 — ECHO-1 / ECHO-2 / ECHO-3', '#9ee6bb');
 showOv();
-document.addEventListener('DOMContentLoaded', () => {
-  loadUserMiG29GLB();
-  loadF16GLB(); // 적기 F-16C 실측 모델
-  loadLa17GLB(); // TR-1 표적 드론 La-17M 실측 모델
-  loadMissileGLBs(); // R-27R · R-73 실측 모델
-  loadSu33GLB(); // 갑판 주기 Su-33
-  applyCarrierGLB(); // 항모 실측 모델 (MiG 모델을 주기 기체로 쓰므로 뒤에)
-  cvBuildWeapons(); // 현측 포좌 · 수직발사기 (실측 모델 위에 얹는다)
+// 모델 읽기 (V15.0.0-alpha.3): 단계 사이마다 브라우저에 한 번 쉬게 해서(setTimeout 0) 인트로 로고 애니메이션과
+// 진행 막대가 그려지게 한다. 예전엔 한 번에 몰아 읽어 그동안 화면이 멈췄다. 순서 · 내용은 그대로다.
+// 다 읽으면 window.__stBoot = 'done' — 인트로가 표지로 넘어가는 조건이고, 검사 하네스도 이걸 기다린다.
+document.addEventListener('DOMContentLoaded', async () => {
+  const ko = !document.getElementById('mf-lang-en')?.classList.contains('selected'),
+    rest = () => new Promise(r => setTimeout(r, 0)),
+    steps = [
+      [ko ? '기체 모델 · MiG-29' : 'AIRFRAME · MiG-29', loadUserMiG29GLB],
+      [ko ? '적기 모델 · F-16C' : 'HOSTILE · F-16C', loadF16GLB], // 적기 F-16C 실측 모델
+      [ko ? '표적기 · La-17M' : 'TARGET DRONE · La-17M', loadLa17GLB], // TR-1 표적 드론
+      [ko ? '미사일 · R-27R · R-73' : 'MISSILES · R-27R · R-73', loadMissileGLBs],
+      [ko ? '함재기 · Su-33' : 'CARRIER FIGHTER · Su-33', loadSu33GLB],
+      [ko ? '항공모함 자랴' : 'CARRIER ZARYA', applyCarrierGLB], // MiG 모델을 주기 기체로 쓰므로 뒤에
+      [ko ? '함 방공 무장' : 'SHIP DEFENCES', cvBuildWeapons], // 실측 모델 위에 얹는다
+    ];
+  for (let i = 0; i < steps.length; i++) {
+    window.stBootProgress?.(steps[i][0], 0.1 + (0.75 * i) / steps.length);
+    await rest();
+    try {
+      steps[i][1]();
+    } catch (e) {
+      console.error('[STEEL TEMPEST] boot step failed', steps[i][0], e);
+    }
+  }
+  window.stBootProgress?.(ko ? '텍스처 준비' : 'PREPARING TEXTURES', 0.88);
+  window.__stBoot = 'done';
 });
 requestAnimationFrame(loop);
     </script>
@@ -115038,238 +115221,6 @@ OgAAACoAAAA8AAAAOwAAACoAAAApAAAAPAAAACoAAAA9AAAAPgAAAD8AAAA9AAAAPwAAAEAAAAA9AAAA
 AAA9AAAAQwAAAEQAAAA9AAAARAAAAEUAAAA9AAAARQAAAEYAAAA9AAAARgAAAEcAAAA9AAAARwAAAEgAAAA9AAAASAAAAEkAAAA9AAAASQAAAEoAAAA9AAAA
 SgAAAEsAAAA9AAAASwAAAEwAAAA9AAAATAAAAE0AAAA9AAAATQAAAE4AAAA9AAAATgAAAE8AAAA9AAAATwAAAFAAAAA9AAAAUAAAAFEAAAA9AAAAUQAAAD4A
 AAA=
-</script>
-<script type="text/plain" id="asset-cover-jpeg">
-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
 </script>
 <script type="text/plain" id="asset-teaser-mp4">
 AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAM9cbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAu5MAAQAAAQAAAAAAAAAAAAAAAAEAAAAA
