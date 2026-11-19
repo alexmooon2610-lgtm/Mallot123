@@ -199,7 +199,7 @@ function loop(n) {
     }
   }
   if (TCINE.on) titleCineUpdate(dt); // 표지 시네마틱: 위에서 정한 카메라를 덮어쓴다 (89-title-cine)
-  weatherUpdate(dt, S === 'play'); // 빗줄기 · 번개 · 빗소리 (02-weather, 보이는 것만)
+  weatherUpdate(dt, S === 'play', TCINE.on); // 빗줄기 · 번개 · 빗소리 (02-weather, 보이는 것만 — 표지에서도)
   nightLightsUpdate(dt); // 밤: 갑판 조명 · 광학 착함 장치 · 전투기 항법등 (44-night-lights)
   ckUpdate(dt);
   trailsUpdate();

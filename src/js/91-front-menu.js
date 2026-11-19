@@ -333,6 +333,7 @@
     if (b.dataset.wxTod) sel.tod = b.dataset.wxTod;
     if (b.dataset.wxKind) sel.kind = b.dataset.wxKind;
     wxSetPick(sel);
+    weatherMenu(); // 메뉴 뒤 장면도 바로 바뀐다 (다음에 표지로 나가면 그 날씨)
     renderBrief();
   });
   function renderLoadout(M) {

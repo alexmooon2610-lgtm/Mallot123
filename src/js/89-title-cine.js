@@ -13,6 +13,7 @@ function titleCine(on) {
   if (on === TCINE.on) return;
   TCINE.on = on;
   if (on) {
+    weatherMenu(); // 표지 배경 = 무한모드에서 마지막으로 고른 날씨 · 시간대 (02-weather, alpha.8)
     const ac = typeof pickedAc === 'function' ? pickedAc() : 'mig';
     if (!TCINE.jet || TCINE.ac !== ac) {
       if (TCINE.jet) scene.remove(TCINE.jet);

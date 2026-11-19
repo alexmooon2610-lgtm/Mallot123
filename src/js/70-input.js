@@ -303,6 +303,8 @@ function returnToMenu() {
   showOv();
 }
 function start() {
+  // 터치 기기: 가로 화면 · 키보드 확인 창 (71-input-gate). 확인되면 다시 start() 를 부른다
+  if (inputGateBlock(start)) return;
   // 선택 상태(activeMission)만 신뢰한다. 숨겨진 #ov 의 오래된 select 값에 영향받지 않게 한다.
   const env = activeMode === 'AIRBASE' ? 'AIRBASE' : 'CARRIER',
     m = MISSIONS[activeMission];
