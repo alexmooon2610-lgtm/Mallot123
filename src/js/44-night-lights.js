@@ -17,7 +17,7 @@
 //   등 · 배의 빨간 충돌방지등(깜빡임). 자리는 모델 꼭짓점에서 찾는다(모델 파일은 건드리지 않는다).
 // 전부 화면 크기가 고정된 빛 점(Points)이라 멀리서도 점으로 보이고, 실제 광원이 아니라서 셰이더 · 성능에 영향이 없다.
 // 판정과 무관하다 (rnd 를 쓰지 않음 · p.pos 는 읽기만).
-const NL = { deck: null, lens: null, ball: null, wave: null, ac: null, acRoot: null, t: 0, glow: null, on: false };
+const NL = { deck: null, lens: null, ball: null, wave: null, acs: new Map(), t: 0, glow: null };
 const NL_A = (7.5 * Math.PI) / 180,
   NL_S0 = V(-1.25, 0, 152.25), // 함미에서 착함축이 시작하는 점
   NL_D = V(-Math.sin(NL_A), 0, -Math.cos(NL_A)), // 착함축 방향 (함수 쪽)
@@ -212,12 +212,10 @@ function nlAircraftSpots(root) {
     bot: bot.add(V(0, -0.12, 0)),
   };
 }
+// 기체 하나에 등을 단다 → [항법등, 충돌방지등] (자리를 못 찾으면 빈 배열 — 다시 찾지 않게 기억)
 function nlAttachAircraft(root) {
-  if (NL.ac) NL.ac.forEach(o => o.parent && o.parent.remove(o));
-  NL.ac = null;
-  NL.acRoot = root;
-  const s = root && nlAircraftSpots(root);
-  if (!s) return;
+  const s = nlAircraftSpots(root);
+  if (!s) return [];
   const nav = nlPoints(
       [
         [s.red.x, s.red.y, s.red.z, 0xff2418],
@@ -235,7 +233,7 @@ function nlAttachAircraft(root) {
     );
   // 깊이 검사는 한다 (기체 뒤로 돌아간 날개 끝 빛은 가려진다). 빛 점은 표면에서 12 cm 밖에 둔다
   [nav, bcn].forEach(o => root.add(o));
-  NL.ac = [nav, bcn];
+  return [nav, bcn];
 }
 
 // ---------- 매 프레임 (90-main-loop, 보이는 것만)
@@ -258,13 +256,21 @@ function nightLightsUpdate(dt) {
   NL.lens.visible = NL.olsBody.visible = fade > 0; // 광학 착함 장치는 낮에도
   NL.deck.material.opacity = fade;
   NL.lens.material.opacity = Math.min(1, fade * 1.3);
-  // 전투기 등 (밤만): 출격마다 기체가 새로 만들어지므로 바뀌면 다시 단다
-  if (night && p && p.mesh !== NL.acRoot) nlAttachAircraft(p.mesh);
-  if (NL.ac) {
-    const ph = NL.t % 1.1;
-    NL.ac[0].visible = night;
-    NL.ac[1].visible = night && (ph < 0.1 || (ph > 0.55 && ph < 0.62)); // 충돌방지등: 1.1초에 두 번 번쩍
-  }
+  // 전투기 등 (밤만): 플레이어 기체 + 표지 시네마틱 기체(alpha.8). 출격마다 기체가 새로 만들어지므로 새 기체면 다시 단다
+  const want = [p && p.mesh, typeof TCINE !== 'undefined' && TCINE.on && TCINE.jet].filter(Boolean),
+    ph = NL.t % 1.1,
+    flash = ph < 0.1 || (ph > 0.55 && ph < 0.62); // 충돌방지등: 1.1초에 두 번 번쩍
+  if (night) want.forEach(r => NL.acs.has(r) || NL.acs.set(r, nlAttachAircraft(r)));
+  NL.acs.forEach((objs, r) => {
+    const on = night && want.includes(r);
+    if (!on && r !== (typeof TCINE !== 'undefined' && TCINE.jet)) {
+      objs.forEach(o => o.parent && o.parent.remove(o)); // 지나간 출격의 기체 — 버린다
+      NL.acs.delete(r);
+      return;
+    }
+    if (objs[0]) objs[0].visible = on;
+    if (objs[1]) objs[1].visible = on && flash;
+  });
   // 광학 착함 장치의 공: 플레이어가 착함축 뒤쪽 접근 구역에 있을 때만
   NL.ball.visible = false;
   NL.wave.visible = false;

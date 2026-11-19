@@ -51,6 +51,7 @@
     "50-ground-threats.js",
     "60-cockpit.js",
     "70-input.js",
+    "71-input-gate.js",
     "80-hud.js",
     "81-rear-mirror.js",
     "89-title-cine.js",

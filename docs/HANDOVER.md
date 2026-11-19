@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.7** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.8** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -99,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_7.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_8.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -190,6 +190,7 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 | `00-core.js` | 렌더러 · 씬 · 카메라 · 색 파이프라인 · 공용 헬퍼 · 기체/미사일 메시 팩토리 · 상수 `P`(무장 제원) |
 | `01-environment.js` | 하늘 돔 · **바다 셰이더** · 태양 · 안개 · **그림자** · 환경맵 |
 | `01-cloud-layer.js` | 고정 고도 구름층 (2600 m, 두께 520). `density()` · `opaqueAround()` · `mats`(날씨 색) |
+| `71-input-gate.js` | **기기 확인 안내** `IG` — 터치 기기에서 출격 전 가로 화면 · 키보드 확인 창, 비행 중 세로 → 멈춤 + 안내, 메뉴 안내 띠 (alpha.8) |
 | `44-night-lights.js` | **야간 조명 · 광학 착함 장치** `NL` — 갑판 조명 · 착함 유도등(낮에도) · 전투기 항법등/충돌방지등, 착함축 `nlApproach()` (alpha.6, 8절) |
 | `04-render-guard.js` | **렌더 점검 · 자동 복구** `RG` — 텍스처 GPU 업로드 확인 · 조명 확인 · 안전 단계 `GFX.level` 0~3 (alpha.5, 10-7절) |
 | `02-weather.js` | **날씨 · 시간대** `WX` — `weatherApply`(init) · `weatherUpdate`(매 프레임, 연출) · `weatherDrift`/`weatherTurb`(판정) (alpha.4) |
@@ -453,6 +454,18 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 - 전부 화면 크기 고정 빛 점(`Points`, 가산 혼합 · 톤매핑 · 안개 없음)이라 실제 광원이 아니다 → 셰이더 · 성능 영향 없음. 항모에서 멀면 흐려진다(10~30 km).
 - 밤 출격 때 안내 메시지: "야간 착함: 좌현 광학 착함 장치 — 주황 공이 초록 기준등과 같은 높이면 정상 강하각, 빨강이면 너무 낮다".
 
+### 표지 날씨 · 기기 확인 — V15.0.0-alpha.8
+- **표지 날씨 (사용자: "정식으로 굳혀")**: 표지 실시간 시네마틱은 무한모드에서 마지막으로 고른 날씨 · 시간대(`stWx`)로 그린다.
+  원래는 부팅 때 `init()` 이 기본 임무(LEGACY)로 장면을 준비하며 우연히 적용된 것 → 이제 `titleCine(true)` · 브리핑 선택 때 `weatherMenu()` 가 일부러 입힌다
+  (다른 임무 뒤 메뉴로 돌아와도). 표지 기체에도 밤 항법등 · 충돌방지등(`NL.acs` 가 플레이어 + 표지 기체), 폭풍이면 표지에서도 번개 · 천둥 · 빗소리(0.6배),
+  아래 띠에 `WX NIGHT STORM` 처럼 날씨 표시.
+- **기기 확인 안내 (사용자 요청 2026-11-19: 세로 화면 · 키보드 없음으로 못 하는 사용자들)** `71-input-gate.js`: **터치 조작이 아직 없다.**
+  터치가 주 입력인 기기(`maxTouchPoints > 0` 이고 `hover: none`)에서만 동작 — PC · 하네스는 그대로.
+  - 출격(`start()` 맨 앞 `inputGateBlock`): '출격 전 확인' 창 — 가로 화면 · 키보드 각각 확인/필요. 둘 다 되면 0.7초 뒤 저절로 출격, '그래도 출격' · '메뉴로'.
+    키보드는 표준 감지 방법이 없어 **실제 키 입력(isTrusted keydown)을 한 번 받으면** 있는 것으로 보고 기기에 기억(`stKbd`).
+  - 비행 중 세로로 돌리면 자동 일시정지 + '화면을 가로로 돌려 주세요' → 다시 가로면 자동으로 이어서.
+  - 메뉴 화면 위쪽 안내 띠: "이 게임은 가로 화면과 키보드가 필요해요 — 키보드를 연결했다면 아무 키나 눌러 주세요".
+
 ### 비행장 AIRBASE 29
 - 지형 높이장 + 활주로. 이륙 활주 → 상승, 최종 접근 → 착륙 포착 연출
 - 지상 SAM 위협 (`50-ground-threats.js`)
@@ -668,7 +681,7 @@ alpha.3 핫픽스(RENDER_SAFE) 뒤에도 사용자 기기에서 항모 · 기체
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_7.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_8.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -730,7 +743,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_7.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_8.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -794,6 +807,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V15.0.0-alpha.5 | **검은 물체 자동 점검 · 복구**(10-7절) — 텍스처 GPU 업로드 확인 · 다시 올리기, 조명 확인 · 안전 단계 1~3(기기에 기억), 로딩이 텍스처 전부 + 점검까지 기다림, 웹킷 · 저사양 캔버스 업로드, 도색 텍스처 지우던 것 · 환경맵 누수 수정. 판정 변화 없음 |
 | V15.0.0-alpha.6 | **야간 조명 · 광학 착함 장치** — 실측 착함축(좌현 7.5°) · 착함 유도등(초록 기준등 + 공, 낮에도) · 복행등 · 갑판 조명 · 드롭 라이트 · 장애물등, 전투기 항법등(빨강 · 초록 · 흰색) + 충돌방지등(밤만), HUD 착함 안내를 같은 축으로. 판정 변화 없음 |
 | V15.0.0-alpha.7 | 광학 착함 장치를 **실물 크기 · 실제 자리**로 (좌현 가장자리에 선 렌즈 상자 + 기준등 팔, 공 ±0.9 m, 뒤에서는 가려짐) — alpha.6 은 갑판 위 13 m 에 떠 있었다. 판정 변화 없음 |
+| V15.0.0-alpha.8 | **기기 확인 안내**(터치 기기: 출격 전 가로 화면 · 키보드 확인, 비행 중 세로 → 멈춤, 메뉴 안내 띠) · **표지 날씨 정식화**(무한모드 날씨 · 표지 기체 항법등 · 표지 번개 · 날씨 표시). 판정 변화 없음 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

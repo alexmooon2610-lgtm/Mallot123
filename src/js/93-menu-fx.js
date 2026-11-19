@@ -11,7 +11,8 @@
     // 표지 시네마틱 기체의 실제 고도 · 속도 · 방위 (89-title-cine) — 예전엔 아무 숫자나 흔들었다
     const R0 = typeof TCINE !== 'undefined' && TCINE.on && TCINE.ro;
     $id('mf-ro').textContent = R0
-      ? `ALT ${String(R0.alt).padStart(5, '0')} M · SPD ${R0.kmh} KM/H · HDG ${String(R0.hdg).padStart(3, '0')}`
+      ? `ALT ${String(R0.alt).padStart(5, '0')} M · SPD ${R0.kmh} KM/H · HDG ${String(R0.hdg).padStart(3, '0')}` +
+        (typeof WX !== 'undefined' ? ` · WX ${WX_TOD[WX.tod].en} ${WX_KIND[WX.kind].en}` : '') // 표지 날씨 (alpha.8)
       : '';
   }, 120);
   // 비행 효과(진동 · 시야 · 항적) 단계 표시

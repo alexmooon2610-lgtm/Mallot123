@@ -246,7 +246,14 @@ function wxAmbUpdate() {
 }
 
 // ---------- 매 프레임 (90-main-loop) — 보이는 것 · 소리만. 판정은 34-flight 의 weatherPhys
-function weatherUpdate(dt, playing) {
+// 표지 · 메뉴 (alpha.8 — 사용자: "정식으로 굳혀"): 무한모드에서 마지막으로 고른 날씨 · 시간대를 표지 배경에도 입힌다.
+// 판정 배율도 같이 바뀌지만 메뉴에서는 판정이 돌지 않고, 출격하면 init 이 그 임무의 날씨로 다시 입힌다.
+function weatherMenu() {
+  if (typeof S !== 'undefined' && S === 'play') return;
+  weatherApply(wxPick());
+}
+function weatherUpdate(dt, playing, title) {
+  const live = playing || title; // 표지 시네마틱에서도 번개 · 빗소리
   const K = WX_KIND[WX.kind];
   wxRt.t += dt;
   // 소나기: 45초 주기로 퍼붓다 그친다 (보이는 비만 — 판정 배율은 평균값으로 고정)
@@ -289,7 +296,7 @@ function weatherUpdate(dt, playing) {
     r.m.material.opacity = 0.18 + 0.32 * wxRt.show * (WX.tod === 'night' ? 0.6 : 1);
   } else r.lastCam.copy(cam.position);
   // 폭풍: 번개 (6~18초마다) — 화면 번쩍임 + 하늘빛 + 잠시 뒤 천둥
-  if (WX.kind === 'storm' && playing) {
+  if (WX.kind === 'storm' && live) {
     if ((wxRt.nextBolt -= dt) <= 0) {
       wxRt.nextBolt = 6 + vrnd() * 12;
       wxRt.bolt = 1;
@@ -331,7 +338,7 @@ function weatherUpdate(dt, playing) {
         wxRt.rainG = { gain: { value: 0 } };
       }
     }
-    const want = playing ? 0.22 * wxRt.show * (cameraMode === 'cockpit' ? 0.7 : 1) : 0;
+    const want = live ? 0.22 * wxRt.show * (title ? 0.6 : cameraMode === 'cockpit' ? 0.7 : 1) : 0;
     wxRt.rainG.gain.value += (want - wxRt.rainG.gain.value) * Math.min(1, dt * 3);
   }
 }
