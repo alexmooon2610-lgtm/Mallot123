@@ -204,7 +204,13 @@ const GFX = (() => {
     if (/[?&]gfxreset\b/.test(location.search)) localStorage.removeItem('stGfxSafe'); // 주소 끝에 ?gfxreset 으로 되돌린다
     level = Math.max(0, Math.min(3, +localStorage.getItem('stGfxSafe') || 0));
   } catch (e) {}
-  return { level, texFix: 0, checks: 0, lastFail: '' };
+  let ff = false;
+  try {
+    if (/[?&]gfxreset\b/.test(location.search)) localStorage.removeItem('stGfxFF');
+    ff = localStorage.getItem('stGfxFF') === '1';
+  } catch (e) {}
+  // ff: 이 기기의 GPU 가 gl_FrontFacing 을 틀리게 준다 → 양면 재질을 전부 한쪽 면으로 (04-render-guard, alpha.10)
+  return { level, ff, texFix: 0, checks: 0, lastFail: '' };
 })();
 function texCap(scale = 1) {
   // 폰은 갑판처럼 크게 쓰는 텍스처도 1536 을 넘기지 않는다 (GPU 메모리 여유가 적다)
@@ -324,7 +330,7 @@ R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
 function renderDiag() {
   const gl = R.getContext(),
     c = R.capabilities;
-  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : LOWGPU ? '저사양' : 'PC'}${WEBKIT ? '·웹킷' : ''}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'} · 안전 L${GFX.level}${GFX.texFix ? ' · 텍스처 복구 ' + GFX.texFix : ''} · 점검 ${GFX.checks}${GFX.lastFail ? ' (' + GFX.lastFail + ')' : ''}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실 ' + RDIAG.lost : ''}`;
+  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : LOWGPU ? '저사양' : 'PC'}${WEBKIT ? '·웹킷' : ''}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'} · 안전 L${GFX.level}${GFX.ff ? '·면' : ''}${GFX.texFix ? ' · 텍스처 복구 ' + GFX.texFix : ''} · 점검 ${GFX.checks}${GFX.lastFail ? ' (' + GFX.lastFail + ')' : ''}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실 ' + RDIAG.lost : ''}`;
 }
 function decodeTexQueued(bytes, mime, max, hi = false) {
   return new Promise((res, rej) => {

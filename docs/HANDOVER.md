@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.9** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.10** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -99,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_9.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_10.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -636,6 +636,20 @@ alpha.3 핫픽스(RENDER_SAFE) 뒤에도 사용자 기기에서 항모 · 기체
   **고장 주입**: ① 가로 1000 넘는 텍스처를 0 으로 올리는 기기 흉내 → 전부 찾아 다시 올림(폰 10회) · ② PBR 셰이더가 새까맣게 나오는 기기 흉내 →
   L1 → L2 → L3 로 올라가 항모 · 기체가 램버트로 정상 표시. 렌더 진단 줄에 `안전 L? · 텍스처 복구 ? · 점검 ?` 가 나온다.
 
+### 10-8. 검은 물체 — 원인 재현: gl_FrontFacing (V15.0.0-alpha.10, 사용자 보고 2026-11-20 "또 터졌다")
+**재현했다.** 모든 GLB 모델(항모 · MiG · Su-33 · F-16 · La-17 · 미사일)의 재질이 glTF `doubleSided` 다. three r128 양면 셰이더는
+`faceDirection = gl_FrontFacing ? 1 : -1` 로 법선을 뒤집는데, **일부 모바일 GPU 드라이버는 gl_FrontFacing 을 틀리게 준다**(알려진 버그).
+이 값을 늘 false 로 바꾸는 고장 주입(`ShaderChunk.normal_fragment_begin`)을 넣었더니 alpha.9 에서 **항모 갑판이 새까맣고 기체가 어둡게** —
+사용자가 말한 그대로 나왔다. 바다 · 하늘(셰이더 재질)은 멀쩡한 것도 같다. alpha.5 렌더 점검은 이걸 못 잡았다(완전한 검정이 아니라 '어두움' — 하늘빛 · 환경맵이 조금 남음).
+- **고침 1 — 모델을 불러올 때 한쪽 면으로** (`singleSideBake`, `10-model-mig29-glb.js`, 모든 `parseSimpleGLB` 모델): 삼각형 감기 방향을 꼭짓점 법선 쪽으로 맞추고,
+  닫히지 않은 메시(한 삼각형에만 붙은 변이 있음 — 위치로 판단해 UV 이음매는 무시)는 법선을 뒤집은 뒷면을 한 벌 붙인 뒤 재질을 `FrontSide` 로.
+  → 셰이더가 gl_FrontFacing 을 아예 쓰지 않는다. 화면은 같다(닫힌 메시의 안쪽 면은 원래 안 보임). 삼각형: MiG +5.6% · Su-33 +3.6% · 항모 +12% · F-16 +5.8%.
+  고장 주입 상태에서도 항모 · 기체가 정상으로 보인다.
+- **고침 2 — 렌더 점검에 양면 시험** (`rgCheckLight` 1열): 같은 회색 판을 한쪽 면 / 양면 재질로 그려 양면 쪽이 70% 아래면 이 GPU 의 gl_FrontFacing 이 틀린 것 →
+  `GFX.ff` (기기에 기억 `stGfxFF`, `?gfxreset` 으로 지움) → 코드로 만든 양면 재질(구름층 · 비행장 지형 등 조명 재질)도 전부 한쪽 면 + 뒷면 형상으로 (`rgSingleSideAll`).
+  안전 단계는 올리지 않는다. 진단 줄에 `안전 L0·면`. 오탐 없음(낮 · 밤 폭풍 폰 흉내).
+- 판정 변화 없음 — 항모 갑판 판정(`deckEdges` · `rampY`)도 그대로(25개 시나리오 동일).
+
 ## 11. 설계만 하고 안 만든 것
 
 ### 11-1. 보급 관리 시스템
@@ -691,7 +705,7 @@ alpha.3 핫픽스(RENDER_SAFE) 뒤에도 사용자 기기에서 항모 · 기체
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_9.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_10.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -753,7 +767,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_9.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_10.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -819,6 +833,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V15.0.0-alpha.7 | 광학 착함 장치를 **실물 크기 · 실제 자리**로 (좌현 가장자리에 선 렌즈 상자 + 기준등 팔, 공 ±0.9 m, 뒤에서는 가려짐) — alpha.6 은 갑판 위 13 m 에 떠 있었다. 판정 변화 없음 |
 | V15.0.0-alpha.8 | **기기 확인 안내**(터치 기기: 출격 전 가로 화면 · 키보드 확인, 비행 중 세로 → 멈춤, 메뉴 안내 띠) · **표지 날씨 정식화**(무한모드 날씨 · 표지 기체 항법등 · 표지 번개 · 날씨 표시). 판정 변화 없음 |
 | V15.0.0-alpha.9 | **뉴 MiG-29 = MiG-29K 9.41 실측 모델**(청색 952, 도색 내장 WEBP) — 테일훅(착함 접근 때 내림) · 갑판 주기기 날개 접힘 · 애프터버너 자리 맞춤. 모델만 교체, 판정 변화 없음 |
+| V15.0.0-alpha.10 | **검은 물체 원인 재현 · 수정** — 일부 모바일 GPU 의 gl_FrontFacing 버그. GLB 양면 재질을 불러올 때 한쪽 면 + 뒷면 형상으로 굽고, 렌더 점검이 이 버그를 찾으면 나머지 양면 재질도 고친다 (10-8절). 판정 변화 없음 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

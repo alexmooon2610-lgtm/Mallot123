@@ -39,9 +39,18 @@ function rgProbe() {
   scene.add(g);
   const rt = new T.WebGLRenderTarget(64, 16, { depthBuffer: false, stencilBuffer: false });
   rt.texture.encoding = R.outputEncoding; // 화면과 같은 셰이더 (거울에서 배운 것 — 다르면 셰이더를 한 벌 더 굽는다)
-  const ctrl = new T.MeshStandardMaterial({ color: 0xb4b4b4, roughness: 0.7, metalness: 0.1 });
+  const ctrl = new T.MeshStandardMaterial({ color: 0xb4b4b4, roughness: 0.7, metalness: 0.1 }),
+    ctrl2 = new T.MeshStandardMaterial({ color: 0xb4b4b4, roughness: 0.7, metalness: 0.1, side: T.DoubleSide }); // 양면 시험용
   cells.forEach(c => (c.lit.material = ctrl));
-  return (RG.P = { g, rt, cells, ctrl, cam: new T.OrthographicCamera(-4, 4, 1, -1, 0.05, 30), px: new Uint8Array(64 * 16 * 4) });
+  return (RG.P = {
+    g,
+    rt,
+    cells,
+    ctrl,
+    ctrl2,
+    cam: new T.OrthographicCamera(-4, 4, 1, -1, 0.05, 30),
+    px: new Uint8Array(64 * 16 * 4),
+  });
 }
 // 점검 판을 한 번 그려 칸별 밝기를 읽는다. 칸 (i 열, r 줄: 0 아래 = 기준(조명 없음), 1 위 = 조명)
 function rgShot() {
@@ -151,29 +160,37 @@ function rgCheckTextures(all) {
 }
 // 지금 쓰이는 재질 (램버트로 바꿨으면 바꾼 쪽)
 const rgLive = m => LAMB.get(m) || m;
-// 2) 조명 확인 — 0열: 회색 표준 재질, 1~3열: 실제 도색 재질 (큰 텍스처부터)
+// 2) 조명 확인 — 0열: 회색 표준 재질(한쪽 면), 1열: 같은 재질 양면, 2~3열: 실제 도색 재질 (큰 텍스처부터)
+//    0열과 1열은 같은 판을 앞에서 보므로 밝기가 같아야 한다. 양면 쪽만 어두우면 GPU 의 gl_FrontFacing 이 틀린 것 (alpha.10)
 function rgCheckLight() {
   const P = rgProbe(),
     real = GTEX.filter(e => e.mats.length && !e.dead)
       .sort((a, b) => (b.tex.image?.width || 0) * (b.tex.image?.height || 0) - (a.tex.image?.width || 0) * (a.tex.image?.height || 0))
-      .slice(0, 3);
-  const ctrl = GFX.level >= 3 ? rgLambert(P.ctrl) : P.ctrl;
+      .slice(0, 2);
+  const ctrl = GFX.level >= 3 ? rgLambert(P.ctrl) : P.ctrl,
+    ctrl2 = GFX.ff ? null : GFX.level >= 3 ? rgLambert(P.ctrl2) : P.ctrl2;
   P.cells.forEach((c, i) => {
-    const e = real[i - 1],
-      m = i === 0 ? ctrl : e && rgLive(e.mats[0]);
+    const e = real[i - 2],
+      m = i === 0 ? ctrl : i === 1 ? ctrl2 : e && rgLive(e.mats[0]);
     c.lit.visible = c.ref.visible = !!m;
     if (!m) return;
     c.lit.material = m;
-    rgSetRef(c, i === 0 ? null : m.map, m.color);
+    rgSetRef(c, i < 2 ? null : m.map, m.color);
   });
   const cell = rgShot();
   if (!cell) return null;
-  const out = { dark: [], tex: [] };
+  const out = { dark: [], tex: [], ff: false };
+  // 양면 시험: 같은 판인데 양면 쪽이 한쪽 면보다 눈에 띄게 어둡다
+  if (P.cells[1].lit.visible) {
+    const a = cell(0, 1).avg,
+      b = cell(1, 1).avg;
+    if (a > 12 && b < 0.7 * a) out.ff = true;
+  }
   P.cells.forEach((c, i) => {
-    if (!c.lit.visible) return;
+    if (!c.lit.visible || i === 1) return;
     const lit = cell(i, 1),
       ref = cell(i, 0),
-      e = real[i - 1];
+      e = real[i - 2];
     if (e && ref.max <= 3 && rgCpu(e) >= 20) out.tex.push(e); // 기준부터 검다 = 텍스처 문제
     else if (ref.max >= 20 && lit.max <= 3) out.dark.push(i === 0 ? 'ctrl' : e.tex.image?.width + 'px');
     // 맑은 낮에 해를 정면으로 받는 회색 판이 기준의 30% 도 안 되면 그림자 판정이 깨진 것 (전부 그늘)
@@ -186,6 +203,25 @@ function rgCheckLight() {
 
 // 3) 램버트로 바꾸기 (안전 단계 3) — 같은 재질은 같은 램버트 하나로
 const LAMB = new WeakMap();
+// 양면 재질을 한쪽 면으로 (gl_FrontFacing 이 틀린 GPU): 조명을 쓰는 재질만. 형상은 뒷면을 한 벌 붙여 양쪽에서 보이게
+function rgSingleSide(root) {
+  if (!root || !root.traverse) return;
+  root.traverse(o => {
+    if (!o.isMesh || !o.material) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || m.side !== T.DoubleSide || m.isMeshBasicMaterial || m.isShaderMaterial) continue;
+      if (o.geometry && !o.geometry.userData.singleSided && o.geometry.attributes.normal) {
+        singleSideBake(o.geometry);
+        o.geometry.userData.singleSided = o.geometry.userData.singleSided || 1;
+      }
+      m.side = T.FrontSide;
+      m.needsUpdate = true;
+    }
+  });
+}
+function rgSingleSideAll() {
+  rgRoots().forEach(rgSingleSide);
+}
 function rgLambert(m) {
   if (!m || !m.isMeshStandardMaterial) return m;
   let l = LAMB.get(m);
@@ -198,7 +234,7 @@ function rgLambert(m) {
     emissiveIntensity: m.emissiveIntensity,
     transparent: m.transparent,
     opacity: m.opacity,
-    side: m.side,
+    side: GFX.ff && m.side === T.DoubleSide ? T.FrontSide : m.side,
     alphaTest: m.alphaTest,
     vertexColors: m.vertexColors,
     depthWrite: m.depthWrite,
@@ -222,7 +258,7 @@ function rgLambertize(root) {
     o.material = Array.isArray(o.material) ? o.material.map(rgLambert) : rgLambert(o.material);
   });
 }
-function rgLambertizeAll() {
+function rgRoots() {
   const roots = [scene];
   [
     () => cockpitScene,
@@ -239,7 +275,10 @@ function rgLambertizeAll() {
       roots.push(f());
     } catch (e) {}
   });
-  roots.forEach(rgLambertize);
+  return roots;
+}
+function rgLambertizeAll() {
+  rgRoots().forEach(rgLambertize);
   // 텍스처가 나중에 붙는 재질도 따라가게: 원래 재질의 map 이 바뀌면 램버트에도 옮긴다 (점검 때마다)
   GTEX.forEach(e =>
     e.mats.forEach(m => {
@@ -283,12 +322,24 @@ function rgCheck() {
   if (rgOff()) return true;
   GFX.checks++;
   if (GFX.level >= 3) rgLambertizeAll();
+  if (GFX.ff) rgSingleSideAll();
   const tb = rgCheckTextures(RG.fullTex);
   RG.fullTex = false;
   const L = rgCheckLight();
   if (!L) return false; // 컨텍스트를 잃었다 — 복원 뒤 다시
   L.tex.forEach(e => !e.dead && rgFixTex(e));
   let again = tb > 0 || L.tex.length > 0;
+  if (L.ff && !GFX.ff) {
+    // gl_FrontFacing 이 틀린 GPU: 단계를 올리지 않고 양면 재질만 고친다 (모델 GLB 는 불러올 때 이미 한쪽 면)
+    GFX.ff = true;
+    try {
+      localStorage.setItem('stGfxFF', '1');
+    } catch (e) {}
+    rgSingleSideAll();
+    console.warn('[STEEL TEMPEST] render guard: gl_FrontFacing broken — double-sided materials made single-sided');
+    if (typeof S !== 'undefined' && S === 'play') msg('그래픽 자동 복구 — 양면 재질 문제를 찾아 고쳤어요', '#9cf');
+    again = true;
+  }
   if (L.dark.length) {
     // 한 번 검게 읽힌 것으로는 올리지 않는다 — 0.25초 뒤 한 번 더 검으면 그때 안전 단계를 올린다 (순간적인 읽기 실패 대비)
     if (RG.suspect === 'L' + GFX.level) {
@@ -330,6 +381,7 @@ function renderGuardTick(dt) {
 // 출격할 때 (20-game-init init 끝): 1초 뒤 점검 — 날씨 · 기체가 바뀐 뒤
 function renderGuardSortie() {
   if (GFX.level >= 3) rgLambertizeAll();
+  if (GFX.ff) rgSingleSideAll();
   RG.due = 1;
 }
 // 렌더 점검 끝났나 (인트로가 기다린다)
