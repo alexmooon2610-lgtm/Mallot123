@@ -96,6 +96,83 @@ function applyLoadedMiG29ToPlayer() {
   disposePlayerModel(previous);
   console.info('[STEEL TEMPEST] MiG-29 GLB applied', mig29GLBTemplate);
 }
+// ---------- 양면 → 한쪽 면 굽기 (V15.0.0-alpha.10, 검은 물체 대책)
+// 양면 재질(glTF doubleSided)은 three 셰이더가 gl_FrontFacing 으로 뒷면 법선을 뒤집어 비춘다. 일부 모바일 GPU 는
+// 이 값을 틀리게 줘서(알려진 드라이버 버그) 앞면이 뒷면 취급을 받아 새까맣게 나온다 — PC · SwiftShader 에서는 안 보인다.
+// 그래서 불러올 때 형상을 고쳐 한쪽 면 재질로도 똑같이 보이게 한다:
+//   1) 삼각형 감기 방향을 꼭짓점 법선(바깥) 쪽으로 맞춘다 (법선과 반대로 감긴 삼각형은 뒤집는다)
+//   2) 닫히지 않은 메시(가장자리가 한 삼각형에만 붙은 변이 있음 — 얇은 판 등)는 뒷면을 법선을 뒤집어 한 벌 더 붙인다
+// 닫힌 메시는 안쪽 면이 원래 안 보이므로 화면은 같다. 셰이더에서 gl_FrontFacing 을 쓰지 않게 된다.
+function singleSideBake(geo) {
+  const P = geo.attributes.position,
+    Nn = geo.attributes.normal,
+    UV = geo.attributes.uv;
+  if (!P || !Nn) return;
+  let idx = geo.index ? Array.from(geo.index.array) : [...Array(P.count).keys()];
+  const p = P.array,
+    n = Nn.array;
+  // 1) 감기 방향 맞추기
+  for (let t = 0; t < idx.length; t += 3) {
+    const a = idx[t] * 3,
+      b = idx[t + 1] * 3,
+      c = idx[t + 2] * 3;
+    const ux = p[b] - p[a],
+      uy = p[b + 1] - p[a + 1],
+      uz = p[b + 2] - p[a + 2],
+      vx = p[c] - p[a],
+      vy = p[c + 1] - p[a + 1],
+      vz = p[c + 2] - p[a + 2];
+    const gx = uy * vz - uz * vy,
+      gy = uz * vx - ux * vz,
+      gz = ux * vy - uy * vx;
+    if (gx * (n[a] + n[b] + n[c]) + gy * (n[a + 1] + n[b + 1] + n[c + 1]) + gz * (n[a + 2] + n[b + 2] + n[c + 2]) < 0) {
+      const s = idx[t + 1];
+      idx[t + 1] = idx[t + 2];
+      idx[t + 2] = s;
+    }
+  }
+  // 2) 열린 메시인가: 위치가 같은 꼭짓점을 하나로 보고(UV 이음매 무시) 한 삼각형에만 붙은 변을 센다
+  const key = i => Math.round(p[i * 3] * 1e4) + ',' + Math.round(p[i * 3 + 1] * 1e4) + ',' + Math.round(p[i * 3 + 2] * 1e4),
+    vid = new Map(),
+    id = i => {
+      const k = key(i);
+      let v = vid.get(k);
+      if (v === undefined) vid.set(k, (v = vid.size));
+      return v;
+    },
+    edges = new Map();
+  for (let t = 0; t < idx.length; t += 3)
+    for (let e = 0; e < 3; e++) {
+      const i = id(idx[t + e]),
+        j = id(idx[t + ((e + 1) % 3)]),
+        k = i < j ? i + '_' + j : j + '_' + i;
+      edges.set(k, (edges.get(k) || 0) + 1);
+    }
+  let open = 0;
+  edges.forEach(c => c === 1 && open++);
+  if (open > Math.max(4, edges.size * 0.002)) {
+    // 뒷면 한 벌: 꼭짓점을 복사해 법선을 뒤집고 감기 방향을 반대로
+    const vc = P.count,
+      p2 = new Float32Array(vc * 6),
+      n2 = new Float32Array(vc * 6);
+    p2.set(p);
+    p2.set(p, vc * 3);
+    n2.set(n);
+    for (let i = 0; i < vc * 3; i++) n2[vc * 3 + i] = -n[i];
+    geo.setAttribute('position', new T.BufferAttribute(p2, 3));
+    geo.setAttribute('normal', new T.BufferAttribute(n2, 3));
+    if (UV) {
+      const u2 = new Float32Array(vc * 4);
+      u2.set(UV.array);
+      u2.set(UV.array, vc * 2);
+      geo.setAttribute('uv', new T.BufferAttribute(u2, 2));
+    }
+    const m = idx.length;
+    for (let t = 0; t < m; t += 3) idx.push(idx[t] + vc, idx[t + 2] + vc, idx[t + 1] + vc);
+  }
+  geo.setIndex(new T.BufferAttribute(new Uint32Array(idx), 1));
+  geo.userData.singleSided = open;
+}
 // 단순 GLB 읽기: 이 모델이 쓰는 기능(메시 · 인덱스 · 위치/법선/UV · 기본 재질)만 읽는다.
 // CDN 의 GLTFLoader 없이도 모델이 뜨도록 게임 안에서 직접 읽는다.
 function parseSimpleGLB(buf, texScale = 1, texHi = false) {
@@ -149,7 +226,9 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
       color: new T.Color(c[0], c[1], c[2]),
       metalness: pb.metallicFactor ?? 1,
       roughness: pb.roughnessFactor ?? 1,
-      side: m.doubleSided ? T.DoubleSide : T.FrontSide,
+      // 양면 재질도 한쪽 면으로 그린다 (alpha.10): 양면 셰이더는 gl_FrontFacing 으로 뒷면 법선을 뒤집는데,
+      // 일부 모바일 GPU 는 이 값이 틀려 앞면 조명이 뒤집혀 새까맣게 나온다. 대신 형상을 미리 고친다 (singleSideBake).
+      side: T.FrontSide,
       transparent: m.alphaMode === 'BLEND',
       opacity: c[3],
     });
@@ -184,6 +263,8 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
         }
       if (pr.indices != null) geo.setIndex(new T.BufferAttribute(acc(pr.indices).arr, 1));
       if (at.NORMAL == null) geo.computeVertexNormals();
+      const gm = pr.material != null && g.materials[pr.material];
+      if (gm && gm.doubleSided) singleSideBake(geo);
       const mesh = new T.Mesh(geo, pr.material != null ? mats[pr.material] : new T.MeshStandardMaterial());
       mesh.name = g.meshes[mi].name || '';
       return mesh;
