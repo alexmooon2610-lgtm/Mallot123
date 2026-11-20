@@ -87,6 +87,7 @@ function hmdDir() {
 // 탄은 판정용 위치(b.p)만 가진다. 예광탄(tracer 발에 한 발)만 3D 막대(b.m)를 붙여 화면에 그린다.
 // 무광탄은 메시 없이 똑같이 날아가 똑같이 맞는다 — 30발/초를 전부 그리면 메시가 너무 많다.
 function bullet(a, f) {
+  if (a === p) pilotEvent('gun', a);
   const d = f
       .clone()
       .add(V(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(a === p ? 0.008 : 0.02))

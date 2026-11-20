@@ -5,6 +5,7 @@
     python3 tools/harness/run.py diff <a.json> <b.json>                      # 프레임 단위 비교
     python3 tools/harness/run.py fxcheck <out.json>                        # 비행 효과 · 시점이 판정을 바꾸는지
     python3 tools/harness/run.py weapons <game.html>                         # 무장 단위 시험 (미사일 유도 · 기총 · 대응수단)
+    python3 tools/harness/run.py evo <game.html>                             # 진화 난도 대응 수법 단위 시험 (V16)
     python3 tools/harness/run.py list
 
 가짜 시계(det.js)로 프레임을 직접 돌리고, 매 프레임 판정 상태(probe.js)를 해시한다.
@@ -68,6 +69,36 @@ setSt('fly'); ops.safe = 0;
 es.forEach(e => scene.remove(e.mesh)); es = []; wt = 1e9;
 p.pos.set(0, 1000, 0); p.q.setFromEuler(new T.Euler(Math.PI / 2, 0, 0)); p.vd.set(0, 1, 0);
 p.speed = 250; p.thr = 1; p.ab = 0; p.gearDown = false; p.flap = 0;
+"""
+
+# 진화 난도 시험용 습관 기록 (V16)
+EVO_A_JSON = '{"v":1,"sorties":5,"combat":600,"ir":10,"sarh":2,"sarhR":14000,"gun":20,"turnL":60,"turnR":10,"above":80,"below":10,"cobra":3,"traps":3,"flares":5,"flareD":20000}'
+EVO_B_JSON = '{"v":1,"sorties":5,"combat":600,"ir":2,"sarh":10,"sarhR":110000,"gun":5,"turnL":10,"turnR":10,"above":10,"below":10,"cobra":0,"traps":0,"flares":5,"flareD":20000}'
+# 공중에서 바로 웨이브 1 을 4~6 km 앞에 불러 교전 (진화 수법이 실제로 쓰이는지)
+EVO_FIGHT = """
+setSt('fly'); ops.safe = 0;
+es.forEach(e => scene.remove(e.mesh)); es = []; wt = 1e9;
+p.pos.set(30000, 3500, 30000); p.q.setFromEuler(new T.Euler(0, 0, 0)); p.vd.copy(p.fwd());
+p.speed = 230; p.thr = 0.8; p.ab = 0; p.gearDown = false; p.flap = 0; p.hp = 40; // 시험: 오래 버티며 적 기동을 본다
+spawnWave();
+es.forEach((e, i) => { e.pos.copy(p.pos).add(V(-1500 + i * 3000, 300 * i, -5000 - i * 800)); e.q.setFromEuler(new T.Euler(0, Math.PI, 0)); e.vd.copy(e.fwd()); });
+window.__evoLog = { flares: 0, chaff: 0, pHits: 0, eKills: 0, dAlt: 0, n: 0 };
+const _fl = flare, _ch = chaff, _kl = kill;
+flare = a => (a !== p && window.__evoLog.flares++, _fl(a));
+chaff = a => (a !== p && window.__evoLog.chaff++, _ch(a));
+kill = a => (a === p ? window.__evoLog.pHits++ : (window.__evoLog.eKills++, _kl(a))); // 시험: 플레이어는 죽지 않는다
+const _ai = aiUpdate;
+aiUpdate = (dt, e) => { _ai(dt, e); window.__evoLog.dAlt += e.pos.y - p.pos.y; window.__evoLog.n++; };
+window.__extra = () => ({ diff: DIFF_KEY, tactics: Object.keys(EVO.c), wave: wv, es: es.length, kills, log: Object.assign({}, window.__evoLog, { dAlt: Math.round(window.__evoLog.dAlt / Math.max(1, window.__evoLog.n)) }), pilot: { ir: +PILOT.ir.toFixed(2), sarh: +PILOT.sarh.toFixed(2), turnL: +PILOT.turnL.toFixed(2), turnR: +PILOT.turnR.toFixed(2), combat: +PILOT.combat.toFixed(1) } });
+"""
+EVO_AMBUSH = """
+setSt('fly'); ops.safe = 0;
+es.forEach(e => scene.remove(e.mesh)); es = []; wt = 20;
+p.pos.copy(CV.localToWorld(V(0, 120, 1500)));
+p.q.copy(CV.quaternion); p.vd.set(0, -0.06, -1).applyQuaternion(CV.quaternion).normalize();
+p.speed = 140; p.thr = 0.4; p.ab = 0; p.gearDown = true; p.flap = 1;
+window.__extra = () => ({ tactics: Object.keys(EVO.c), wave: wv, es: es.length, wt: +wt.toFixed(2),
+  spawnDist: es.map(e => Math.round(e.pos.distanceTo(CV.position))), alt: es.map(e => Math.round(e.pos.y)) });
 """
 
 # 항모에서 25 km 떨어진 곳, 앞 5 km 에 F-16 두 대를 나란히 (같은 방향으로 날아가게) 둔다 — 다중 락 시험용
@@ -140,6 +171,24 @@ SCENARIOS = {
     'wx-storm': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1, {'stWx': '{"tod":"night","kind":"storm"}'}),
     'wx-rain-trap': ('CARRIER', 'LEGACY', 900, {}, 1, {'stWx': '{"tod":"dusk","kind":"rain"}'},
                      TRAP.format(z=120, spd=140, sink=0.04) + 'p.gun = 10; p.fl = 3; p.am.SARH = 0;'),
+    # 난도 · 진화 (V16): 같은 조작을 쉬움 / 어려움으로. 진화는 습관 기록을 미리 넣어 수법을 풀어 둔다
+    'diff-easy': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1, {'stDiff': 'easy'}),
+    'diff-hard': ('CARRIER', 'LEGACY', 3000, keys(*CARRIER_LAUNCH, *COMBAT), 1, {'stDiff': 'hard'}),
+    # 진화 A: R-73 위주 · 왼쪽 선회 · 위에서 공격 · 코브라 · 착함 습관 → 플레어 조기 · 선회 끊기 · 래그 · 고도 · 매복
+    'evo-a': ('CARRIER', 'LEGACY', 2400, keys(tap('KeyH', 60), tap('Digit2', 80), tap('Space', 400), hold('ArrowLeft', 500, 560),
+                                             hold('ArrowUp', 560, 900), tap('Space', 1200), hold('KeyG', 1400, 1500)), 1,
+              {'stDiff': 'evolve', 'stPilot': EVO_A_JSON}, EVO_FIGHT),
+    # 비교: 같은 교전을 '어려움'(수법 없음)으로
+    'evo-a-hard': ('CARRIER', 'LEGACY', 2400, keys(tap('KeyH', 60), tap('Digit2', 80), tap('Space', 400), hold('ArrowLeft', 500, 560),
+                                                  hold('ArrowUp', 560, 900), tap('Space', 1200), hold('KeyG', 1400, 1500)), 1,
+                   {'stDiff': 'hard', 'stPilot': EVO_A_JSON}, EVO_FIGHT),
+    'evo-b-hard': ('CARRIER', 'LEGACY', 2400, keys(tap('KeyT', 60), tap('Tab', 120), tap('KeyY', 160), tap('Space', 400), tap('Space', 900)), 1,
+                   {'stDiff': 'hard', 'stPilot': EVO_B_JSON}, EVO_FIGHT),
+    # 진화 B: R-27R 원거리 습관 → 노칭(빔 기동 · 강하 · 채프)
+    'evo-b': ('CARRIER', 'LEGACY', 2400, keys(tap('KeyT', 60), tap('Tab', 120), tap('KeyY', 160), tap('Space', 400), tap('Space', 900)), 1,
+              {'stDiff': 'evolve', 'stPilot': EVO_B_JSON}, EVO_FIGHT),
+    # 진화 A + 착함 매복: 웨이브를 기다리며 착함 접근(기어 내림)하면 다음 웨이브가 함미 쪽 접근로에 바로 나온다
+    'evo-ambush': ('CARRIER', 'LEGACY', 600, {}, 1, {'stDiff': 'evolve', 'stPilot': EVO_A_JSON}, EVO_AMBUSH),
     'carrier-s2': ('CARRIER', 'LEGACY', 1200, keys(*CARRIER_LAUNCH), 2),  # 시드 2: 판정이 시드를 따르는지 확인용
     'idle': ('CARRIER', 'LEGACY', 1800, {}, 1),                           # 아무 조작 없이 두기 (갑판 대기)
     'airbase': ('AIRBASE', None, 2400, keys(hold('KeyW', 0, 120), tap('ShiftLeft', 130),
@@ -183,6 +232,28 @@ async def open_game(browser, html, seed, storage=None, errs=None):
 READY = """() => [typeof mig29GLBTemplate !== 'undefined' && !!mig29GLBTemplate, !!f16GLBTemplate, !!la17GLBTemplate,
                 !!su33GLBTemplate, !!(mslGLBTemplate.SARH && mslGLBTemplate.IR),
                 window.__stBoot !== 'loading']"""  # alpha.3+: 모델 읽기가 단계별로 쉬어 가므로 항모까지 다 읽혔는지(__stBoot) 본다
+
+
+async def evo(html):
+    """진화 난도 대응 수법 단위 시험 (V16, evo.js): 같은 상황을 어려움 / 진화(그 수법만)로 돌려 비교한다"""
+    from playwright.async_api import async_playwright
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(executable_path=CHROME, args=[
+            '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--mute-audio'])
+        errs = []
+        page = await open_game(browser, html, 1, errs=errs)
+        await page.add_script_tag(path=os.path.join(HERE, 'evo.js'))
+        bad = 0
+        for name in await page.evaluate('() => Object.keys(__evo.T0)'):
+            h = await page.evaluate(f'() => __evo.T0.{name}(null)')
+            v = await page.evaluate(f'() => __evo.T0.{name}("{name}")')
+            ok = await page.evaluate(f'([h, v]) => __evo.EXPECT.{name}(h, v)', [h, v])
+            bad += not ok
+            print(f"  {'OK ' if ok else 'BAD'} {name:6s} 어려움 {json.dumps(h, ensure_ascii=False)}  →  진화 {json.dumps(v, ensure_ascii=False)}")
+        if errs:
+            print('ERRORS', errs[:3])
+        await browser.close()
+        return 1 if bad or errs else 0
 
 
 async def weapons(html, gun_hits=None):
@@ -252,6 +323,10 @@ async def run_one(browser, html, name, spec, shots_dir):
             "([n, inp, pre]) => __det.step(n, inp, () => __probe.hash() + '/' + (rnd.state ? rnd.state().toString(16) : __det.calls), pre)",
             [n, js_inputs, pre if i == 0 else None])
     brief = await page.evaluate('() => __probe.brief()')
+    # 시나리오 setup 이 window.__extra 를 정해 두면 끝에 한 번 불러 그 값을 보여 준다 (판정 해시와 무관)
+    extra = await page.evaluate('() => window.__extra ? window.__extra() : null')
+    if extra is not None:
+        print(f'   [{name}] extra: {json.dumps(extra, ensure_ascii=False)}', flush=True)
     state = await page.evaluate('() => __probe.state()')
     det_errs = await page.evaluate('() => __det.errors')
     outside = await page.evaluate('() => __det.outside')
@@ -341,7 +416,7 @@ def fxcheck(path):
 
 if __name__ == '__main__':
     a = sys.argv[1:]
-    if not a or a[0] not in ('run', 'diff', 'list', 'fxcheck', 'weapons'):
+    if not a or a[0] not in ('run', 'diff', 'list', 'fxcheck', 'weapons', 'evo'):
         print(__doc__)
         sys.exit(2)
     if a[0] == 'list':
@@ -354,6 +429,8 @@ if __name__ == '__main__':
             del a[i:i + 2]
         names = a[3:] or list(SCENARIOS)
         asyncio.run(run(a[1], a[2], names, shots))
+    elif a[0] == 'evo':
+        sys.exit(asyncio.run(evo(a[1])))
     elif a[0] == 'weapons':
         sys.exit(asyncio.run(weapons(a[1], GUN_HITS_TO_KILL)))
     elif a[0] == 'fxcheck':

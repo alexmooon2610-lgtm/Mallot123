@@ -242,7 +242,8 @@
     $id('mf-brief-chips').innerHTML =
       `<span class="mf-chip">${ko() ? '분류' : 'TYPE'} <b>${M.category}</b></span><span class="mf-chip">${ko() ? '환경' : 'ENV'} <b>${env}</b></span><span class="mf-chip">${ko() ? '날씨' : 'WEATHER'} <b>${w[lang]}</b></span>` +
       (M.gates ? `<span class="mf-chip">${ko() ? '게이트' : 'GATES'} <b>${M.gates.length}</b></span>` : '') +
-      (M.par ? `<span class="mf-chip">${ko() ? '목표 시간' : 'PAR'} <b>${fmtTime(M.par[0])}</b></span>` : '');
+      (M.par ? `<span class="mf-chip">${ko() ? '목표 시간' : 'PAR'} <b>${fmtTime(M.par[0])}</b></span>` : '') +
+      (M.id === 'LEGACY' ? `<span class="mf-chip">${ko() ? '난도' : 'DIFF'} <b>${DIFF[diffPick()][lang]}</b></span>` : '');
     if (M.campaign) {
       const c = campChapter(M.chapter);
       $id('mf-brief-chips').insertAdjacentHTML(
@@ -259,6 +260,7 @@
           ? '기록 없음'
           : 'No record yet';
     renderLoadout(M);
+    renderDiff(M);
     renderWeather(M);
     $id('mf-brief-hint').textContent = ko() ? '출격 전 브리핑을 확인하십시오' : 'REVIEW THE BRIEFING BEFORE FLIGHT';
     $id('mf-brief-back').textContent = ko() ? '◂ 뒤로' : '◂ BACK';
@@ -297,6 +299,67 @@
   // 출격 전 무장 구성 (LEGACY · 캠페인 항모 임무). 1999년에는 함내 재고 제한이 없다 — 워프 뒤 보급 시스템이 붙는다.
   let briefLoad = null,
     briefAc = 'mig';
+  // 난도 (무한모드 LEGACY 만, 37-adaptive-ai, V16). 진화 난도면 '적 정보부 보고' — 습관 기록 · 풀린 수법
+  function renderDiff(M) {
+    const box = $id('mf-brief-diff');
+    box.hidden = !(M && M.id === 'LEGACY');
+    if (box.hidden) return;
+    const k = diffPick(),
+      D0 = DIFF[k],
+      N = DIFF.normal,
+      pc = (v, inv) => {
+        const x = inv ? 1 / v : v;
+        return x === 1 ? '' : (x > 1 ? '+' : '−') + Math.round(Math.abs(1 - x) * 100) + '%';
+      };
+    $id('mf-brief-h7').textContent = ko() ? '난도' : 'DIFFICULTY';
+    $id('mf-diff-row').innerHTML = DIFF_KEYS.map(
+      d => `<button class="mf-btn${d === k ? ' selected' : ''}${d === 'evolve' ? ' mf-evo' : ''}" data-diff="${d}">${DIFF[d][lang]}</button>`
+    ).join('');
+    const eff = [];
+    if (D0.waveMax !== N.waveMax || D0.waveAdd) eff.push((ko() ? '웨이브 최대 ' : 'wave max ') + D0.waveMax + (D0.waveAdd ? (ko() ? ` · 처음부터 +${D0.waveAdd}` : ` · +${D0.waveAdd} from start`) : ''));
+    if (D0.react !== 1) eff.push((ko() ? '적 락 속도 ' : 'enemy lock speed ') + pc(D0.react, true));
+    if (D0.turn !== 1) eff.push((ko() ? '적 선회 ' : 'enemy turn ') + pc(D0.turn));
+    if (D0.cd !== 1) eff.push((ko() ? '적 미사일 간격 ' : 'enemy missile interval ') + pc(D0.cd));
+    if (D0.flareP !== N.flareP) eff.push((ko() ? '적 플레어 ' : 'enemy flares ') + Math.round(D0.flareP * 100) + '%');
+    $id('mf-diff-note').textContent =
+      (k === 'evolve'
+        ? ko()
+          ? '어려움 + 학습하는 적: 당신의 습관을 받아치는 수법이 풀린다. '
+          : 'Hard + a learning enemy that unlocks counters to your habits. '
+        : '') + (eff.length ? (ko() ? '적: ' : 'Enemy: ') + eff.join(' · ') : ko() ? '예전 그대로' : 'Classic balance');
+    // 적 정보부 보고
+    const intel = $id('mf-intel');
+    intel.hidden = k !== 'evolve';
+    if (intel.hidden) return;
+    const I = evoIntel(ko());
+    intel.innerHTML =
+      `<div class="mf-intel-h">${ko() ? '적 정보부 보고' : 'ENEMY INTELLIGENCE'}</div>` +
+      `<div class="mf-intel-hab">${I.habits.map(([a, b]) => `<span>${a}</span><b>${b}</b>`).join('')}</div>` +
+      `<div class="mf-intel-tac">${I.rows
+        .map(
+          r =>
+            `<div class="${r.on ? 'on' : ''}"><i style="--p:${Math.round(r.s * 100)}%"></i><b>${r.name}</b><small>${r.on ? (ko() ? '습득 — ' : 'LEARNED — ') : Math.round(r.s * 100) + '% — '}${r.why}</small></div>`
+        )
+        .join('')}</div>` +
+      `<p class="mf-intel-foot">${ko() ? '기록은 스토리 · 무한모드의 모든 공중전에서 쌓이고, 출격마다 조금씩 흐려진다.' : 'Logged from every air combat (story and endless); older habits fade each sortie.'}
+        <button class="mf-btn mf-intel-reset" data-intel-reset>${ko() ? '학습 기록 지우기' : 'RESET'}</button></p>`;
+  }
+  $id('mf-brief-diff').addEventListener('click', e => {
+    const b = e.target.closest('[data-diff]');
+    if (b) {
+      diffSetPick(b.dataset.diff);
+      return renderBrief();
+    }
+    if (e.target.closest('[data-intel-reset]')) {
+      if (!e.target.dataset.armed) {
+        e.target.dataset.armed = '1';
+        e.target.textContent = ko() ? '정말 지울까요? 한 번 더' : 'Click again to confirm';
+        return;
+      }
+      pilotReset();
+      renderBrief();
+    }
+  });
   // 출격 전 날씨 · 시간대 (무한모드 LEGACY 만, 02-weather). 한 판 동안 고정
   function renderWeather(M) {
     const box = $id('mf-brief-wx');

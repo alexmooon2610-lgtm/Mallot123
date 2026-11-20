@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.10** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-18 · 버전 **V16.0.0-alpha.1** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -99,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_10.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V16_0_0_alpha_1.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -190,6 +190,7 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 | `00-core.js` | 렌더러 · 씬 · 카메라 · 색 파이프라인 · 공용 헬퍼 · 기체/미사일 메시 팩토리 · 상수 `P`(무장 제원) |
 | `01-environment.js` | 하늘 돔 · **바다 셰이더** · 태양 · 안개 · **그림자** · 환경맵 |
 | `01-cloud-layer.js` | 고정 고도 구름층 (2600 m, 두께 520). `density()` · `opaqueAround()` · `mats`(날씨 색) |
+| `37-adaptive-ai.js` | **난도 · 조종사 습관 기록 · 진화하는 적** — `DIFF`/`DF` · `PILOT`(stPilot) · `EVO_TACTICS` · `EVOAI` (V16, 8절) |
 | `71-input-gate.js` | **기기 확인 안내** `IG` — 터치 기기에서 출격 전 가로 화면 · 키보드 확인 창, 비행 중 세로 → 멈춤 + 안내, 메뉴 안내 띠 (alpha.8) |
 | `44-night-lights.js` | **야간 조명 · 광학 착함 장치** `NL` — 갑판 조명 · 착함 유도등(낮에도) · 전투기 항법등/충돌방지등, 착함축 `nlApproach()` (alpha.6, 8절) |
 | `04-render-guard.js` | **렌더 점검 · 자동 복구** `RG` — 텍스처 GPU 업로드 확인 · 조명 확인 · 안전 단계 `GFX.level` 0~3 (alpha.5, 10-7절) |
@@ -454,6 +455,34 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 - 전부 화면 크기 고정 빛 점(`Points`, 가산 혼합 · 톤매핑 · 안개 없음)이라 실제 광원이 아니다 → 셰이더 · 성능 영향 없음. 항모에서 멀면 흐려진다(10~30 km).
 - 밤 출격 때 안내 메시지: "야간 착함: 좌현 광학 착함 장치 — 주황 공이 초록 기준등과 같은 높이면 정상 강하각, 빨강이면 너무 낮다".
 
+### 난도 · 학습하는 적 — V16.0.0 (`37-adaptive-ai.js`, 사용자 결정 2026-11-20)
+**결정**: 난도는 무한모드(LEGACY)만 — 쉬움 / 보통 / 어려움 / **진화**. 보통 = 예전 그대로(기본). 습관 기록은 스토리 · 무한 상관없이 모든 공중전에서(훈련 TR · 멀티 제외),
+학습하는 적은 **진화 난도에서만**. 학습은 두 가지를 같이: ① 수법 풀기(에일리언: 아이솔레이션 방식 — alpha.1 에서 완료) ② 실제 학습(진화 알고리즘 · 신경망 예측기 — 다음).
+- **난도 수치 `DF`** (`DIFF`, init 의 `diffApply`): 웨이브 최대 기수(`waveMax` 3/5/6, 어려움은 처음부터 +1) · 레이더 탐색→락 시간(`react` ×1.5/1/0.7) ·
+  미사일 재발사(`cd` ×1.5/1/0.8) · IR 미사일에 플레어 확률/거리(45%·2.6 km / 75%·3.2 km / 90%·3.8 km) · 락 받을 때 채프 간격(4.5/3/2초) ·
+  선회(`turn` ×0.85/1/1.12) · 목표 속도(×0.95/1/1.05) · 기총 조준각(3/4/5°). **보통의 값은 예전 상수와 정확히 같아서**(×1 · 같은 수) 판정이 프레임 단위로 같다.
+  진화 = 어려움 수치 + 학습.
+- **습관 기록 `PILOT`** (`localStorage.stPilot`): 공중전 시간 · R-73/R-27R 발사 수 · R-27R 발사 거리 · 기총 시간 · 3G 넘는 선회의 좌/우 각도 ·
+  가장 가까운 적보다 800 m 위/아래 시간 · 코브라 · 착함 · 미사일이 올 때 플레어. 사건은 판정 코드에서 `pilotEvent()` 로 알리고(읽기만), 매 프레임 `pilotRecord()`.
+  **실제 출격(`start()`)마다 전부 0.85 배로 흐려진다** — 플레이 방식을 바꾸면 적도 다시 따라와야 한다. 부팅 때 `init()` 은 세지 않는다.
+- **수법 6가지 `EVO_TACTICS`** (습관 점수 0~1, 1 이면 풀림 — 출격 · 웨이브마다 다시 계산, 새로 풀리면 무전 "적 정보: …"):
+  | 수법 | 풀리는 습관 | 적 행동 (`EVOAI`) |
+  |---|---|---|
+  | 플레어 조기 살포 | R-73 4발 이상 · 비율 60%+ | IR 미사일에 5.2 km · 97% 로 플레어, 꼬리 4.5 km 안에 붙으면 미사일이 없어도 2.4초마다 플레어 |
+  | 노칭 | R-27R 4발 이상 · 비율 50%+ · 평균 8 km+ | 레이더 락을 16 km 부터 받으면 빔(옆으로) + 강하 + 채프 1.5초 |
+  | 선회 끊기 | 3G 선회 25 rad+ · 한쪽이 35%p+ 많음 | 3.5 km 안 추격에서 플레이어가 늘 도는 쪽으로 앞질러 겨눔 |
+  | 래그 추적 | 코브라 2회+ | 뒤 2.5 km 안에서 속도를 맞추고 살짝 위로 — 추월하지 않음 |
+  | 고도 우위 | 적 위에 있던 시간 65%+ (60초+) | 2.5 km 더 높이 나타나고, 아래에 있으면 더 가파르게 올라옴 |
+  | 착함 매복 | 착함 2회+ | 웨이브를 기다리는 동안 착함 접근(비행 중 기어 내림 · 항모 15 km 안)하면 다음 웨이브가 함미 뒤 22~30 km 저고도에 바로 나온다 |
+  모든 수법은 피할 길이 있다(플레어 조기 → 레이더 · 기총, 노칭 → 근접 IR, 선회 끊기 → 반대로 돌기, …). 반응 속도 · G 는 어려움을 넘지 않는다.
+- **브리핑**: 무한모드에 '난도' 칸(날씨 칸 위) · 칩 · 전투 영향 줄. 진화면 **'적 정보부 보고'** — 습관 통계 7줄 + 수법 6개 진행 막대(습득/%) + '학습 기록 지우기'(두 번 눌러 확인).
+  출격 메시지 "난도: 진화 — 적이 당신을 학습한다 (익힌 수법 n/6)".
+- 시험: `run.py evo <html>` (`evo.js`) — 같은 상황을 어려움 / 진화(그 수법만)로 돌려 비교. 결과: 플레어 0 → 4 · 노칭 각 0° → 90°·강하 · 채프 0 → 2 ·
+  선회 끊기 오른쪽 0 → 191 m · 래그 최소 거리 214 → 412 m · 고도 상승 604 → 845 m. 하네스 시나리오 `diff-easy` · `diff-hard` · `evo-a`(+`-hard`) · `evo-b`(+`-hard`) · `evo-ambush`
+  (기준 `baseline/V16_0_0_a1_diff.json`). `evo-a/b` 는 플레이어가 죽지 않게 `kill` 을 바꿔 두고 적 행동만 센다(`window.__extra`).
+- **다음 (V16 alpha.2~)**: ④ 진화 알고리즘 — 적 조종사 유전자(교전 거리 · 공격성 · 플레어 시점 · 접근 각 · 발사 타이밍 · 이탈) · 웨이브 끝 성적으로 선택 · 교차 · 변이, 기기에 저장.
+  ⑤ 신경망 예측기 — 입력 10여 개 → 2초 뒤 플레이어 기동(좌 · 우 · 당김 · 밂) 예측, 비행 중 온라인 학습, 적의 조준 · 발사 · 위치에 사용. ⑥ 자동 조종 습관 흉내로 수십 판 시뮬레이션.
+
 ### 뉴 MiG-29 = MiG-29K 9.41 실측 모델 — V15.0.0-alpha.9 (사용자 제공 2026-11-20, `claude/mig29k_model_spec.md`)
 - `src/assets/mig29.glb` 를 `mig29k_painted_webp.glb`(1.10 MB, 도색 WEBP 내장)로 바꿨다. 따로 읽던 도색 PNG(`asset-mig29-paint`)는 없앴다 → HTML 15.22 → 15.19 MB.
   PNG 텍스처 원본판은 `src/assets/source/mig29k_painted.glb` (빌드에 안 들어감).
@@ -705,7 +734,7 @@ alpha.3 핫픽스(RENDER_SAFE) 뒤에도 사용자 기기에서 항모 · 기체
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_10.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V16_0_0_alpha_1.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -721,6 +750,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 | `run.py` | 시나리오 실행 · 비교. 3D 렌더(`R.render`)는 끄고 돌린다 — 판정과 무관하고, SwiftShader 에서 한 프레임 0.4초 걸려서다 |
 | `baseline/V14_8_0.json` | **현재 기준 결과.** 새 빌드는 이것과 `diff` 한다. 의도적으로 판정을 바꿨을 때만 새로 뜬다 |
 | `baseline/V15_0_0_a3_su33.json` | alpha.3 에 더한 시나리오 6개의 기준. `run ... su33-carrier su33-vclimb su33-trap su33-cobra multilock loadout-trap` 결과와 `diff` |
+| `baseline/V16_0_0_a1_diff.json` | V16 난도 · 진화 시나리오 7개 기준 (`diff-easy diff-hard evo-a evo-a-hard evo-b evo-b-hard evo-ambush`) |
 | `baseline/V15_0_0_a4_wx.json` | alpha.4 날씨 시나리오 2개(`wx-storm` · `wx-rain-trap`)의 기준 |
 | `baseline/V14_7_0.json` | 공중 재보급 삭제 이전 기준 |
 | `baseline/V14_6_0.json` | 비행 물리 개편 이전 기준 |
@@ -767,7 +797,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_10.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V16_0_0_alpha_1.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -834,6 +864,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V15.0.0-alpha.8 | **기기 확인 안내**(터치 기기: 출격 전 가로 화면 · 키보드 확인, 비행 중 세로 → 멈춤, 메뉴 안내 띠) · **표지 날씨 정식화**(무한모드 날씨 · 표지 기체 항법등 · 표지 번개 · 날씨 표시). 판정 변화 없음 |
 | V15.0.0-alpha.9 | **뉴 MiG-29 = MiG-29K 9.41 실측 모델**(청색 952, 도색 내장 WEBP) — 테일훅(착함 접근 때 내림) · 갑판 주기기 날개 접힘 · 애프터버너 자리 맞춤. 모델만 교체, 판정 변화 없음 |
 | V15.0.0-alpha.10 | **검은 물체 원인 재현 · 수정** — 일부 모바일 GPU 의 gl_FrontFacing 버그. GLB 양면 재질을 불러올 때 한쪽 면 + 뒷면 형상으로 굽고, 렌더 점검이 이 버그를 찾으면 나머지 양면 재질도 고친다 (10-8절). 판정 변화 없음 |
+| V16.0.0-alpha.1 | **난도 시스템**(무한모드: 쉬움 · 보통 · 어려움 · 진화) · **조종사 습관 기록**(전 모드) · **진화 난도: 습관을 받아치는 수법 6가지**(플레어 조기 · 노칭 · 선회 끊기 · 래그 · 고도 우위 · 착함 매복) · 적 정보부 보고. 보통 난도 판정 변화 없음 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

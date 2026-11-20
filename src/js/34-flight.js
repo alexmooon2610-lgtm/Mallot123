@@ -33,6 +33,7 @@ function cobraStart() {
   // 수평 판정 (11-17 완화): 뱅크 45° · 경로각 ±30° 안 (예전 30° · ±20°)
   if (bank > 45 || Math.abs(p.vd.y) > 0.5) return rej(`코브라: 날개를 더 수평으로 (뱅크 ${Math.round(bank)}° → 45° 안) · 경로각 ±30° 안`);
   cobra = { t: 0, v0: kmh };
+  pilotEvent('cobra');
   msg('코브라!', '#ff4');
   tone(300, 0.5, 'sawtooth', 0.05, 160);
 }

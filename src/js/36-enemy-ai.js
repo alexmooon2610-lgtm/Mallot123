@@ -15,7 +15,7 @@ function aiUpdate(dt, e) {
   if (r0.relock > 0) r0.relock -= dt;
   if (r0.phase == 'SEARCH') {
     r0.t = sees ? r0.t + dt : Math.max(0, r0.t - dt);
-    if (r0.t > 1.6) {
+    if (r0.t > 1.6 * DF.react) {
       r0.phase = 'TRACK';
       r0.t = 0;
     }
@@ -25,7 +25,7 @@ function aiUpdate(dt, e) {
       r0.phase = 'SEARCH';
       r0.t = 0;
     } else if (sees && r < 13000 && r0.relock <= 0) {
-      if ((r0.t += dt) > 1.4) {
+      if ((r0.t += dt) > 1.4 * DF.react) {
         r0.phase = 'LOCK';
         r0.t = 0;
       }
@@ -97,35 +97,41 @@ function aiUpdate(dt, e) {
     if (pd.dot(f) < 0) pd.negate();
     des = pd.add(V(0, -0.25, 0)).normalize();
     spd = 330;
-    if (A.fd <= 0 && ((nm.type == 'IR' && near < 3200 && rnd() < 0.75) || (nm.type == 'SARH' && near < 7000))) {
+    // 난도(DF) · 진화 수법(EVOAI, 진화 난도만)에 따라 플레어 거리 · 확률이 바뀐다. 보통이면 예전 3200 m · 75%
+    const fR = EVO.on ? EVOAI.flareR() : DF.flareR,
+      fP = EVO.on ? EVOAI.flareP() : DF.flareP;
+    if (A.fd <= 0 && ((nm.type == 'IR' && near < fR && rnd() < fP) || (nm.type == 'SARH' && near < 7000))) {
       nm.type == 'IR' ? flare(e) : chaff(e);
       A.fd = 0.7;
     }
   } else if (cvSamEvading || cvEvading) {
     /* 방공 회피 기동을 유지한다. */
-  } else if (rdLockedTg(e) && r < 11000) {
+  } else if (rdLockedTg(e) && r < (EVO.on ? EVOAI.notchR() : 11000)) {
     des = V()
       .crossVectors(d, V(0, 1, 0))
       .normalize();
     if (des.dot(f) < 0) des.negate();
-    spd = 300;
+    if (EVO.on) EVOAI.notchDive(des);
+    spd = 300 * DF.spd;
     if (A.fd <= 0 && e.chT <= 0) {
       chaff(e);
-      A.fd = 3;
+      A.fd = EVO.on ? EVOAI.notchChaff() : DF.chaffT;
     }
   } else if (known) {
     const lead = p.pos.clone().addScaledVector(p.vd, p.speed * clamp(r / 700, 0, 6));
     des = lead.sub(e.pos).normalize();
     if (r < 1800) des.y += 0.5;
-    spd = r > 6000 ? 330 : 250;
+    spd = (r > 6000 ? 330 : 250) * DF.spd;
+    if (EVO.on) spd = EVOAI.pursue(e, A, f, d, r, des, spd);
   } else {
     if ((A.hint -= dt) <= 0) {
       A.hint = 10;
       A.goal = V(d.x + rnd() - 0.5, d.y * 0.3, d.z + rnd() - 0.5).normalize();
     }
     des = A.goal.clone();
-    spd = 230;
+    spd = 230 * DF.spd;
   }
+  if (EVO.on) EVOAI.preFlare(e, A, f, d, r, dt); // 진화: 꼬리에 붙으면 미리 플레어
   for (const o of es)
     if (o !== e) {
       const dd = e.pos.clone().sub(o.pos),
@@ -143,6 +149,7 @@ function aiUpdate(dt, e) {
   e.q.rotateTowards(
     qT,
     0.95 *
+      DF.turn *
       dt *
       clamp((e.speed - e.prm.stall * 0.5) / (e.prm.stall * 0.8), 0.2, 1) *
       clamp(1 - (Math.acos(clamp(e.fwd().dot(e.vd), -1, 1)) - 0.25) / 0.35, 0.2, 1)
@@ -162,19 +169,19 @@ function aiUpdate(dt, e) {
       !ms.some(m => m.sh === e && m.type == 'SARH' && !m.dead)
     ) {
       fire(e, 'SARH', p);
-      e.cd = 6;
+      e.cd = 6 * DF.cd;
     } else {
       const sc = heatScore(p, e.pos, f, 14);
       A.irT = sc > 0.2 && r < P.IR.range * WX.irK && r > P.IR.min ? A.irT + dt : 0;
       if (A.irT > 1 && e.am.IR > 0) {
         fire(e, 'IR', p);
-        e.cd = 7;
+        e.cd = 7 * DF.cd;
         A.irT = 0;
       }
     }
   }
   e.gc -= dt;
-  if (p.hp > 0 && r < 1100 && ang < 4 && e.gun > 0 && e.gc <= 0) {
+  if (p.hp > 0 && r < 1100 && ang < DF.gunCone && e.gun > 0 && e.gc <= 0) {
     bullet(e, f);
     e.gc = 0.09;
     e.gun--;

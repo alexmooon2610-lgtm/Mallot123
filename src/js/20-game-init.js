@@ -146,6 +146,11 @@ function init() {
   cloudLayer.setWeather(curM().weather);
   // 날씨 · 시간대 (02-weather): 무한모드(LEGACY)만 브리핑에서 고른 값, 나머지는 낮 · 맑음 (= 예전 그대로)
   weatherApply(wxFor(curM()));
+  diffApply(curM()); // 난도 (무한모드만, 37-adaptive-ai) — 첫 웨이브보다 먼저
+  if (DIFF_KEY !== 'normal') {
+    const n = Object.keys(EVO.c).length;
+    msg(`난도: ${DF.ko}${EVO.on ? ` — 적이 당신을 학습한다 (익힌 수법 ${n}/${EVO_TACTICS.length})` : ''}`, EVO.on ? '#f88' : '#9cf');
+  }
   renderGuardSortie(); // 1초 뒤 렌더 점검 (04-render-guard — 검은 물체 자동 복구)
   if (WX.sig !== 'day|clear')
     msg(`기상: ${WX_TOD[WX.tod].ko} · ${WX_KIND[WX.kind].ko}${WX.wind.lengthSq() ? ` — 옆바람 ${Math.round(WX.wind.length())} m/s` : ''}`, '#9cf');
@@ -174,7 +179,8 @@ const msg = (s, c = G) => {
 };
 function spawnWave() {
   wv++;
-  const n = Math.min(wv, 5);
+  evoWave(); // 진화 난도: 새로 풀린 수법 알림 (37-adaptive-ai)
+  const n = Math.min(wv + DF.waveAdd, DF.waveMax); // 난도별 웨이브 크기 (보통: 예전처럼 최대 5)
   let made = 0;
   for (let i = 0; i < n; i++) {
     let pos = null;
@@ -196,7 +202,7 @@ function spawnWave() {
       );
     }
     const x = mkAc('E');
-    x.pos.copy(pos);
+    x.pos.copy(evoSpawnPos(pos, i)); // 진화 난도: 고도 우위 · 착함 매복 자리
     x.q.setFromEuler(new T.Euler(0, rnd() * 6.28, 0));
     x.speed = 240;
     x.vd.copy(x.fwd());
@@ -219,6 +225,7 @@ function spawnWave() {
     es.push(x);
     made++;
   }
+  EVO.ambushNext = false;
   msg(`WAVE ${wv} — F-16 x${made}`, '#ff4');
   tone(700, 0.3, 'sawtooth', 0.06, 1000);
 }
