@@ -102,6 +102,7 @@ function opsFly(dt) {
     p.thr = 0;
     p.ab = 0;
     msg('착함! 어레스팅 와이어 포착', '#ff4');
+    pilotEvent('trap');
     tone(200, 0.6, 'sawtooth', 0.12, 60);
     boom(p.pos.clone().add(V(0, -8, 0)), 12);
     return 0;

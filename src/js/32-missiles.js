@@ -194,6 +194,7 @@ function fire(ac, ty, tg) {
   ms.push(m);
   ac.am[ty]--;
   ac.cd = 1.5;
+  pilotEvent('fire', ac, { type: ty, tg: lockedTarget }); // 습관 기록 (37-adaptive-ai, 읽기만)
   if (ac === p) {
     tone(300, 0.35, 'sawtooth', 0.04, 90);
     launchSnd();
@@ -349,6 +350,7 @@ function reportCountermeasure(a, type, result) {
 function flare(a) {
   if (a.fl <= 0) return false;
   a.fl--;
+  if (a === p) pilotEvent('flare', a);
   for (let i = 0; i < 3; i++) {
     const s = getSprite(0xffd06a, 1);
     s.scale.set(FLARE_SIZE, FLARE_SIZE, 1);

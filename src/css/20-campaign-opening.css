@@ -685,3 +685,76 @@
   background: linear-gradient(#9fd4ff, #5f9fd8);
   color: #06121e;
 }
+
+/* ============ 난도 · 적 정보부 보고 (V16.0.0 · 37-adaptive-ai) ============ */
+.mf-wx-row .mf-btn.mf-evo {
+  border-color: #c0504a;
+}
+.mf-wx-row .mf-btn.mf-evo.selected {
+  background: linear-gradient(#ff9a8a, #c84a3c);
+  color: #1a0604;
+}
+.mf-intel {
+  margin-top: 10px;
+  border: 1px solid rgba(220, 90, 80, 0.5);
+  background: rgba(40, 8, 6, 0.55);
+  padding: 10px 12px;
+  font-size: 11px;
+}
+.mf-intel-h {
+  color: #ff9a8a;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+.mf-intel-hab {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  margin-bottom: 10px;
+  opacity: 0.9;
+}
+.mf-intel-hab b {
+  text-align: right;
+  font-weight: 600;
+}
+.mf-intel-tac > div {
+  position: relative;
+  padding: 5px 8px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.mf-intel-tac > div i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--p);
+  background: rgba(255, 120, 100, 0.13);
+}
+.mf-intel-tac > div.on {
+  border-color: rgba(255, 110, 90, 0.7);
+}
+.mf-intel-tac > div.on i {
+  background: rgba(255, 90, 70, 0.28);
+}
+.mf-intel-tac b,
+.mf-intel-tac small {
+  position: relative;
+  display: block;
+}
+.mf-intel-tac small {
+  opacity: 0.75;
+  margin-top: 2px;
+}
+.mf-intel-foot {
+  margin: 8px 0 0;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.mf-intel-reset {
+  padding: 4px 8px;
+  font-size: 10px;
+}
