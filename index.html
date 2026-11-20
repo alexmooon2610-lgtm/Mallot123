@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>STEEL TEMPEST V15.0.0-alpha.9 — FIRST SORTIE</title>
+    <title>STEEL TEMPEST V15.0.0-alpha.10 — FIRST SORTIE</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <style>
       /* ============ 1. BASE · 오버레이/메뉴 ============ */
@@ -3791,7 +3791,7 @@ window.__stIntroT0 = performance.now();
             <div class="ac-title-kicker">THE LAST WAR OF THE CENTURY</div>
             <h1 class="ac-title-name">STEEL<b>TEMPEST</b></h1>
             <div class="ac-title-stripe" aria-hidden="true"><i></i><i></i><i></i></div>
-            <div class="ac-title-sub">AIR COMBAT · V15.0.0-alpha.9</div>
+            <div class="ac-title-sub">AIR COMBAT · V15.0.0-alpha.10</div>
           </div>
           <div class="ac-title-start">
             <button class="ac-title-btn" id="mf-start">PRESS ENTER</button>
@@ -4146,7 +4146,13 @@ const GFX = (() => {
     if (/[?&]gfxreset\b/.test(location.search)) localStorage.removeItem('stGfxSafe'); // 주소 끝에 ?gfxreset 으로 되돌린다
     level = Math.max(0, Math.min(3, +localStorage.getItem('stGfxSafe') || 0));
   } catch (e) {}
-  return { level, texFix: 0, checks: 0, lastFail: '' };
+  let ff = false;
+  try {
+    if (/[?&]gfxreset\b/.test(location.search)) localStorage.removeItem('stGfxFF');
+    ff = localStorage.getItem('stGfxFF') === '1';
+  } catch (e) {}
+  // ff: 이 기기의 GPU 가 gl_FrontFacing 을 틀리게 준다 → 양면 재질을 전부 한쪽 면으로 (04-render-guard, alpha.10)
+  return { level, ff, texFix: 0, checks: 0, lastFail: '' };
 })();
 function texCap(scale = 1) {
   // 폰은 갑판처럼 크게 쓰는 텍스처도 1536 을 넘기지 않는다 (GPU 메모리 여유가 적다)
@@ -4266,7 +4272,7 @@ R.domElement.addEventListener('webglcontextlost', () => RDIAG.lost++);
 function renderDiag() {
   const gl = R.getContext(),
     c = R.capabilities;
-  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : LOWGPU ? '저사양' : 'PC'}${WEBKIT ? '·웹킷' : ''}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'} · 안전 L${GFX.level}${GFX.texFix ? ' · 텍스처 복구 ' + GFX.texFix : ''} · 점검 ${GFX.checks}${GFX.lastFail ? ' (' + GFX.lastFail + ')' : ''}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실 ' + RDIAG.lost : ''}`;
+  return `${c.isWebGL2 ? 'WebGL2' : 'WebGL1'} · ${c.precision} · ${MOBILE ? '폰' : LOWGPU ? '저사양' : 'PC'}${WEBKIT ? '·웹킷' : ''}${typeof RENDER_SAFE !== 'undefined' && RENDER_SAFE ? '(안전)' : ''} · 텍스처 ${TEXQ.ok}/${TEXQ.total}${TEXQ.fail ? ' 실패 ' + TEXQ.fail : ''} · 셰이더 ${R.info.programs.length}${RDIAG.glErr ? ' 오류 ' + RDIAG.glErr : ''} · 그림자 ${sun.castShadow ? (typeof shadowParked !== 'undefined' && shadowParked ? '멈춤' : '켬') : '끔'} · 해상도단 ${typeof resStep !== 'undefined' ? resStep : '-'} · 환경맵 ${scene.environment ? 'O' : 'X'} · 안전 L${GFX.level}${GFX.ff ? '·면' : ''}${GFX.texFix ? ' · 텍스처 복구 ' + GFX.texFix : ''} · 점검 ${GFX.checks}${GFX.lastFail ? ' (' + GFX.lastFail + ')' : ''}${RDIAG.lost || (gl && gl.isContextLost()) ? ' · 컨텍스트 소실 ' + RDIAG.lost : ''}`;
 }
 function decodeTexQueued(bytes, mime, max, hi = false) {
   return new Promise((res, rej) => {
@@ -5798,9 +5804,18 @@ function rgProbe() {
   scene.add(g);
   const rt = new T.WebGLRenderTarget(64, 16, { depthBuffer: false, stencilBuffer: false });
   rt.texture.encoding = R.outputEncoding; // 화면과 같은 셰이더 (거울에서 배운 것 — 다르면 셰이더를 한 벌 더 굽는다)
-  const ctrl = new T.MeshStandardMaterial({ color: 0xb4b4b4, roughness: 0.7, metalness: 0.1 });
+  const ctrl = new T.MeshStandardMaterial({ color: 0xb4b4b4, roughness: 0.7, metalness: 0.1 }),
+    ctrl2 = new T.MeshStandardMaterial({ color: 0xb4b4b4, roughness: 0.7, metalness: 0.1, side: T.DoubleSide }); // 양면 시험용
   cells.forEach(c => (c.lit.material = ctrl));
-  return (RG.P = { g, rt, cells, ctrl, cam: new T.OrthographicCamera(-4, 4, 1, -1, 0.05, 30), px: new Uint8Array(64 * 16 * 4) });
+  return (RG.P = {
+    g,
+    rt,
+    cells,
+    ctrl,
+    ctrl2,
+    cam: new T.OrthographicCamera(-4, 4, 1, -1, 0.05, 30),
+    px: new Uint8Array(64 * 16 * 4),
+  });
 }
 // 점검 판을 한 번 그려 칸별 밝기를 읽는다. 칸 (i 열, r 줄: 0 아래 = 기준(조명 없음), 1 위 = 조명)
 function rgShot() {
@@ -5910,29 +5925,37 @@ function rgCheckTextures(all) {
 }
 // 지금 쓰이는 재질 (램버트로 바꿨으면 바꾼 쪽)
 const rgLive = m => LAMB.get(m) || m;
-// 2) 조명 확인 — 0열: 회색 표준 재질, 1~3열: 실제 도색 재질 (큰 텍스처부터)
+// 2) 조명 확인 — 0열: 회색 표준 재질(한쪽 면), 1열: 같은 재질 양면, 2~3열: 실제 도색 재질 (큰 텍스처부터)
+//    0열과 1열은 같은 판을 앞에서 보므로 밝기가 같아야 한다. 양면 쪽만 어두우면 GPU 의 gl_FrontFacing 이 틀린 것 (alpha.10)
 function rgCheckLight() {
   const P = rgProbe(),
     real = GTEX.filter(e => e.mats.length && !e.dead)
       .sort((a, b) => (b.tex.image?.width || 0) * (b.tex.image?.height || 0) - (a.tex.image?.width || 0) * (a.tex.image?.height || 0))
-      .slice(0, 3);
-  const ctrl = GFX.level >= 3 ? rgLambert(P.ctrl) : P.ctrl;
+      .slice(0, 2);
+  const ctrl = GFX.level >= 3 ? rgLambert(P.ctrl) : P.ctrl,
+    ctrl2 = GFX.ff ? null : GFX.level >= 3 ? rgLambert(P.ctrl2) : P.ctrl2;
   P.cells.forEach((c, i) => {
-    const e = real[i - 1],
-      m = i === 0 ? ctrl : e && rgLive(e.mats[0]);
+    const e = real[i - 2],
+      m = i === 0 ? ctrl : i === 1 ? ctrl2 : e && rgLive(e.mats[0]);
     c.lit.visible = c.ref.visible = !!m;
     if (!m) return;
     c.lit.material = m;
-    rgSetRef(c, i === 0 ? null : m.map, m.color);
+    rgSetRef(c, i < 2 ? null : m.map, m.color);
   });
   const cell = rgShot();
   if (!cell) return null;
-  const out = { dark: [], tex: [] };
+  const out = { dark: [], tex: [], ff: false };
+  // 양면 시험: 같은 판인데 양면 쪽이 한쪽 면보다 눈에 띄게 어둡다
+  if (P.cells[1].lit.visible) {
+    const a = cell(0, 1).avg,
+      b = cell(1, 1).avg;
+    if (a > 12 && b < 0.7 * a) out.ff = true;
+  }
   P.cells.forEach((c, i) => {
-    if (!c.lit.visible) return;
+    if (!c.lit.visible || i === 1) return;
     const lit = cell(i, 1),
       ref = cell(i, 0),
-      e = real[i - 1];
+      e = real[i - 2];
     if (e && ref.max <= 3 && rgCpu(e) >= 20) out.tex.push(e); // 기준부터 검다 = 텍스처 문제
     else if (ref.max >= 20 && lit.max <= 3) out.dark.push(i === 0 ? 'ctrl' : e.tex.image?.width + 'px');
     // 맑은 낮에 해를 정면으로 받는 회색 판이 기준의 30% 도 안 되면 그림자 판정이 깨진 것 (전부 그늘)
@@ -5945,6 +5968,25 @@ function rgCheckLight() {
 
 // 3) 램버트로 바꾸기 (안전 단계 3) — 같은 재질은 같은 램버트 하나로
 const LAMB = new WeakMap();
+// 양면 재질을 한쪽 면으로 (gl_FrontFacing 이 틀린 GPU): 조명을 쓰는 재질만. 형상은 뒷면을 한 벌 붙여 양쪽에서 보이게
+function rgSingleSide(root) {
+  if (!root || !root.traverse) return;
+  root.traverse(o => {
+    if (!o.isMesh || !o.material) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || m.side !== T.DoubleSide || m.isMeshBasicMaterial || m.isShaderMaterial) continue;
+      if (o.geometry && !o.geometry.userData.singleSided && o.geometry.attributes.normal) {
+        singleSideBake(o.geometry);
+        o.geometry.userData.singleSided = o.geometry.userData.singleSided || 1;
+      }
+      m.side = T.FrontSide;
+      m.needsUpdate = true;
+    }
+  });
+}
+function rgSingleSideAll() {
+  rgRoots().forEach(rgSingleSide);
+}
 function rgLambert(m) {
   if (!m || !m.isMeshStandardMaterial) return m;
   let l = LAMB.get(m);
@@ -5957,7 +5999,7 @@ function rgLambert(m) {
     emissiveIntensity: m.emissiveIntensity,
     transparent: m.transparent,
     opacity: m.opacity,
-    side: m.side,
+    side: GFX.ff && m.side === T.DoubleSide ? T.FrontSide : m.side,
     alphaTest: m.alphaTest,
     vertexColors: m.vertexColors,
     depthWrite: m.depthWrite,
@@ -5981,7 +6023,7 @@ function rgLambertize(root) {
     o.material = Array.isArray(o.material) ? o.material.map(rgLambert) : rgLambert(o.material);
   });
 }
-function rgLambertizeAll() {
+function rgRoots() {
   const roots = [scene];
   [
     () => cockpitScene,
@@ -5998,7 +6040,10 @@ function rgLambertizeAll() {
       roots.push(f());
     } catch (e) {}
   });
-  roots.forEach(rgLambertize);
+  return roots;
+}
+function rgLambertizeAll() {
+  rgRoots().forEach(rgLambertize);
   // 텍스처가 나중에 붙는 재질도 따라가게: 원래 재질의 map 이 바뀌면 램버트에도 옮긴다 (점검 때마다)
   GTEX.forEach(e =>
     e.mats.forEach(m => {
@@ -6042,12 +6087,24 @@ function rgCheck() {
   if (rgOff()) return true;
   GFX.checks++;
   if (GFX.level >= 3) rgLambertizeAll();
+  if (GFX.ff) rgSingleSideAll();
   const tb = rgCheckTextures(RG.fullTex);
   RG.fullTex = false;
   const L = rgCheckLight();
   if (!L) return false; // 컨텍스트를 잃었다 — 복원 뒤 다시
   L.tex.forEach(e => !e.dead && rgFixTex(e));
   let again = tb > 0 || L.tex.length > 0;
+  if (L.ff && !GFX.ff) {
+    // gl_FrontFacing 이 틀린 GPU: 단계를 올리지 않고 양면 재질만 고친다 (모델 GLB 는 불러올 때 이미 한쪽 면)
+    GFX.ff = true;
+    try {
+      localStorage.setItem('stGfxFF', '1');
+    } catch (e) {}
+    rgSingleSideAll();
+    console.warn('[STEEL TEMPEST] render guard: gl_FrontFacing broken — double-sided materials made single-sided');
+    if (typeof S !== 'undefined' && S === 'play') msg('그래픽 자동 복구 — 양면 재질 문제를 찾아 고쳤어요', '#9cf');
+    again = true;
+  }
   if (L.dark.length) {
     // 한 번 검게 읽힌 것으로는 올리지 않는다 — 0.25초 뒤 한 번 더 검으면 그때 안전 단계를 올린다 (순간적인 읽기 실패 대비)
     if (RG.suspect === 'L' + GFX.level) {
@@ -6089,6 +6146,7 @@ function renderGuardTick(dt) {
 // 출격할 때 (20-game-init init 끝): 1초 뒤 점검 — 날씨 · 기체가 바뀐 뒤
 function renderGuardSortie() {
   if (GFX.level >= 3) rgLambertizeAll();
+  if (GFX.ff) rgSingleSideAll();
   RG.due = 1;
 }
 // 렌더 점검 끝났나 (인트로가 기다린다)
@@ -6729,6 +6787,83 @@ function applyLoadedMiG29ToPlayer() {
   disposePlayerModel(previous);
   console.info('[STEEL TEMPEST] MiG-29 GLB applied', mig29GLBTemplate);
 }
+// ---------- 양면 → 한쪽 면 굽기 (V15.0.0-alpha.10, 검은 물체 대책)
+// 양면 재질(glTF doubleSided)은 three 셰이더가 gl_FrontFacing 으로 뒷면 법선을 뒤집어 비춘다. 일부 모바일 GPU 는
+// 이 값을 틀리게 줘서(알려진 드라이버 버그) 앞면이 뒷면 취급을 받아 새까맣게 나온다 — PC · SwiftShader 에서는 안 보인다.
+// 그래서 불러올 때 형상을 고쳐 한쪽 면 재질로도 똑같이 보이게 한다:
+//   1) 삼각형 감기 방향을 꼭짓점 법선(바깥) 쪽으로 맞춘다 (법선과 반대로 감긴 삼각형은 뒤집는다)
+//   2) 닫히지 않은 메시(가장자리가 한 삼각형에만 붙은 변이 있음 — 얇은 판 등)는 뒷면을 법선을 뒤집어 한 벌 더 붙인다
+// 닫힌 메시는 안쪽 면이 원래 안 보이므로 화면은 같다. 셰이더에서 gl_FrontFacing 을 쓰지 않게 된다.
+function singleSideBake(geo) {
+  const P = geo.attributes.position,
+    Nn = geo.attributes.normal,
+    UV = geo.attributes.uv;
+  if (!P || !Nn) return;
+  let idx = geo.index ? Array.from(geo.index.array) : [...Array(P.count).keys()];
+  const p = P.array,
+    n = Nn.array;
+  // 1) 감기 방향 맞추기
+  for (let t = 0; t < idx.length; t += 3) {
+    const a = idx[t] * 3,
+      b = idx[t + 1] * 3,
+      c = idx[t + 2] * 3;
+    const ux = p[b] - p[a],
+      uy = p[b + 1] - p[a + 1],
+      uz = p[b + 2] - p[a + 2],
+      vx = p[c] - p[a],
+      vy = p[c + 1] - p[a + 1],
+      vz = p[c + 2] - p[a + 2];
+    const gx = uy * vz - uz * vy,
+      gy = uz * vx - ux * vz,
+      gz = ux * vy - uy * vx;
+    if (gx * (n[a] + n[b] + n[c]) + gy * (n[a + 1] + n[b + 1] + n[c + 1]) + gz * (n[a + 2] + n[b + 2] + n[c + 2]) < 0) {
+      const s = idx[t + 1];
+      idx[t + 1] = idx[t + 2];
+      idx[t + 2] = s;
+    }
+  }
+  // 2) 열린 메시인가: 위치가 같은 꼭짓점을 하나로 보고(UV 이음매 무시) 한 삼각형에만 붙은 변을 센다
+  const key = i => Math.round(p[i * 3] * 1e4) + ',' + Math.round(p[i * 3 + 1] * 1e4) + ',' + Math.round(p[i * 3 + 2] * 1e4),
+    vid = new Map(),
+    id = i => {
+      const k = key(i);
+      let v = vid.get(k);
+      if (v === undefined) vid.set(k, (v = vid.size));
+      return v;
+    },
+    edges = new Map();
+  for (let t = 0; t < idx.length; t += 3)
+    for (let e = 0; e < 3; e++) {
+      const i = id(idx[t + e]),
+        j = id(idx[t + ((e + 1) % 3)]),
+        k = i < j ? i + '_' + j : j + '_' + i;
+      edges.set(k, (edges.get(k) || 0) + 1);
+    }
+  let open = 0;
+  edges.forEach(c => c === 1 && open++);
+  if (open > Math.max(4, edges.size * 0.002)) {
+    // 뒷면 한 벌: 꼭짓점을 복사해 법선을 뒤집고 감기 방향을 반대로
+    const vc = P.count,
+      p2 = new Float32Array(vc * 6),
+      n2 = new Float32Array(vc * 6);
+    p2.set(p);
+    p2.set(p, vc * 3);
+    n2.set(n);
+    for (let i = 0; i < vc * 3; i++) n2[vc * 3 + i] = -n[i];
+    geo.setAttribute('position', new T.BufferAttribute(p2, 3));
+    geo.setAttribute('normal', new T.BufferAttribute(n2, 3));
+    if (UV) {
+      const u2 = new Float32Array(vc * 4);
+      u2.set(UV.array);
+      u2.set(UV.array, vc * 2);
+      geo.setAttribute('uv', new T.BufferAttribute(u2, 2));
+    }
+    const m = idx.length;
+    for (let t = 0; t < m; t += 3) idx.push(idx[t] + vc, idx[t + 2] + vc, idx[t + 1] + vc);
+  }
+  geo.setIndex(new T.BufferAttribute(new Uint32Array(idx), 1));
+  geo.userData.singleSided = open;
+}
 // 단순 GLB 읽기: 이 모델이 쓰는 기능(메시 · 인덱스 · 위치/법선/UV · 기본 재질)만 읽는다.
 // CDN 의 GLTFLoader 없이도 모델이 뜨도록 게임 안에서 직접 읽는다.
 function parseSimpleGLB(buf, texScale = 1, texHi = false) {
@@ -6782,7 +6917,9 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
       color: new T.Color(c[0], c[1], c[2]),
       metalness: pb.metallicFactor ?? 1,
       roughness: pb.roughnessFactor ?? 1,
-      side: m.doubleSided ? T.DoubleSide : T.FrontSide,
+      // 양면 재질도 한쪽 면으로 그린다 (alpha.10): 양면 셰이더는 gl_FrontFacing 으로 뒷면 법선을 뒤집는데,
+      // 일부 모바일 GPU 는 이 값이 틀려 앞면 조명이 뒤집혀 새까맣게 나온다. 대신 형상을 미리 고친다 (singleSideBake).
+      side: T.FrontSide,
       transparent: m.alphaMode === 'BLEND',
       opacity: c[3],
     });
@@ -6817,6 +6954,8 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
         }
       if (pr.indices != null) geo.setIndex(new T.BufferAttribute(acc(pr.indices).arr, 1));
       if (at.NORMAL == null) geo.computeVertexNormals();
+      const gm = pr.material != null && g.materials[pr.material];
+      if (gm && gm.doubleSided) singleSideBake(geo);
       const mesh = new T.Mesh(geo, pr.material != null ? mats[pr.material] : new T.MeshStandardMaterial());
       mesh.name = g.meshes[mi].name || '';
       return mesh;
