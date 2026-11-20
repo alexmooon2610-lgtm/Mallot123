@@ -1,6 +1,6 @@
 # STEEL TEMPEST — 전체 인수인계 문서
 
-마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.8** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
+마지막 갱신: 2026-11-18 · 버전 **V15.0.0-alpha.9** (멀티플레이 기틀 + **Su-33 선택** + **무한모드 날씨 · 시간대** + **렌더 자동 점검** + **야간 조명 · 광학 착함 장치** — `docs/MULTIPLAYER.md`) · 저장소 `steel-tempest/` (로컬 git — **원격에 올릴 것**, 3-0절)
 
 이 문서 하나로 프로젝트 전체를 파악할 수 있게 썼다. 코드를 처음 보는 사람이 읽고 바로 이어서
 작업할 수 있는 것이 목표다. 3D 모델 실측 사양은 따로 있다 (`claude/*_model_spec.md`).
@@ -99,7 +99,7 @@ README.md                 짧은 안내
 
 ### 빌드
 ```bash
-python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_8.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
+python3 build.py        # → dist/STEEL_TEMPEST_V15_0_0_alpha_9.html (버전은 HTML 안의 "STEEL TEMPEST Vx.y.z" 에서 읽는다)
 prettier --write "src/js/*.js" "src/css/*.css"   # 코드 모양 (120자)
 ```
 `src/manifest.json` 의 `js` 순서대로 이어 붙인다 (파일 이름 정렬이 아니다). **순서가 곧 의존성**이다 —
@@ -454,6 +454,16 @@ V14.4.0에서 `T.Color.prototype.setHex/setStyle` 을 감싸 **코드에 쓴 16�
 - 전부 화면 크기 고정 빛 점(`Points`, 가산 혼합 · 톤매핑 · 안개 없음)이라 실제 광원이 아니다 → 셰이더 · 성능 영향 없음. 항모에서 멀면 흐려진다(10~30 km).
 - 밤 출격 때 안내 메시지: "야간 착함: 좌현 광학 착함 장치 — 주황 공이 초록 기준등과 같은 높이면 정상 강하각, 빨강이면 너무 낮다".
 
+### 뉴 MiG-29 = MiG-29K 9.41 실측 모델 — V15.0.0-alpha.9 (사용자 제공 2026-11-20, `claude/mig29k_model_spec.md`)
+- `src/assets/mig29.glb` 를 `mig29k_painted_webp.glb`(1.10 MB, 도색 WEBP 내장)로 바꿨다. 따로 읽던 도색 PNG(`asset-mig29-paint`)는 없앴다 → HTML 15.22 → 15.19 MB.
+  PNG 텍스처 원본판은 `src/assets/source/mig29k_painted.glb` (빌드에 안 들어감).
+- `parseSimpleGLB` 가 `EXT_texture_webp` 텍스처를 읽는다 (`t.source ?? t.extensions.EXT_texture_webp.source`).
+- **모델만 바꿨다** — 비행 제원 · 히트박스 · 무장은 9.12 그대로 (MiG 판정 기준선 동일). K 형 제원(RD-33MK · 큰 날개 · 연료)으로 바꿀지는 사용자 결정 대기.
+- 노드 쓰임: `landing_gear` 를 기어 표시로 · `tailhook` 은 **항모 모드에서 비행 중 기어를 내리면** X +31° 로 내림(메인 루프 `setHook`, 보이는 것만) ·
+  갑판 주기 MiG 2대는 `folded: true` 로 바깥 날개 Z ±118° 접어 세움.
+- 애프터버너 불꽃 모양은 그대로, 자리만 9.41 노즐 출구(x ±0.88 · 높이 1.22 · z 6.95)로. 바퀴 바닥 기준(`MIG29_GLB_Y` −1.09)은 그대로라 갑판 높이도 그대로.
+- 도색이 GLB 안에 있으므로 `paintMiG29` 는 빈 함수로 남겼다. 야간 항법등 자리는 꼭짓점에서 찾으므로 그대로 맞는다.
+
 ### 표지 날씨 · 기기 확인 — V15.0.0-alpha.8
 - **표지 날씨 (사용자: "정식으로 굳혀")**: 표지 실시간 시네마틱은 무한모드에서 마지막으로 고른 날씨 · 시간대(`stWx`)로 그린다.
   원래는 부팅 때 `init()` 이 기본 임무(LEGACY)로 장면을 준비하며 우연히 적용된 것 → 이제 `titleCine(true)` · 브리핑 선택 때 `weatherMenu()` 가 일부러 입힌다
@@ -681,7 +691,7 @@ alpha.3 핫픽스(RENDER_SAFE) 뒤에도 사용자 기기에서 항모 · 기체
 ### 쓰는 법
 ```bash
 python3 build.py
-python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_8.html /tmp/new.json      # 시나리오 전부 (약 1분)
+python3 tools/harness/run.py run dist/STEEL_TEMPEST_V15_0_0_alpha_9.html /tmp/new.json      # 시나리오 전부 (약 1분)
 python3 tools/harness/run.py diff tools/harness/baseline/V14_8_0.json /tmp/new.json  # 프레임 단위 비교
 python3 tools/harness/run.py run <html> <out.json> carrier tr1 --shots /tmp/shots   # 일부만 + 마지막 화면 저장
 python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · 콕핏/외부 시점이 판정을 바꾸는지
@@ -743,7 +753,7 @@ python3 tools/harness/run.py fxcheck /tmp/new.json   # 비행 효과 ON/OFF · �
 
 ### 멀티 두 페이지 시험 (`nettest.py`)
 ```bash
-python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_8.html --latency 60 --jitter 20 [--shots DIR]
+python3 tools/harness/nettest.py dist/STEEL_TEMPEST_V15_0_0_alpha_9.html --latency 60 --jitter 20 [--shots DIR]
 ```
 페이지 둘(방장 A · 참가자 B)을 띄우고 메시지를 하네스가 직접 나른다 (`?net=relay`). 지연 · 흔들림 · 끊김을 넣는다.
 로비 · 시작 · 서로 보임 · 보간 오차 · 끊김 감지를 확인한다. 자세한 결과는 `docs/MULTIPLAYER.md` 6절.
@@ -808,6 +818,7 @@ CSS 래스터 비용은 이 환경에서 안 보인다 (10-2절의 교훈).
 | V15.0.0-alpha.6 | **야간 조명 · 광학 착함 장치** — 실측 착함축(좌현 7.5°) · 착함 유도등(초록 기준등 + 공, 낮에도) · 복행등 · 갑판 조명 · 드롭 라이트 · 장애물등, 전투기 항법등(빨강 · 초록 · 흰색) + 충돌방지등(밤만), HUD 착함 안내를 같은 축으로. 판정 변화 없음 |
 | V15.0.0-alpha.7 | 광학 착함 장치를 **실물 크기 · 실제 자리**로 (좌현 가장자리에 선 렌즈 상자 + 기준등 팔, 공 ±0.9 m, 뒤에서는 가려짐) — alpha.6 은 갑판 위 13 m 에 떠 있었다. 판정 변화 없음 |
 | V15.0.0-alpha.8 | **기기 확인 안내**(터치 기기: 출격 전 가로 화면 · 키보드 확인, 비행 중 세로 → 멈춤, 메뉴 안내 띠) · **표지 날씨 정식화**(무한모드 날씨 · 표지 기체 항법등 · 표지 번개 · 날씨 표시). 판정 변화 없음 |
+| V15.0.0-alpha.9 | **뉴 MiG-29 = MiG-29K 9.41 실측 모델**(청색 952, 도색 내장 WEBP) — 테일훅(착함 접근 때 내림) · 갑판 주기기 날개 접힘 · 애프터버너 자리 맞춤. 모델만 교체, 판정 변화 없음 |
 
 그 이전: 블랙아웃, 구름층, 항모 방공, 무전 자막(TTS 제거), 키 가이드 선화, F-16/La-17M 모델 등.
 

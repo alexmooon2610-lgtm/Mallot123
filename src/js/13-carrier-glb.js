@@ -202,7 +202,7 @@ function applyCarrierGLB() {
         [36.0, 16.5, 135],
         [56.0, 18.0, 135],
       ]) {
-        const m = createMiG29FromUserGLB({ gearDown: true });
+        const m = createMiG29FromUserGLB({ gearDown: true, folded: true }); // 9.41: 바깥 날개를 접어 세운다
         m.position.set(by, CV_DECK_Y - MIG29_GLB_Y, -(bx - 152.25));
         m.rotation.y = (hd * Math.PI) / 180;
         m.name = 'Parked_MiG29';
