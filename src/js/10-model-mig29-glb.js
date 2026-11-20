@@ -1,10 +1,14 @@
-/* ===== MiG-29 GLB (도색 모델: 2톤 그레이 위장 · 보르트 46, 랜딩기어 포함) =====
+/* ===== MiG-29 GLB — V15.0.0-alpha.9 부터 '뉴 MiG-29' = MiG-29K (izd. 9.41) 실측 모델 (claude/mig29k_model_spec.md) =====
+   MAKS 2007 청색 도색 · 보르트 952 · 도색 텍스처가 GLB 안에 WEBP 로 들어 있다(EXT_texture_webp, 1.10 MB —
+   예전 9-12 모델 0.54 MB + 따로 읽던 도색 PNG 0.59 MB 보다 작다). 원본 PNG 판은 src/assets/source/ 에 보관.
    모델 축: 기수 -Z, 위 +Y, 바퀴 바닥 y=0 (실기 크기, m). 게임 축과 방향이 같아 회전하지 않는다.
-   바퀴 바닥을 예전 기어 높이(y≈-1.09)에 맞춰 아래로 옮긴다. 비행 계산은 모델과 무관하다.
+   바퀴 바닥을 예전 기어 높이(y≈-1.09)에 맞춰 아래로 옮긴다. 비행 계산 · 히트박스는 모델과 무관하다 (모델만 바꿈).
+   노드: landing_gear(내린 상태) · tailhook(피벗에서 X +31° = 내림) · wing_outer_R/L(Z ±118° = 접힘, 갑판 주기용)
 */
 let mig29GLBTemplate = null;
 const MIG29_GLB_Y = -1.09;
-const MIG29_GEAR = /^(nose_|main_)/; // 랜딩기어 메시 이름
+const MIG29K_HOOK_DOWN = (31 * Math.PI) / 180,
+  MIG29K_FOLD = (118 * Math.PI) / 180;
 function cloneGLBWithOwnedResources(source) {
   const clone = source.clone(true);
   clone.traverse(node => {
@@ -23,16 +27,25 @@ function createMiG29FromUserGLB(opts = {}) {
   const model = cloneGLBWithOwnedResources(mig29GLBTemplate);
   model.position.y = MIG29_GLB_Y;
   root.add(model);
-  const gear = [];
-  model.traverse(n => {
-    if (n.isMesh && MIG29_GEAR.test(n.name)) gear.push(n);
-  });
+  const gearNode = model.getObjectByName('landing_gear'),
+    hook = model.getObjectByName('tailhook'),
+    gear = gearNode ? [gearNode] : [];
   const setGear = on => gear.forEach(g => (g.visible = !!on));
+  // 테일훅: 갑판 위 · 순항 중에는 접고, 항모로 내려앉을 때(비행 중 기어 내림)만 내린다 — 메인 루프가 매 프레임 정한다
+  const setHook = on => hook && (hook.rotation.x = on ? MIG29K_HOOK_DOWN : 0);
   setGear(opts.gearDown);
+  if (opts.folded)
+    for (const [n, a] of [
+      ['wing_outer_R', MIG29K_FOLD],
+      ['wing_outer_L', -MIG29K_FOLD],
+    ]) {
+      const w = model.getObjectByName(n);
+      if (w) w.rotation.z = a;
+    }
 
-  // 애프터버너 불꽃: 모델의 쌍발 노즐 출구(x ±1.05, 노즐 중심 높이, z 8.3) 뒤에 붙인다.
+  // 애프터버너 불꽃 (모양은 예전 그대로 — 사용자 지시): 9.41 노즐 출구(y ±0.88 · 높이 1.22 m · 출구 z 6.95) 뒤에 붙인다.
   const flames = [];
-  for (const x of [-1.05, 1.05]) {
+  for (const x of [-0.88, 0.88]) {
     const flame = new T.Mesh(
       new T.ConeGeometry(0.24, 2.15, 16, 1, true),
       new T.MeshBasicMaterial({
@@ -45,13 +58,14 @@ function createMiG29FromUserGLB(opts = {}) {
       })
     );
     flame.rotation.x = Math.PI / 2;
-    flame.position.set(x, 1.725 + MIG29_GLB_Y, 9.38);
+    flame.position.set(x, 1.22 + MIG29_GLB_Y, 6.95 + 1.075);
     flame.visible = false;
     flame.name = 'Game_Afterburner_Effect';
     root.add(flame);
     flames.push(flame);
   }
   root.userData.setGear = setGear;
+  root.userData.setHook = setHook;
   root.userData.setAfterburner = on =>
     flames.forEach(f => {
       f.visible = !!on;
@@ -60,54 +74,10 @@ function createMiG29FromUserGLB(opts = {}) {
   if (opts.scale) root.scale.setScalar(opts.scale);
   return root;
 }
-// 도색 텍스처는 GLB 안에 넣지 않고 따로 읽는다. 예전 GLTFLoader(r128)는 GLB 안 텍스처 하나만
-// 못 읽어도 모델 전체를 버리기 때문이다. 텍스처가 늦거나 실패해도 기체는 회색 기본색으로 보인다.
-const MIG29_BASE_GREY = 0xa3afb3;
-let mig29PaintTex = null;
-const mig29Extras = []; // 플레이어 외에 같은 도색을 받는 MiG (항모 갑판 주기 기체)
-function paintMiG29(root) {
-  if (!root) return;
-  root.traverse(n => {
-    if (!n.isMesh) return;
-    for (const m of Array.isArray(n.material) ? n.material : [n.material]) {
-      if (!m || m.name !== 'body') continue;
-      if (mig29PaintTex) {
-        guardTex(mig29PaintTex, m);
-        m.map = mig29PaintTex;
-        m.color.set(0xffffff);
-      } else if (!m.map) m.color.set(MIG29_BASE_GREY);
-      m.needsUpdate = true;
-    }
-  });
-}
-function loadMiG29Paint() {
-  try {
-    const b64 = readAsset('asset-mig29-paint'),
-      raw = atob(b64),
-      bytes = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-    decodeTexQueued(bytes, 'image/png', texCap(), true) // 내 기체 도색은 먼저
-      .then(src => {
-        const tex = new T.Texture(src);
-        tex.flipY = false; // glTF UV 기준
-        tex.encoding = T.sRGBEncoding;
-        tex.wrapS = tex.wrapT = T.ClampToEdgeWrapping;
-        tex.minFilter = T.LinearMipmapLinearFilter;
-        tex.magFilter = T.LinearFilter;
-        try {
-          tex.anisotropy = Math.min(8, R.capabilities.getMaxAnisotropy());
-        } catch (e) {}
-        tex.needsUpdate = true;
-        mig29PaintTex = guardTex(tex);
-        paintMiG29(mig29GLBTemplate);
-        if (p && p.mesh) paintMiG29(p.mesh);
-        mig29Extras.forEach(paintMiG29);
-      })
-      .catch(e => console.warn('[STEEL TEMPEST] MiG-29 paint texture failed; grey fallback', e));
-  } catch (e) {
-    console.warn('[STEEL TEMPEST] MiG-29 paint texture setup failed', e);
-  }
-}
+// 도색: alpha.9 부터 GLB 안에 들어 있다 (예전엔 도색 PNG 를 따로 읽어 'body' 재질에 붙였다).
+// 갑판 주기 기체 · 표지 기체가 부르던 paintMiG29 는 이제 할 일이 없다 (남겨 둔 이름).
+const mig29Extras = []; // 항모 갑판 주기 MiG
+function paintMiG29() {}
 function createMiG29(opts = {}) {
   return mig29GLBTemplate ? createMiG29FromUserGLB(opts) : createMiG29Procedural(opts);
 }
@@ -148,7 +118,8 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
   function texOf(ti) {
     if (ti in texCache) return texCache[ti];
     const t = g.textures && g.textures[ti],
-      im = t && g.images && g.images[t.source];
+      src = t && (t.source ?? t.extensions?.EXT_texture_webp?.source), // WEBP 텍스처판(EXT_texture_webp)도 읽는다
+      im = src != null && g.images && g.images[src];
     if (!im || im.bufferView == null) return (texCache[ti] = null);
     const v = g.bufferViews[im.bufferView],
       bytes = new Uint8Array(buf, binStart + (v.byteOffset || 0), v.byteLength);
@@ -245,10 +216,9 @@ function parseSimpleGLB(buf, texScale = 1, texHi = false) {
   return root;
 }
 function loadUserMiG29GLB() {
-  loadMiG29Paint();
   try {
     const bytes = assetBytes('asset-mig29-glb');
-    mig29GLBTemplate = parseSimpleGLB(bytes.buffer);
+    mig29GLBTemplate = parseSimpleGLB(bytes.buffer, 1, true); // 내 기체 도색은 먼저 펼친다
     mig29GLBTemplate.name = 'MiG29_GLB_Template';
     paintMiG29(mig29GLBTemplate);
     applyLoadedMiG29ToPlayer();

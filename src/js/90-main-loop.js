@@ -201,6 +201,9 @@ function loop(n) {
   if (TCINE.on) titleCineUpdate(dt); // 표지 시네마틱: 위에서 정한 카메라를 덮어쓴다 (89-title-cine)
   weatherUpdate(dt, S === 'play', TCINE.on); // 빗줄기 · 번개 · 빗소리 (02-weather, 보이는 것만 — 표지에서도)
   nightLightsUpdate(dt); // 밤: 갑판 조명 · 광학 착함 장치 · 전투기 항법등 (44-night-lights)
+  // MiG-29K 테일훅 (보이는 것만): 항모 모드에서 비행 중 기어를 내리면 내린다
+  if (p && p.mesh && p.mesh.userData.setHook)
+    p.mesh.userData.setHook(!!p.gearDown && typeof ops !== 'undefined' && ops.st === 'fly' && !isAirbase());
   ckUpdate(dt);
   trailsUpdate();
   // 월드 렌더링과 콕핏 렌더링을 분리해 배경/항모 모델의 깊이 테스트를 독립시킨다.
