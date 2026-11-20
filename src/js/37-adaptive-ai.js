@@ -91,6 +91,7 @@ function pilotSave() {
 function pilotReset() {
   PILOT = PILOT0();
   pilotSave();
+  evoPoolReset(); // 진화 개체군도 (37-evo-genes)
   if (EVO.on) evoRefresh(false);
 }
 // 출격할 때 (init): 기록할 판인지 정하고, 예전 기록을 한 번 흐린다
@@ -322,5 +323,5 @@ function evoIntel(ko) {
       [ko ? '적보다 위 : 아래' : 'Above : below', alt > 1 ? `${pct(P0.above / alt)} : ${pct(P0.below / alt)}` : '—'],
       [ko ? '코브라 · 착함' : 'Cobras · traps', `${P0.cobra.toFixed(1)} · ${P0.traps.toFixed(1)}`],
     ];
-  return { rows, habits };
+  return { rows, habits, genes: evoGeneIntel(ko) };
 }

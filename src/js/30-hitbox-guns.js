@@ -111,6 +111,7 @@ function bullet(a, f) {
     if (a === p) off = V(-4.5, -2.5, 0).applyQuaternion(p.q);
   }
   bl.push({ p: pos, m, off, side: a.side, dmg: a.prm.gunDmg, age: 0, v });
+  if (EVO.on && a !== p) EVOBUL.set(bl[bl.length - 1], a); // 진화: 누가 쏜 탄인지 (탄 객체에는 필드를 더하지 않는다)
 }
 function hurt(a, d) {
   if (a === p && isAirbase()) missionStats.hits++;
@@ -143,6 +144,7 @@ function updBul(dt) {
         b.age = 9;
         puff(b.p, 0xffaa44, 25, 0.5, 2, 1);
         if (a.drone) a.lastHit = 'GUN';
+        if (a === p && EVO.on) evoCredit(EVOBUL.get(b), 'ghit');
         hurt(a, b.dmg); // 쏜 기체 기준 피해 (P.mig.gunDmg · P.f16.gunDmg)
         break;
       }

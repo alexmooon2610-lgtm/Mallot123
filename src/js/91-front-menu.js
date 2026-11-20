@@ -335,6 +335,14 @@
     intel.innerHTML =
       `<div class="mf-intel-h">${ko() ? '적 정보부 보고' : 'ENEMY INTELLIGENCE'}</div>` +
       `<div class="mf-intel-hab">${I.habits.map(([a, b]) => `<span>${a}</span><b>${b}</b>`).join('')}</div>` +
+      `<div class="mf-intel-gen"><b>${ko() ? '적 조종사 진화' : 'ENEMY PILOT EVOLUTION'}</b> ${
+        I.genes.n
+          ? (ko() ? `${I.genes.gen}세대 · 개체군 ${I.genes.n}명` : `gen ${I.genes.gen} · pool ${I.genes.n}`) +
+            (I.genes.traits.length ? ` — ${I.genes.traits.join(' · ')}` : ko() ? ' — 아직 뚜렷한 성향 없음' : ' — no clear traits yet')
+          : ko()
+            ? '아직 없음 — 첫 웨이브부터 진화가 시작된다'
+            : 'none yet — evolution starts with the first wave'
+      }</div>` +
       `<div class="mf-intel-tac">${I.rows
         .map(
           r =>

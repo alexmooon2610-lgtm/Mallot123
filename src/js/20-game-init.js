@@ -76,6 +76,7 @@ function disposePlayerModel(root) {
   });
 }
 function init() {
+  evoSortieEnd(); // 진화: 지난 판에서 살아남은 적 조종사도 개체군에 넣는다 (37-evo-genes)
   resetGroundThreats();
   if (p?.mesh) disposePlayerModel(p.mesh);
   clearMissionMarker();
@@ -180,6 +181,7 @@ const msg = (s, c = G) => {
 function spawnWave() {
   wv++;
   evoWave(); // 진화 난도: 새로 풀린 수법 알림 (37-adaptive-ai)
+  evoGeneration(); // 진화 난도: 새 세대 (37-evo-genes)
   const n = Math.min(wv + DF.waveAdd, DF.waveMax); // 난도별 웨이브 크기 (보통: 예전처럼 최대 5)
   let made = 0;
   for (let i = 0; i < n; i++) {
@@ -202,6 +204,7 @@ function spawnWave() {
       );
     }
     const x = mkAc('E');
+    evoAssign(x); // 진화 난도: 개체군에서 태어난 조종사 유전자
     x.pos.copy(evoSpawnPos(pos, i)); // 진화 난도: 고도 우위 · 착함 매복 자리
     x.q.setFromEuler(new T.Euler(0, rnd() * 6.28, 0));
     x.speed = 240;

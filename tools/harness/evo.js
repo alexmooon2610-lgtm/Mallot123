@@ -110,5 +110,31 @@ window.__evo = (() => {
     lag: (h, v) => !v.overshoot && v.minDist > h.minDist + 150,
     climb: (h, v) => v.climb > h.climb + 150,
   };
-  return { T0, EXPECT };
+  // 진화 알고리즘 자체 시험: 가짜 성적(사격 거리 짧을수록 · 접근 고도 높을수록 좋음)으로 25세대를 돌려 개체군이 그쪽으로 옮겨 가는지
+  function ga() {
+    evoPoolReset();
+    EVO.on = true;
+    const iE = EVO_GI.eng,
+      iA = EVO_GI.alt,
+      mean = i => {
+        const top = EVOP.pool.slice(0, 8);
+        return top.reduce((s, c) => s + c.g[i], 0) / Math.max(1, top.length);
+      };
+    const hist = [];
+    for (let gen = 0; gen < 25; gen++) {
+      evoGeneration();
+      for (let k = 0; k < 4; k++) {
+        const e = {};
+        evoAssign(e);
+        const r = EVOG.get(e);
+        r.f = (1 - r.g[iE]) * 3 + r.g[iA] * 3;
+        evoFinalize(e, false);
+      }
+      if (gen === 3 || gen === 24) hist.push({ gen: gen + 1, eng: +mean(iE).toFixed(2), alt: +mean(iA).toFixed(2) });
+    }
+    const I = evoGeneIntel(true);
+    evoPoolReset();
+    return { hist, traits: I.traits };
+  }
+  return { T0, EXPECT, ga };
 })();
