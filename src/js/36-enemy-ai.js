@@ -26,6 +26,7 @@ function aiUpdate(dt, e) {
       r0.t = 0;
     } else if (sees && r < 13000 && r0.relock <= 0) {
       if ((r0.t += dt) > 1.4 * DF.react) {
+        if (EVO.on) evoCredit(e, 'lock');
         r0.phase = 'LOCK';
         r0.t = 0;
       }
@@ -90,15 +91,15 @@ function aiUpdate(dt, e) {
   const th = ms.filter(m => m.side == 'P' && m.tg === e && !m.dead),
     near = th.reduce((a, m) => Math.min(a, m.pos.distanceTo(e.pos)), 1e9),
     nm = th.find(m => m.pos.distanceTo(e.pos) === near);
-  if (nm && near < 6500) {
+  if (nm && near < 6500 * (EVO.on ? evoGene(e, 'brk') : 1)) {
     const pd = V()
       .crossVectors(nm.dir, V(0, 1, 0))
       .normalize();
     if (pd.dot(f) < 0) pd.negate();
-    des = pd.add(V(0, -0.25, 0)).normalize();
+    des = pd.add(V(0, EVO.on ? -0.25 + evoGene(e, 'dv') : -0.25, 0)).normalize();
     spd = 330;
     // 난도(DF) · 진화 수법(EVOAI, 진화 난도만)에 따라 플레어 거리 · 확률이 바뀐다. 보통이면 예전 3200 m · 75%
-    const fR = EVO.on ? EVOAI.flareR() : DF.flareR,
+    const fR = EVO.on ? EVOAI.flareR() * evoGene(e, 'flr') : DF.flareR,
       fP = EVO.on ? EVOAI.flareP() : DF.flareP;
     if (A.fd <= 0 && ((nm.type == 'IR' && near < fR && rnd() < fP) || (nm.type == 'SARH' && near < 7000))) {
       nm.type == 'IR' ? flare(e) : chaff(e);
@@ -118,10 +119,11 @@ function aiUpdate(dt, e) {
       A.fd = EVO.on ? EVOAI.notchChaff() : DF.chaffT;
     }
   } else if (known) {
-    const lead = p.pos.clone().addScaledVector(p.vd, p.speed * clamp(r / 700, 0, 6));
+    const lead = p.pos.clone().addScaledVector(p.vd, p.speed * clamp(r / 700, 0, 6) * (EVO.on ? evoGene(e, 'lead') : 1));
+    if (EVO.on && r > 3000) lead.y += evoGene(e, 'alt'); // 진화 유전자: 높이 / 낮게 접근
     des = lead.sub(e.pos).normalize();
     if (r < 1800) des.y += 0.5;
-    spd = (r > 6000 ? 330 : 250) * DF.spd;
+    spd = (r > 6000 ? 330 : 250) * DF.spd * (EVO.on ? evoGene(e, 'spd') : 1);
     if (EVO.on) spd = EVOAI.pursue(e, A, f, d, r, des, spd);
   } else {
     if ((A.hint -= dt) <= 0) {
@@ -163,7 +165,7 @@ function aiUpdate(dt, e) {
   if (e.cd <= 0 && p.hp > 0) {
     if (
       r0.phase == 'LOCK' &&
-      r < P.SARH.range &&
+      r < P.SARH.range * (EVO.on ? evoGene(e, 'eng') : 1) &&
       r > Math.max(P.SARH.min, 1200) &&
       e.am.SARH > 0 &&
       !ms.some(m => m.sh === e && m.type == 'SARH' && !m.dead)
@@ -173,7 +175,7 @@ function aiUpdate(dt, e) {
     } else {
       const sc = heatScore(p, e.pos, f, 14);
       A.irT = sc > 0.2 && r < P.IR.range * WX.irK && r > P.IR.min ? A.irT + dt : 0;
-      if (A.irT > 1 && e.am.IR > 0) {
+      if (A.irT > (EVO.on ? evoGene(e, 'irw') : 1) && e.am.IR > 0) {
         fire(e, 'IR', p);
         e.cd = 7 * DF.cd;
         A.irT = 0;

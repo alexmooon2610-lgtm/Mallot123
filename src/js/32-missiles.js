@@ -237,6 +237,7 @@ function updMsl(m, dt) {
       m.dead = 1;
       if (a !== p) msg('명중!', '#ff4');
       if (a.drone) a.lastHit = m.type;
+      if (a === p && EVO.on) evoCredit(m.sh, 'mhit'); // 진화: 쏜 적 조종사 성적
       weaponKill(a);
       return;
     }
@@ -262,6 +263,7 @@ function weaponKill(a) {
 }
 function kill(a) {
   if (a.dead) return;
+  if (a !== p && EVO.on) evoFinalize(a, true); // 진화: 격추된 적 조종사를 개체군으로
   a.hp = 0;
   a.dead = 1;
   boom(a.pos, 130);

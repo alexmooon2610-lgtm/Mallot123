@@ -250,6 +250,11 @@ async def evo(html):
             ok = await page.evaluate(f'([h, v]) => __evo.EXPECT.{name}(h, v)', [h, v])
             bad += not ok
             print(f"  {'OK ' if ok else 'BAD'} {name:6s} 어려움 {json.dumps(h, ensure_ascii=False)}  →  진화 {json.dumps(v, ensure_ascii=False)}")
+        g = await page.evaluate('() => __evo.ga()')
+        a, b = g['hist'][0], g['hist'][-1]
+        gok = b['eng'] < a['eng'] - 0.1 and b['alt'] > a['alt'] + 0.15
+        bad += not gok
+        print(f"  {'OK ' if gok else 'BAD'} 진화   {a['gen']}세대 사격거리 {a['eng']} · 접근고도 {a['alt']}  →  {b['gen']}세대 {b['eng']} · {b['alt']}  특징: {' · '.join(g['traits'])}")
         if errs:
             print('ERRORS', errs[:3])
         await browser.close()

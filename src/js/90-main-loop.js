@@ -117,6 +117,7 @@ function loop(n) {
     });
     ms = ms.filter(m => {
       if (m.dead) {
+        evoMissileGone(m); // 진화: 표적이 살아 있으면 그 조종사가 피한 것
         scene.remove(m.mesh);
         return false;
       }
